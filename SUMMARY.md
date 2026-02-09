@@ -2,8 +2,7 @@
 
 ## Getting Started
 
-* [Introduction](README.md)
-* [Quick Start](getting-started.md)
+* [Getting Started](getting-started.md)
 
 ## Reference
 
