@@ -3,3 +3,7 @@
 *~
 .idea/
 .vscode/
+
+# docs-tools
+node_modules/
+.docs-tools/
