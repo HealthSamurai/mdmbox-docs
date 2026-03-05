@@ -11,6 +11,21 @@ Healthcare organizations deal with dozens of systems: EHRs, labs, pharmacies, bi
 - **Data conflicts** — one system says the address is "123 Main St", another says "123 Main Street, Apt 2"
 - **Misidentification** — two different patients merged into one record, or one patient split into two
 
+```mermaid
+graph LR
+    EHR(EHR) --> P1(John Smith\nDOB 1990-05-15)
+    Lab(Lab System) --> P2(Jon Smith\nDOB 1990-05-15)
+    Pharmacy(Pharmacy) --> P3(J. Smith\nDOB 05/15/1990)
+    Billing(Billing) --> P4(John Smith\nDOB 1990-5-15)
+
+    style P1 fill:#f4a0a0
+    style P2 fill:#f4a0a0
+    style P3 fill:#f4a0a0
+    style P4 fill:#f4a0a0
+```
+
+All four records above are the same patient — but no system knows that.
+
 These problems directly affect patient safety, billing accuracy, and regulatory compliance.
 
 ## Core Concepts
@@ -18,6 +33,16 @@ These problems directly affect patient safety, billing accuracy, and regulatory 
 ### Golden Record
 
 A golden record is the single, most accurate and complete representation of an entity (e.g., a patient). Instead of having five conflicting records across five systems, MDM creates one authoritative version — the golden record — that all systems can trust.
+
+```mermaid
+graph TB
+    R1(EHR Record\nPhone: 555-0100) --> GR(Golden Record\nJohn Smith\nDOB: 1990-05-15\nPhone: 555-0199\nAddr: 123 Main St)
+    R2(Lab Record\nAddr: 123 Main) --> GR
+    R3(Pharmacy Record\nPhone: 555-0199) --> GR
+    R4(Billing Record\nAddr: 123 Main Street) --> GR
+
+    style GR fill:#4caf50,color:#fff
+```
 
 {% hint style="info" %}
 Think of the golden record as the "source of truth." When systems disagree about a patient's phone number, the golden record holds the correct one.
@@ -55,6 +80,28 @@ Record B: John Smith, DOB 1990-05-15, Phone 555-0123
 
 Record linkage connects related records across different systems without necessarily merging them. Even if two systems store data differently, linkage establishes that "Record A in System 1" and "Record B in System 2" refer to the same patient.
 
+```mermaid
+graph TB
+    subgraph System 1
+        A(Record A\nJohn Smith)
+    end
+    subgraph System 2
+        B(Record B\nJon Smith)
+    end
+    subgraph System 3
+        C(Record C\nJ. Smith)
+    end
+
+    A --- MDM(MDM Layer)
+    B --- MDM
+    C --- MDM
+
+    MDM --> GR(Golden Record\nJohn Smith)
+
+    style MDM fill:#2196f3,color:#fff
+    style GR fill:#4caf50,color:#fff
+```
+
 This is important because:
 
 - Source systems keep their own data intact
@@ -75,6 +122,21 @@ When multiple records describe the same entity, survivorship rules determine whi
 Deduplication is the process of finding and resolving duplicate records within a single system. It uses the same matching techniques but focuses on cleaning up one data source rather than linking across sources.
 
 ## How MDM Works in Practice
+
+```mermaid
+flowchart LR
+    A(Data Sources) --> B(Standardization)
+    B --> C(Matching)
+    C --> D{Confidence?}
+    D -->|High| E(Auto-merge)
+    D -->|Low| F(Manual Review)
+    F --> E
+    E --> G(Golden Record)
+    G --> H(Sync Back)
+
+    style G fill:#4caf50,color:#fff
+    style D fill:#ff9800,color:#fff
+```
 
 {% stepper %}
 {% step %}
