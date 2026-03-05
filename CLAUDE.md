@@ -76,7 +76,23 @@ Place images in `assets/` directory (use subdirectories to organize, e.g. `asset
 
 ### Mermaid Diagrams
 
-Mermaid diagrams are supported via ` ```mermaid ` code blocks. They are rendered server-side to SVG (light + dark themes) — no custom CSS classes or inline styles are supported. Use round rectangles `(Node Name)` instead of `[Node Name]` for nodes.
+Mermaid diagrams are supported via ` ```mermaid ` code blocks. They are rendered server-side to SVG (light + dark themes). Use round rectangles `(Node Name)` instead of `[Node Name]` for nodes. No custom CSS classes or inline styles — only the built-in color classes below.
+
+#### Color Classes
+
+Apply colors to nodes using `class NodeName color` or inline `:::color` syntax. The class name is `{color}{width}` where width is the border thickness in pixels (1, 2, or 3).
+
+Available colors: `red`, `blue`, `violet`, `green`, `yellow`, `neutral`
+
+Examples: `red1`, `blue2`, `green3`, `neutral1`
+
+```mermaid
+graph LR
+    A(Source):::blue2 --> B(Process):::green2 --> C(Result):::violet2
+    class A blue2
+```
+
+Class definitions are auto-injected — do not write `classDef` lines manually.
 
 ### Markdown Rules
 
