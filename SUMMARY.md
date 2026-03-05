@@ -3,6 +3,7 @@
 ## Getting Started
 
 * [Getting Started](getting-started.md)
+* [MDM Theory](mdm-theory.md)
 
 ## Reference
 
