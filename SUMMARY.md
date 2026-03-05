@@ -8,3 +8,4 @@
 
 * [API](api.md)
 * [Release notes](release-notes.md)
+* [Widgets Showcase](widgets-showcase.md)
