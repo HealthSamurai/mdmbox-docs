@@ -72,6 +72,10 @@ Place images in `assets/` directory (use subdirectories to organize, e.g. `asset
 - To optimize locally before pushing: `bun images:optimize`
 - Do not edit files in `assets/og/` — these are auto-generated Open Graph images
 
+### Mermaid Diagrams
+
+Mermaid diagrams are supported via ` ```mermaid ` code blocks. They are rendered server-side to SVG (light + dark themes) — no custom CSS classes or inline styles are supported. Use round rectangles `(Node Name)` instead of `[Node Name]` for nodes.
+
 ### Markdown Rules
 
 - Exactly one `# H1` per file (the page title)
@@ -206,6 +210,7 @@ bun images:optimize — convert images to AVIF format
 
 - Commit directly to `main` branch
 - After committing, ask the user before pushing
+- Before starting work and before pushing, always pull with rebase: `git pull --rebase`
 
 ### Pre-push Checks
 
