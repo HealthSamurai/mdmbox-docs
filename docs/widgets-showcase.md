@@ -120,6 +120,190 @@ Download Example Archive
 MDMbox has transformed our master data management workflow. The documentation widgets make it easy to create rich, interactive content.
 {% endquote %}
 
+## Markdown Features
+
+### Text Formatting
+
+This is **bold text**, this is *italic text*, and this is ***bold italic text***.
+
+This is ~~strikethrough text~~ and this is `inline code`.
+
+### Links
+
+[External link](https://example.com) and [internal link](getting-started.md).
+
+### Lists
+
+Unordered list:
+
+- First item
+- Second item
+  - Nested item
+  - Another nested item
+- Third item
+
+Ordered list:
+
+1. First step
+2. Second step
+   1. Sub-step A
+   2. Sub-step B
+3. Third step
+
+### Task List
+
+- [x] Completed task
+- [ ] Incomplete task
+- [x] Another completed task
+
+### Table
+
+| Column 1 | Column 2 | Column 3 |
+| --------- | --------- | --------- |
+| Row 1 | Data | Data |
+| Row 2 | Data | Data |
+| Row 3 | Data | Data |
+
+### Blockquote
+
+> This is a blockquote. It can contain **formatted text** and other elements.
+>
+> It can also span multiple paragraphs.
+
+### Horizontal Rule
+
+---
+
+### Image
+
+![Example image](../assets/carousel-1.avif)
+
+### Code Blocks
+
+Inline: use the `config.yaml` file.
+
+Fenced code block with syntax highlighting:
+
+```sql
+SELECT id, name, status
+FROM devices
+WHERE status = 'active'
+ORDER BY name;
+```
+
+```python
+def hello(name: str) -> str:
+    return f"Hello, {name}!"
+```
+
+### Footnote
+
+This text has a footnote[^1].
+
+[^1]: This is the footnote content.
+
+### Mermaid Diagrams
+
+Flowchart:
+
+```mermaid
+flowchart LR
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action 1]
+    B -->|No| D[Action 2]
+    C --> E[End]
+    D --> E
+```
+
+Sequence diagram:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    participant Database
+    Client->>Server: POST /api/resource
+    Server->>Database: INSERT INTO resources
+    Database-->>Server: OK
+    Server-->>Client: 201 Created
+```
+
+Class diagram:
+
+```mermaid
+classDiagram
+    class Device {
+        +String id
+        +String name
+        +String status
+        +activate()
+        +deactivate()
+    }
+    class Policy {
+        +String id
+        +String name
+        +List~Rule~ rules
+        +apply(Device)
+    }
+    class Rule {
+        +String condition
+        +String action
+    }
+    Policy "1" --> "*" Rule
+    Policy "1" --> "*" Device
+```
+
+State diagram:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> Active: Approve
+    Pending --> Rejected: Reject
+    Active --> Suspended: Suspend
+    Suspended --> Active: Reactivate
+    Active --> [*]: Delete
+```
+
+Entity relationship diagram:
+
+```mermaid
+erDiagram
+    DEVICE ||--o{ ENROLLMENT : has
+    DEVICE {
+        string id PK
+        string name
+        string status
+    }
+    ENROLLMENT {
+        string id PK
+        string device_id FK
+        date enrolled_at
+    }
+    POLICY ||--o{ DEVICE : applies_to
+    POLICY {
+        string id PK
+        string name
+        string description
+    }
+```
+
+Gantt chart:
+
+```mermaid
+gantt
+    title Project Timeline
+    dateFormat YYYY-MM-DD
+    section Phase 1
+        Requirements    :done, 2026-01-01, 2026-01-15
+        Design          :done, 2026-01-15, 2026-02-01
+    section Phase 2
+        Development     :active, 2026-02-01, 2026-03-15
+        Testing         :2026-03-15, 2026-04-01
+    section Phase 3
+        Deployment      :2026-04-01, 2026-04-15
+```
+
 ## Nested Widgets
 
 Widgets can be nested. Here is a hint inside a tab:
