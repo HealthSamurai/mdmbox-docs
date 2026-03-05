@@ -13,15 +13,10 @@ Healthcare organizations deal with dozens of systems: EHRs, labs, pharmacies, bi
 
 ```mermaid
 graph LR
-    EHR(EHR) --> P1(John Smith\nDOB 1990-05-15)
-    Lab(Lab System) --> P2(Jon Smith\nDOB 1990-05-15)
-    Pharmacy(Pharmacy) --> P3(J. Smith\nDOB 05/15/1990)
-    Billing(Billing) --> P4(John Smith\nDOB 1990-5-15)
-
-    style P1 fill:#f4a0a0
-    style P2 fill:#f4a0a0
-    style P3 fill:#f4a0a0
-    style P4 fill:#f4a0a0
+    EHR(EHR) --> P1(John Smith\nDOB 1990-05-15):::red2
+    Lab(Lab System) --> P2(Jon Smith\nDOB 1990-05-15):::red2
+    Pharmacy(Pharmacy) --> P3(J. Smith\nDOB 05/15/1990):::red2
+    Billing(Billing) --> P4(John Smith\nDOB 1990-5-15):::red2
 ```
 
 All four records above are the same patient — but no system knows that.
@@ -36,12 +31,10 @@ A golden record is the single, most accurate and complete representation of an e
 
 ```mermaid
 graph TB
-    R1(EHR Record\nPhone: 555-0100) --> GR(Golden Record\nJohn Smith\nDOB: 1990-05-15\nPhone: 555-0199\nAddr: 123 Main St)
+    R1(EHR Record\nPhone: 555-0100) --> GR(Golden Record\nJohn Smith\nDOB: 1990-05-15\nPhone: 555-0199\nAddr: 123 Main St):::green2
     R2(Lab Record\nAddr: 123 Main) --> GR
     R3(Pharmacy Record\nPhone: 555-0199) --> GR
     R4(Billing Record\nAddr: 123 Main Street) --> GR
-
-    style GR fill:#4caf50,color:#fff
 ```
 
 {% hint style="info" %}
@@ -92,14 +85,11 @@ graph TB
         C(Record C\nJ. Smith)
     end
 
-    A --- MDM(MDM Layer)
+    A --- MDM(MDM Layer):::blue2
     B --- MDM
     C --- MDM
 
-    MDM --> GR(Golden Record\nJohn Smith)
-
-    style MDM fill:#2196f3,color:#fff
-    style GR fill:#4caf50,color:#fff
+    MDM --> GR(Golden Record\nJohn Smith):::green2
 ```
 
 This is important because:
@@ -131,11 +121,9 @@ flowchart LR
     D -->|High| E(Auto-merge)
     D -->|Low| F(Manual Review)
     F --> E
-    E --> G(Golden Record)
+    E --> G(Golden Record):::green2
     G --> H(Sync Back)
-
-    style G fill:#4caf50,color:#fff
-    style D fill:#ff9800,color:#fff
+    class D yellow2
 ```
 
 {% stepper %}
