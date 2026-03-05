@@ -110,8 +110,8 @@ Download Example Archive
 ## Carousel
 
 {% carousel %}
-![First example image](../assets/carousel-1.png)
-![Second example image](../assets/carousel-2.png)
+![First example image](../assets/carousel-1.avif)
+![Second example image](../assets/carousel-2.avif)
 {% endcarousel %}
 
 ## Quote
