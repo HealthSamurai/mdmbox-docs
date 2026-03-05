@@ -21,6 +21,8 @@ redirects.yaml  — URL redirects
 
 Run `bun install` once after cloning — this installs docs-tools and sets up git hooks.
 
+`docs-tools` is intentionally unpinned (`github:HealthSamurai/docs-tools`) so that every `bun install` pulls the latest version. This means `bun.lock` changes frequently — this is normal and expected. If `bun.lock` shows up as modified in `git status`, just commit it together with your other changes.
+
 ### Creating a New Page
 
 1. Create a `.md` file in `docs/` (or a subdirectory)
