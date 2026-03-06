@@ -160,4 +160,3 @@ flowchart LR
 ## Next Steps
 
 - [Getting Started](getting-started.md) — set up MDMbox for your organization
-- [API Reference](api.md) — integrate MDMbox with your systems

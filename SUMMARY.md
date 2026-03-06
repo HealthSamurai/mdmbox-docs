@@ -19,6 +19,5 @@
 
 ## Reference
 
-* [API](api.md)
 * [Release Notes](release-notes.md)
 * [Widgets Showcase](widgets-showcase.md)
