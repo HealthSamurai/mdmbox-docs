@@ -99,14 +99,6 @@ Link card embed:
 [Getting Started](getting-started.md)
 {% endcontent-ref %}
 
-## File Download
-
-{% file src="/assets/example.pdf" / %}
-
-{% file src="/assets/example.zip" %}
-Download Example Archive
-{% endfile %}
-
 ## Carousel
 
 {% carousel %}
