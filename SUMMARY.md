@@ -1,24 +1,9 @@
 # Table of contents
 
-## Getting Started
-
-* [Getting Started with MDMbox](getting-started.md)
-* [Run MDMbox Locally](run-locally.md)
-* [Configuration](configuration.md)
-
-## Usage
-
-* [Find Duplicates: $match](match-operation.md)
-* [Merge and Unmerge Records](merge-and-unmerge.md)
-
-## How It Works
-
-* [MDM Theory](mdm-theory.md)
-* [Matching Model Explanation](matching-model.md)
-* [Mathematical Details](mathematical-details.md)
-
-## Reference
-
-* [API](api.md)
-* [Release Notes](release-notes.md)
-* [Widgets Showcase](widgets-showcase.md)
+* [MDM — Master Data Management](README.md)
+  * [Run MDM locally](run-mdm-locally.md)
+  * [Configure MDM module](configure-mdm-module.md)
+  * [Find duplicates: $match](find-duplicates-match.md)
+  * [Merging and Unmerging Records: $merge and $unmerge](merging-and-unmerging-records-usdmerge-and-usdunmerge.md)
+  * [Matching Model Explanation](matching-model-explanation.md)
+  * [Mathematical Details](mathematical-details.md)

@@ -1,13 +1,13 @@
 ---
-description: Follow these steps to launch MDMbox locally using Docker Compose
+description: Follow these steps to launch Aidbox MDM module locally using Docker Compose
 ---
 
-# Run MDMbox Locally
+# Run MDM locally
 
 ## Prerequisites
 
 {% hint style="warning" %}
-Please **make sure** that both [Docker and Docker Compose](https://docs.docker.com/engine/install/) are installed.
+Please **make sure** that both [Docker & Docker Compose](https://docs.docker.com/engine/install/) are installed.
 {% endhint %}
 
 {% hint style="info" %}
@@ -16,19 +16,13 @@ Replace example hosts like `mdm.example.com` and `aidbox.example.com` with your 
 
 ## Steps
 
-{% stepper %}
-{% step %}
-
-### Create a directory
+### 1. Create a directory
 
 ```sh
 mkdir aidbox-mdm && cd aidbox-mdm
 ```
 
-{% endstep %}
-{% step %}
-
-### Create Docker Compose file
+### 2. Create Docker Compose file
 
 Create a file named `mdm-compose.yml` with the following content:
 
@@ -170,10 +164,7 @@ services:
     restart: unless-stopped
 ```
 
-{% endstep %}
-{% step %}
-
-### Start MDMbox
+### 3. Start the MDM module
 
 ```bash
 docker compose -f mdm-compose.yml up
@@ -181,56 +172,43 @@ docker compose -f mdm-compose.yml up
 
 This command starts all required services:
 
-- **aidbox-db** — PostgreSQL database
-- **aidbox** — Aidbox FHIR server
-- **backend** — MDM backend service
-- **frontend** — MDM frontend interface
+* **aidbox-db**: PostgreSQL database
+* **aidbox**: Aidbox FHIR server
+* **backend**: MDM backend service
+* **frontend**: MDM frontend interface
 
-{% endstep %}
-{% step %}
+### 4. Access Aidbox
 
-### Access Aidbox
+Open in your browser [https://aidbox.example.com/](https://aidbox.example.com)
 
-Open [https://aidbox.example.com](https://aidbox.example.com) in your browser.
-
-{% endstep %}
-{% step %}
-
-### Activate your Aidbox instance
+### 5. Activate your Aidbox instance
 
 Click "Continue with Aidbox account" and create a free Aidbox account in [Aidbox user portal](https://aidbox.app/).
 
-{% endstep %}
-{% step %}
+More about Aidbox licenses [here](https://docs.aidbox.app/docs/aidbox/overview/aidbox-user-portal/licenses).
 
-### Configure the MDM module
+### 6. Configure the MDM module
 
-Follow the [Configuration guide](configuration.md) to set up OAuth authentication, user privileges, SQL functions, and create the matching model in the MDM backend via `/MatchingModel` or `https://mdm.example.com/admin`.
+Follow the [configuration guide](configure-mdm-module.md) to set up OAuth authentication, user privileges, SQL functions, and **create the matching model in the MDM backend** via `/MatchingModel` or `https://mdm.example.com/admin`.
 
-{% endstep %}
-{% step %}
+### 7. Access the MDM Frontend
 
-### Access the MDM Frontend
-
-Once all services are running and configured, access the MDM frontend at [https://mdm.example.com](https://mdm.example.com).
+Once all services are running and configured, access the MDM frontend at [https://mdm.example.com](https://mdm.example.com)
 
 You can now log in using OAuth authentication through Aidbox.
-
-{% endstep %}
-{% endstepper %}
 
 ## Service URLs
 
 After successful startup, the following services will be available:
 
-| Service | URL | Description |
-| --- | --- | --- |
-| Aidbox UI | https://aidbox.example.com | FHIR server and admin interface |
+| Service      | URL                   | Description                         |
+| ------------ | --------------------- | ----------------------------------- |
+| Aidbox UI    | https://aidbox.example.com | FHIR server and admin interface     |
 | MDM Frontend | https://mdm.example.com | MDM user interface |
-| MDM Backend | https://mdm.example.com | MDM REST API |
+| MDM Backend  | https://mdm.example.com | MDM REST API                        |
 
-## Next Steps
+## Next steps
 
-- [Configure the MDM matching model](configuration.md) to start matching records
-- Learn about [matching algorithms](matching-model.md)
-- Explore the [MDM API documentation](https://dev.mdm.health-samurai.io/backend/static/swagger.html) for integration
+* [Configure the MDM matching model](configure-mdm-module.md) to start matching records
+* Learn about [matching algorithms](matching-model-explanation.md)
+* Explore the [MDM API documentation](https://dev.mdm.health-samurai.io/backend/static/swagger.html) for integration

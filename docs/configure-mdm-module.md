@@ -1,16 +1,16 @@
 ---
-description: Configure MDMbox with matching models for deduplication including examples and tuning notes.
+description: Configure MDM module with matching models for deduplication including examples and tuning notes.
 ---
 
-# Configuration
+# Configure MDM module
 
 {% hint style="info" %}
 The matching model defines the target resource type via the `resource` field (for example, `Patient`, `Practitioner`, `Organization`, or any custom FHIR resource).
 {% endhint %}
 
-The example in the next section provides a **basic model** that allows you to **start MDMbox** and **test** its functionality. For a detailed explanation of all model elements and matching logic, see [Matching Model Explanation](matching-model.md).
+The example in the next section provides a **basic model** that allows you to **start the MDM module** and **test** its functionality. For a detailed explanation of all model elements and matching logic, see [Matching Model Explanation](matching-model-explanation.md).
 
-## Create OAuth Client for MDM Frontend
+## Create OAuth Client for MDM frontend
 
 To enable authentication for the MDM frontend, create an OAuth client in Aidbox:
 
@@ -34,9 +34,9 @@ grant_types:
 - code
 ```
 
-## Add Admin Privileges to Your User
+## Add admin privileges to your user
 
-Navigate to: **Aidbox -> IAM -> Users -> Your Admin**
+Navigate to: **Aidbox → IAM → Users → Your Admin**
 
 1. Open the Aidbox dashboard.
 2. Go to the IAM (Identity and Access Management) section.
@@ -55,7 +55,7 @@ Add the following section to the user configuration JSON:
 }
 ```
 
-## Create SQL Functions
+## Create SQL functions
 
 Create the following SQL functions in your Aidbox database:
 
@@ -90,7 +90,7 @@ END;
 $function$;
 ```
 
-## Create Database Indexes
+## Create database indexes
 
 {% hint style="info" %}
 The indexes below are **recommendations** that work well with the example **Patient** model from the "Add model to MDM backend" section. If your model targets a different resource, adapt table names and expressions accordingly.
@@ -100,163 +100,52 @@ Create the following indexes to optimize matching performance and resource refer
 
 ```sql
 -- Patient indexes for matching and search
-CREATE INDEX IF NOT EXISTS patient_full_name_idx_mdm
-  ON public.patient USING btree (
-    ((immutable_unaccent_upper((resource #>> '{name,0,family}'::text[]))
-      || ' '::text)
-      || immutable_unaccent_upper((resource #>> '{name,0,given,0}'::text[])))
-  );
-
-CREATE INDEX IF NOT EXISTS patient_given_gin_idx_mdm
-  ON public.patient USING gin (
-    ((resource #>> '{name,0,given,0}'::text[])) gin_trgm_ops
-  );
-
-CREATE INDEX IF NOT EXISTS patient_family_gin_idx_mdm
-  ON public.patient USING gin (
-    ((resource #>> '{name,0,family}'::text[])) gin_trgm_ops
-  );
-
-CREATE INDEX IF NOT EXISTS patient_given_btree_idx_mdm
-  ON public.patient USING btree (
-    immutable_unaccent_upper((resource #>> '{name,0,given,0}'::text[]))
-  );
-
-CREATE INDEX IF NOT EXISTS patient_family_btree_idx_mdm
-  ON public.patient USING btree (
-    immutable_unaccent_upper((resource #>> '{name,0,family}'::text[]))
-  );
-
-CREATE INDEX IF NOT EXISTS patient_email_idx_mdm
-  ON public.patient USING gin (
-    jsonb_path_query_array(resource,
-      '$."telecom"[*]?(@."system" == "email")."value"'::jsonpath)
-    jsonb_path_ops
-  );
-
-CREATE INDEX IF NOT EXISTS patient_identifier_idx_mdm
-  ON public.patient USING gin (
-    jsonb_path_query_array(resource,
-      '$."identifier"[*]."value"'::jsonpath)
-    jsonb_path_ops
-  );
-
-CREATE INDEX IF NOT EXISTS patient_phone_idx_mdm
-  ON public.patient USING gin (
-    jsonb_path_query_array(resource,
-      '$."telecom"[*]?(@."system" == "phone")."value"'::jsonpath)
-    jsonb_path_ops
-  );
-
-CREATE INDEX IF NOT EXISTS patient_address_line_btree_idx_mdm
-  ON public.patient USING btree (
-    immutable_remove_spaces_unaccent_upper(
-      (resource #>> '{address,0,line,0}'::text[]))
-  );
-
-CREATE INDEX IF NOT EXISTS patient_identifier_idx2_mdm
-  ON public.patient USING gin (
-    ((resource #> '{identifier}'::text[]))
-  );
-
-CREATE INDEX IF NOT EXISTS patient_birthdate_idx_mdm
-  ON public.patient USING btree (
-    ((resource #>> '{birthDate}'::text[]))
-  );
+CREATE INDEX IF NOT EXISTS patient_full_name_idx_mdm ON public.patient USING btree ((((immutable_unaccent_upper((resource #>> '{name,0,family}'::text[])) || ' '::text) || immutable_unaccent_upper((resource #>> '{name,0,given,0}'::text[]))))); -- match blocks
+CREATE INDEX IF NOT EXISTS patient_given_gin_idx_mdm ON public.patient USING gin (((resource #>> '{name,0,given,0}'::text[])) gin_trgm_ops); -- search by partial given
+CREATE INDEX IF NOT EXISTS patient_family_gin_idx_mdm ON public.patient USING gin (((resource #>> '{name,0,family}'::text[])) gin_trgm_ops); -- search by partial family
+CREATE INDEX IF NOT EXISTS patient_given_btree_idx_mdm ON public.patient USING btree (immutable_unaccent_upper((resource #>> '{name,0,given,0}'::text[]))); -- search by exact given
+CREATE INDEX IF NOT EXISTS patient_family_btree_idx_mdm ON public.patient USING btree (immutable_unaccent_upper((resource #>> '{name,0,family}'::text[]))); -- search by exact family
+CREATE INDEX IF NOT EXISTS patient_email_idx_mdm ON public.patient USING gin (jsonb_path_query_array(resource, '$."telecom"[*]?(@."system" == "email")."value"'::jsonpath) jsonb_path_ops); -- search by email
+CREATE INDEX IF NOT EXISTS patient_identifier_idx_mdm ON public.patient USING gin (jsonb_path_query_array(resource, '$."identifier"[*]."value"'::jsonpath) jsonb_path_ops); -- search by identifier
+CREATE INDEX IF NOT EXISTS patient_phone_idx_mdm ON public.patient USING gin (jsonb_path_query_array(resource, '$."telecom"[*]?(@."system" == "phone")."value"'::jsonpath) jsonb_path_ops); -- search by phone
+CREATE INDEX IF NOT EXISTS patient_address_line_btree_idx_mdm ON public.patient USING btree (immutable_remove_spaces_unaccent_upper((resource #>> '{address,0,line,0}'::text[]))); -- match blocks
+CREATE INDEX IF NOT EXISTS patient_identifier_idx2_mdm ON public.patient USING gin (((resource #> '{identifier}'::text[]))); -- for second model, review needed
+CREATE INDEX IF NOT EXISTS patient_birthdate_idx_mdm ON public.patient USING btree (((resource #>> '{birthDate}'::text[]))); -- match blocks
 
 -- Observation indexes for merge/unmerge operations
-CREATE INDEX IF NOT EXISTS observation_encounter_references_idx_mdm
-  ON public.observation USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Encounter")."id"'::jsonpath)
-  );
-
-CREATE INDEX IF NOT EXISTS observation_patient_references_idx_mdm
-  ON public.observation USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)
-  );
+CREATE INDEX IF NOT EXISTS observation_encounter_references_idx_mdm ON public.observation USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Encounter")."id"'::jsonpath)); -- unmerge
+CREATE INDEX IF NOT EXISTS observation_patient_references_idx_mdm ON public.observation USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)); -- merge
 
 -- Specimen indexes for merge operations
-CREATE INDEX IF NOT EXISTS specimen_patient_references_idx_mdm
-  ON public.specimen USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)
-  );
+CREATE INDEX IF NOT EXISTS specimen_patient_references_idx_mdm ON public.specimen USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)); -- merge
 
 -- DiagnosticReport indexes for merge/unmerge operations
-CREATE INDEX IF NOT EXISTS diagnosticreport_patient_references_idx_mdm
-  ON public.diagnosticreport USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)
-  );
-
-CREATE INDEX IF NOT EXISTS diagnosticreport_encounter_references_idx_mdm
-  ON public.diagnosticreport USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Encounter")."id"'::jsonpath)
-  );
+CREATE INDEX IF NOT EXISTS diagnosticreport_patient_references_idx_mdm ON public.diagnosticreport USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)); -- merge
+CREATE INDEX IF NOT EXISTS diagnosticreport_encounter_references_idx_mdm ON public.diagnosticreport USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Encounter")."id"'::jsonpath)); -- unmerge
 
 -- Encounter indexes for merge operations
-CREATE INDEX IF NOT EXISTS encounter_patient_references_idx_mdm
-  ON public.encounter USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)
-  );
-
-CREATE INDEX IF NOT EXISTS encounter_identifier_idx_mdm
-  ON public.encounter USING gin (
-    (jsonb_path_query_array(resource,
-      '$."identifier".**."value"'))
-    jsonb_path_ops
-  );
+CREATE INDEX IF NOT EXISTS encounter_patient_references_idx_mdm ON public.encounter USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)); -- merge
+CREATE INDEX IF NOT EXISTS encounter_identifier_idx_mdm ON public.encounter USING gin ((jsonb_path_query_array(resource, '$."identifier".**."value"')) jsonb_path_ops);
 
 -- Condition indexes for merge/unmerge operations
-CREATE INDEX IF NOT EXISTS condition_patient_references_idx_mdm
-  ON public.condition USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)
-  );
-
-CREATE INDEX IF NOT EXISTS condition_encounter_references_idx_mdm
-  ON public.condition USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Encounter")."id"'::jsonpath)
-  );
+CREATE INDEX IF NOT EXISTS condition_patient_references_idx_mdm ON public.condition USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)); -- merge
+CREATE INDEX IF NOT EXISTS condition_encounter_references_idx_mdm ON public.condition USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Encounter")."id"'::jsonpath)); -- unmerge
 
 -- Media indexes for merge/unmerge operations
-CREATE INDEX IF NOT EXISTS media_patient_references_idx_mdm
-  ON public.media USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)
-  );
-
-CREATE INDEX IF NOT EXISTS media_encounter_references_idx_mdm
-  ON public.media USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Encounter")."id"'::jsonpath)
-  );
+CREATE INDEX IF NOT EXISTS media_patient_references_idx_mdm ON public.media USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)); -- merge
+CREATE INDEX IF NOT EXISTS media_encounter_references_idx_mdm ON public.media USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Encounter")."id"'::jsonpath)); -- unmerge
 
 -- SourceMessage indexes for merge/unmerge operations
-CREATE INDEX IF NOT EXISTS sourcemessage_patient_references_idx_mdm
-  ON public.sourcemessage USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Patient")."id"'::jsonpath)
-  );
-
-CREATE INDEX IF NOT EXISTS sourcemessage_encounter_references_idx_mdm
-  ON public.sourcemessage USING gin (
-    jsonb_path_query_array(resource,
-      '$.**?(@."resourceType" == "Encounter")."id"'::jsonpath)
-  );
+CREATE INDEX IF NOT EXISTS sourcemessage_patient_references_idx_mdm ON public.sourcemessage USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Patient")."id"'::jsonpath));
+CREATE INDEX IF NOT EXISTS sourcemessage_encounter_references_idx_mdm ON public.sourcemessage USING gin (jsonb_path_query_array(resource, '$.**?(@."resourceType" == "Encounter")."id"'::jsonpath));
 ```
 
-## Add Model to MDM Backend
+## Add model to MDM backend
 
 Matching models are stored in the **MDM server (backend)**, not in Aidbox. You can manage them via:
 
-- **Admin UI**: `https://mdm.example.com/admin`
-- **API**: `POST /MatchingModel`, `PUT /MatchingModel`, `GET /MatchingModel`
+* **Admin UI**: `https://mdm.example.com/admin`
+* **API**: `POST /MatchingModel`, `PUT /MatchingModel`, `GET /MatchingModel`
 
 Authentication is **optional**. If it is enabled, MDM uses **Aidbox OAuth** for access control.
 
@@ -335,7 +224,7 @@ Content-Type: application/json
     "dob": [
       {
         "bf": 0,
-        "expr": "( l.#dob IS NULL OR r.#dob IS NULL )"
+        "expr": "( l.#dob  IS NULL OR r.#dob IS NULL )"
       },
       {
         "bf": 10.59415069916466,
@@ -406,28 +295,29 @@ The example model is intended for **testing and demonstration purposes** and may
 
 For production use and reliable, accurate matching on your data, you should:
 
-- **Adapt the model** to reflect your data specifics and your definition of a correct match.
-- **Calibrate feature weights** using your real-world data. This step typically involves **machine learning** and **manual expert tuning**.
+* **Adapt the model** to reflect your data specifics and your definition of a correct match.
+* **Calibrate feature weights** using your real-world data. This step typically involves **machine learning** and **manual expert tuning**.
 
 {% hint style="success" %}
-We offer a **professional service** for model training and expert tuning. If you need assistance, please [contact us](https://health-samurai.io/contacts).
+We offer a **professional service** for model training and expert tuning.\
+If you need assistance, please [contact us](https://docs.aidbox.app/docs/aidbox/overview/contact-us).
 {% endhint %}
 
-### Performance Considerations
+### Performance considerations
 
 For fast and accurate matching, consider the following:
 
-- **Database indexes:** If you are working with large volumes of records, ensure proper database indexes are created to keep matching fast and scalable.
-- **Data normalization:** Matching quality depends heavily on well-normalized input data. Avoid using placeholders like `"UNKNOWN"` or `"not provided"` for names, addresses, or birthdates, as they negatively impact results.
+* **Database indexes:** If you are working with large volumes of records, ensure proper database indexes are created to keep matching fast and scalable.
+* **Data normalization:** Matching quality depends heavily on well‑normalized input data. Avoid using placeholders like `"UNKNOWN"` or `"not provided"` for names, addresses, or birthdates, as they negatively impact results.
 
 ## Configure Audit Events (Optional)
 
 The MDM module can track and export audit events for compliance and monitoring purposes. When enabled, the system generates FHIR AuditEvent resources for operations like:
 
-- Merge/unmerge operations
-- Search and matching
-- Marking/unmarking duplicates
-- Record creation and viewing
+* Merge/unmerge operations
+* Search and matching
+* Marking/unmarking duplicates
+* Record creation and viewing
 
 ### Enable Audit Worker
 
@@ -450,7 +340,7 @@ MPI_AUDIT_BATCH_SIZE=10
 MPI_AUDIT_LOCK_ID=54321
 ```
 
-### How It Works
+### How it works
 
 1. **Event Collection**: The system creates FHIR AuditEvent resources for auditable operations and stores them in the `mpi.audit_event` table with `send_status = 'pending'`.
 
@@ -468,7 +358,7 @@ MPI_AUDIT_LOCK_ID=54321
 
 ### Audit Repository Requirements
 
-The audit events are sent as FHIR AuditEvent resources following the [BALP (Basic Audit Log Patterns)](https://profiles.ihe.net/ITI/BALP/) specification. You can use any FHIR-compliant audit repository.
+The audit events are sent as FHIR AuditEvent resources following the [BALP (Basic Audit Log Patterns)](https://profiles.ihe.net/ITI/BALP/) specification. You can use any FHIR-compliant audit repository, but we recommend **Auditbox** for optimal integration and audit log management.
 
 {% hint style="success" %}
 **Recommended**: Use [Auditbox](https://www.health-samurai.io/auditbox) for comprehensive audit event storage, querying, and compliance reporting with built-in FHIR AuditEvent support.
@@ -507,7 +397,7 @@ MPI_NOTIFICATION_BATCH_SIZE=10
 MPI_NOTIFICATION_LOCK_ID=12345
 ```
 
-### How It Works
+### How it works
 
 1. **Event Tracking**: When merge/unmerge operations complete, they are marked with `notification_status = 'not_delivered'` in the database.
 
@@ -526,14 +416,14 @@ MPI_NOTIFICATION_LOCK_ID=12345
       "target-patient-id": "Patient/123",
       "source-patient-id": "Patient/456",
       "related-resources-refs": ["Observation/789", "Encounter/012"],
-      "result-patient": { "resourceType": "Patient", "..." : "..." }
+      "result-patient": { /* FHIR Patient resource */ }
     }
   ],
   "unmerges": [
     {
       "id": "unmerge-id",
       "merge-id": "original-merge-id",
-      "source-patient": { "resourceType": "Patient", "..." : "..." },
+      "source-patient": { /* Restored Patient resource */ },
       "user-id": "user-123",
       "related-resources": ["Observation/789", "Encounter/012"]
     }

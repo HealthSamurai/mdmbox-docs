@@ -1,5 +1,5 @@
 ---
-description: Mathematical foundation of probabilistic matching and deduplication in MDMbox.
+description: MDM Mathematical Details for matching and deduplication in FHIR.
 ---
 
 # Mathematical Details
@@ -10,22 +10,22 @@ The algorithm is based on comparisons.
 
 We will use the term _record_ instead of resource here (this term is used in the record linkage articles).
 
-Define a set of comparison functions over pairs of records. Each comparison function returns a single category like:
+Define a set of comparison functions over pairs of records. Each comparison function returns a single category like
 
-- null
-- significantly different
-- slightly different
-- exactly equal
+* null
+* significantly different
+* slightly different
+* exactly equal
 
 Different comparison functions can have different sets of possible categories (i.e., codomains are not necessarily equal).
 
-An example of a comparison function is:
+An example of a comparison function is
 
-- -1, if the surname of one of the records is missing
-- 0, if Levenshtein distance between surnames is greater than 2
-- 1, if Levenshtein distance is 2
-- 2, if Levenshtein distance is 1
-- 3, if surnames are equal
+* \-1, if the surname of one of the records is missing
+* 0, if Levenshtein distance between surnames is greater than 2
+* 1, if Levenshtein distance is 2
+* 2, if Levenshtein distance is 1
+* 3, if surnames are equal
 
 We will say that two records match if they belong to the same entity. For example there can be two records for a single person or organization. These records can differ (e.g., a name change).
 
@@ -33,8 +33,8 @@ We are going to use Bayes' theorem. Prior probability is the probability that tw
 
 Then we define two conditional probabilities for each comparison function value:
 
-- **m-probability** — probability of the specific comparison function value, given that records match
-- **u-probability** — probability of the specific comparison function value, given that records don't match
+* m-probability: probability of the specific comparison function value, given that records match
+* u-probability: probability of the specific comparison function value, given that records don't match
 
 Then m-probability divided by u-probability is a Bayes factor.
 
