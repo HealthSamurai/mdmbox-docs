@@ -20,7 +20,7 @@ The **unmerge** operation allows reversing a previous merge by restoring the ori
 This page provides key information about using `$merge` and `$unmerge`. For full API details, refer to our [Swagger documentation](https://dev.mdm.health-samurai.io/backend/static/swagger.html).
 
 {% hint style="success" %}
-If you need **alternative merge and unmerge approaches** to adjust MDM to your specific workflows and requirements, please [contact us](https://docs.aidbox.app/docs/aidbox/overview/contact-us).
+If you need **alternative merge and unmerge approaches** to adjust MDM to your specific workflows and requirements, please [contact us](https://www.health-samurai.io/docs/aidbox/overview/contact-us).
 {% endhint %}
 
 ## Merge Operation

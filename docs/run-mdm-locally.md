@@ -185,7 +185,7 @@ Open in your browser [https://aidbox.example.com/](https://aidbox.example.com)
 
 Click "Continue with Aidbox account" and create a free Aidbox account in [Aidbox user portal](https://aidbox.app/).
 
-More about Aidbox licenses [here](https://docs.aidbox.app/docs/aidbox/overview/aidbox-user-portal/licenses).
+More about Aidbox licenses [here](https://www.health-samurai.io/docs/aidbox/overview/aidbox-user-portal/licenses).
 
 ### 6. Configure the MDM module
 

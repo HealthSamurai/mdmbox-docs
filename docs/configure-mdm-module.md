@@ -300,7 +300,7 @@ For production use and reliable, accurate matching on your data, you should:
 
 {% hint style="success" %}
 We offer a **professional service** for model training and expert tuning.\
-If you need assistance, please [contact us](https://docs.aidbox.app/docs/aidbox/overview/contact-us).
+If you need assistance, please [contact us](https://www.health-samurai.io/docs/aidbox/overview/contact-us).
 {% endhint %}
 
 ### Performance considerations

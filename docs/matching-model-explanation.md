@@ -12,7 +12,7 @@ For an overview of probabilistic matching concepts and match score calculation, 
 {% endhint %}
 
 This model is used for **record matching**, but the same approach can be adapted to detect duplicates for any type of resource.\
-If you are interested in applying this approach to your use case, please [contact us](https://docs.aidbox.app/docs/aidbox/overview/contact-us).
+If you are interested in applying this approach to your use case, please [contact us](https://www.health-samurai.io/docs/aidbox/overview/contact-us).
 
 Matching models are stored in the **MDM server (backend)** and managed via the `/MatchingModel` API or the `/admin` UI.
 
