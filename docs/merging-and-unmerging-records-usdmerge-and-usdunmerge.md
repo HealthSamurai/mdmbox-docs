@@ -17,7 +17,11 @@ Currently, only **manual merging** is supported. However, the system is designed
 
 The **unmerge** operation allows reversing a previous merge by restoring the original source record and its relationships based on audit data, ensuring no permanent data loss if a merge was done by mistake.
 
-This page provides key information about using `$merge` and `$unmerge`. For full API details, refer to our [Swagger documentation](https://dev.mdm.health-samurai.io/backend/static/swagger.html).
+This page provides key information about using `$merge` and `$unmerge`. For full API details, refer to our [Swagger documentation](https://dev.mdm.health-samurai.io/backend/static/swagger.html). To customize which patient fields appear in the merge UI, see [Configure Merge View](configure-merge-view.md).
+
+{% hint style="info" %}
+The merge and unmerge operations will soon be migrated to the [Custom SQL Operations](custom-sql-operations.md) framework, allowing full customization of the merge and unmerge logic without code changes.
+{% endhint %}
 
 {% hint style="success" %}
 If you need **alternative merge and unmerge approaches** to adjust MDM to your specific workflows and requirements, please [contact us](https://www.health-samurai.io/docs/aidbox/overview/contact-us).

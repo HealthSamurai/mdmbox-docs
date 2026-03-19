@@ -34,6 +34,17 @@ grant_types:
 - code
 ```
 
+Then configure the frontend service with the matching client credentials:
+
+```bash
+AIDBOX_CLIENT_ID=mpi-dev
+AIDBOX_CLIENT_SECRET=pass
+```
+
+{% hint style="warning" %}
+These two environment variables are **required** for the MDM frontend to authenticate via OAuth. Without them, users will see a "Client is not configured for authorization code" error when trying to log in.
+{% endhint %}
+
 ## Add admin privileges to your user
 
 Navigate to: **Aidbox → IAM → Users → Your Admin**

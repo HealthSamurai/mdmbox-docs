@@ -64,6 +64,9 @@ Configure the MDM module to use a matching model stored in the MDM server (backe
 
 Use `$match` operation to find duplicates
 
+{% content-ref url="find-duplicates-match.md" %}
+[find-duplicates-match.md](find-duplicates-match.md)
+{% endcontent-ref %}
 
 ## Merge and Unmerge Records
 
