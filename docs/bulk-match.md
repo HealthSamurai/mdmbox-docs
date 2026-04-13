@@ -25,6 +25,17 @@ graph LR
 
 **Download.** Results are streamed as CSV using PostgreSQL's COPY protocol for efficient transfer.
 
+## Admin UI
+
+The Admin UI at `/admin/bulk-match` is the recommended way to run bulk matching. It provides a visual interface for the entire pipeline:
+
+- Select a BulkMatchingModel from the dropdown
+- View flat table status and trigger preparation
+- Configure and start bulk match jobs
+- Monitor worker progress in real time
+- Download results as CSV
+- Stop, resume, or archive jobs
+
 ## API workflow
 
 ### Step 1: Prepare the flat table
@@ -39,16 +50,19 @@ This creates the flat table, populates it from FHIR resources, and creates index
 GET /api/bulk-match/patient-bulk/status
 ```
 
-Response:
+The response is an OperationOutcome. The `diagnostics` field contains preparation details as a string:
 
 ```json
 {
-  "status": "ready",
-  "stage": null,
-  "source_count": 150000,
-  "model_version": "3",
-  "prepared_at": "2025-04-10T14:30:00Z",
-  "prepare_duration_ms": 12500
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "information",
+      "code": "informational",
+      "details": {"text": "Flat table ready (150000 records)"},
+      "diagnostics": "{:model-id \"patient-bulk\", :prepare-status \"ready\", :stage nil, :source-count 150000, :prepare-duration-ms 12500, :prepared-at \"2025-04-10T14:30:00Z\"}"
+    }
+  ]
 }
 ```
 
@@ -76,6 +90,24 @@ Content-Type: application/json
 
 - `batchSize` -- number of records per worker batch (100 to 10000)
 - `workersCount` -- number of parallel workers (1 to 16)
+
+Response (HTTP 202):
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "information",
+      "code": "informational",
+      "details": {"text": "Bulk match started, job #42"},
+      "diagnostics": "{:id 42, :model-id \"patient-bulk\", :status \"in-progress\"}"
+    }
+  ]
+}
+```
+
+The job ID in `details.text` is needed for the download endpoint.
 
 ### Step 3: Monitor progress
 
@@ -128,21 +160,13 @@ POST /api/bulk-match/patient-bulk/archive
 
 Moves a completed, stopped, or failed job to archived status.
 
-## Admin UI
-
-The bulk match page at `/admin/bulk-match` provides a visual interface for the entire pipeline:
-
-- Select a BulkMatchingModel from the dropdown
-- View flat table status and trigger preparation
-- Configure and start bulk match jobs
-- Monitor worker progress in real time
-- Download results as CSV
-- Stop, resume, or archive jobs
-
 ## Performance considerations
 
 - **Batch size** affects memory usage per worker. Larger batches reduce overhead but use more memory.
 - **Worker count** should not exceed available CPU cores or database connections.
 - The flat table uses PostgreSQL unlogged tables (no WAL overhead) for faster writes.
 - Indexes on block columns are critical -- without them, the comparison query does a full cross-join.
-- Run `ANALYZE` on the flat table after preparation (MDMbox does this automatically).
+
+{% hint style="warning" %}
+Each bulk match worker holds a database connection for the duration of its work. Make sure `MDMBOX_DB_MAX_POOL_SIZE` is large enough to accommodate the number of workers plus normal application traffic.
+{% endhint %}

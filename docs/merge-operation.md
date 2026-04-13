@@ -77,7 +77,7 @@ The plan is a standard FHIR transaction Bundle. It typically contains:
 - `PUT` entries to reassign references from related resources (Encounters, Observations, etc.)
 - A `DELETE` entry for the source resource
 
-Use `ifMatch` headers (ETags) for optimistic locking. If a resource was modified between when the client read it and when the merge executes, the entire transaction rolls back with a `409 Conflict` response.
+Use `ifMatch` headers (ETags) for optimistic locking. If a resource was modified between when the client read it and when the merge executes, the entire transaction rolls back with a `422 Unprocessable Entity` response (code `conflict`).
 
 ## Preview mode
 
@@ -95,6 +95,32 @@ Set `preview` to `true` to see the assembled Bundle (including audit resources) 
 }
 ```
 
+Preview response:
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "outcome",
+      "resource": {
+        "resourceType": "OperationOutcome",
+        "issue": [{"severity": "information", "code": "informational",
+                    "details": {"text": "Merge plan is valid and ready to execute"}}]
+      }
+    },
+    {
+      "name": "bundle",
+      "resource": {
+        "resourceType": "Bundle",
+        "type": "transaction",
+        "entry": ["... assembled entries including audit resources ..."]
+      }
+    }
+  ]
+}
+```
+
 ## Response
 
 On success, the response is a Parameters resource containing:
@@ -107,7 +133,19 @@ On success, the response is a Parameters resource containing:
       "name": "outcome",
       "resource": {
         "resourceType": "OperationOutcome",
-        "issue": [{"severity": "information", "code": "informational"}]
+        "issue": [{"severity": "information", "code": "informational",
+                    "details": {"text": "Merge completed: Patient/duplicate-123 -> Patient/primary-456"}}]
+      }
+    },
+    {
+      "name": "input-parameters",
+      "resource": {
+        "resourceType": "Parameters",
+        "parameter": [
+          {"name": "source", "valueReference": {"reference": "Patient/duplicate-123"}},
+          {"name": "target", "valueReference": {"reference": "Patient/primary-456"}},
+          {"name": "preview", "valueBoolean": false}
+        ]
       }
     },
     {

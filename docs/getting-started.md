@@ -86,6 +86,10 @@ MDMbox maintains its own connection pool separate from the embedded FHIR engine.
 | `MDMBOX_HTTP_PORT` | HTTP port | 3000 |
 | `MDMBOX_HTTP_HOST` | Bind address | 127.0.0.1 |
 
+{% hint style="warning" %}
+When running in Docker, set `MDMBOX_HTTP_HOST` to `0.0.0.0`. The default `127.0.0.1` binds to loopback only and the service will be unreachable from outside the container.
+{% endhint %}
+
 ## Endpoints
 
 Once running, the following endpoints are available:

@@ -85,7 +85,7 @@ Thresholds classify match results into grades:
 
 - Score >= `certain` -- match grade `certain` (high confidence)
 - Score >= `probable` -- match grade `probable` (review recommended)
-- Score < `probable` -- not returned
+- Score < `probable` -- match grade `possible` (only returned if threshold is overridden below `probable`)
 
 ## MatchingModel
 
@@ -165,6 +165,8 @@ Key differences from MatchingModel:
 - `column` replaces `variable` -- each column has a `source` SQL expression and a PostgreSQL `type`
 - `tableName` specifies the flat table to create
 - `index` defines indexes to create on the flat table after population
+- In `block` entries, `variable` refers to a `column` name (not a variable -- the field name is the same in both model types)
+- In `feature` expressions, reference column names directly (e.g., `l.dob` instead of `l.#dob`)
 
 ```json
 {
