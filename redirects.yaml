@@ -1,1 +1,9 @@
-redirects: {}
+redirects:
+  run-mdm-locally: getting-started.md
+  configure-mdm-module: matching-models.md
+  find-duplicates-match: match-operation.md
+  merging-and-unmerging-records-usdmerge-and-usdunmerge: merge-operation.md
+  matching-model-explanation: matching-models.md
+  rbac: getting-started.md
+  configure-merge-view: merge-operation.md
+  custom-sql-operations: api-reference.md

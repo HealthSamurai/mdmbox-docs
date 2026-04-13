@@ -1,99 +1,55 @@
 ---
-description: >-
-  This page introduces the Aidbox MDM module, its core capabilities, and guides
-  for deployment, configuration, matching, and merge/unmerge operations.
+description: MDMbox is a standalone service for probabilistic record matching, deduplication, and merging of FHIR resources.
 ---
 
-# MDM — Master Data Management
+# MDMbox
 
-**Master Data Management (MDM)** is a module in Aidbox that ensures **accurate entity identification** by detecting and removing duplicate records. It helps maintain consistent and reliable data across healthcare systems.
+MDMbox is a master data management service for healthcare organizations. It identifies duplicate records across FHIR resources using probabilistic matching and provides tools to merge and manage them.
 
-**MDM enables:**
+## Core capabilities
 
-* accurate [**matching**](find-duplicates-match.md) of records across different systems and facilities,
-* [**merging**](merging-and-unmerging-records-usdmerge-and-usdunmerge.md#merge-operation) of duplicate records into a single record,
-* [**unmerging**](merging-and-unmerging-records-usdmerge-and-usdunmerge.md#unmerge-operation) of incorrectly linked records,
-* maintaining the **integrity** of clinical data and treatment history.
+**Probabilistic matching.** Configurable Fellegi-Sunter models compare records across multiple dimensions (name, date of birth, address, phone) and produce a match score. Handles typos, incomplete data, and transpositions.
 
-Using MDM **reduces the risk** of lost or duplicated data, errors, and issues with data exchange. This is especially critical in complex ecosystems with many sources — such as clinics, labs, and telemedicine platforms.
+**Merging.** Client-driven merge with a FHIR transaction Bundle. Full audit trail via Task and Provenance resources. Preview mode for dry runs.
 
-The MDM module utilizes a **probabilistic** (score-based or Fellegi-Sunter) method. It is more flexible and can provide better results than rule-based approaches, but at the cost of simplicity.
+**Bulk matching.** Pre-materialize data into a flat table, then run parallel workers to find all duplicate pairs across millions of records. Download results as CSV.
 
-## MDM Capabilities Overview
+**Admin UI.** Server-rendered interface for managing matching models and running bulk match jobs.
 
-### Technical Capabilities
+**FHIR R4.** All operations use standard FHIR resource types and follow FHIR conventions. Works with any resource type (Patient, Practitioner, Organization, etc.).
 
-* FHIR R4 support
-* Seamless integration with the Aidbox platform
-* API-first architecture with a user-friendly web-based UI
-* Notifications for external systems via webhooks (non-FHIR format)
-* Unlimited scalability — supports any number of records
-* Can be deployed in the cloud or on-premises
+## Deployment modes
 
-### Data Safety, Transparency and Consistency
+MDMbox runs as a single Docker container with an embedded FHIR engine. It connects to a PostgreSQL database.
 
-* Role-based access control
-* Full traceability of all operations, user actions and API calls
-* Supports compliance with security and regulatory standards
+**Standalone** -- MDMbox manages its own database. Deploy MDMbox and PostgreSQL, and you are ready to go.
 
-### Core Feature set
+**Shared with Aidbox** -- MDMbox connects to an existing Aidbox database. Both services share the same PostgreSQL instance and FHIR data. Pass the same `BOX_*` environment variables to both services.
 
-* Search for records
-* Flexible matching using a probabilistic algorithm
-  * Fully configurable for specific data and use cases
-  * Handles typos and incomplete data
-* Manual record merging with unique merge strategy combining golden record and survivor record approaches
-* Unmerge capability
-* Ability to mark record pairs as non-duplicates to exclude them from future match results
-
-## Run MDM locally
-
-{% content-ref url="run-mdm-locally.md" %}
-[run-mdm-locally.md](run-mdm-locally.md)
+{% content-ref %}
+[Getting started](getting-started.md)
 {% endcontent-ref %}
 
-## Configure MDM module
-
-Configure the MDM module to use a matching model stored in the MDM server (backend)
-
-{% content-ref url="configure-mdm-module.md" %}
-[configure-mdm-module.md](configure-mdm-module.md)
+{% content-ref %}
+[Matching models](matching-models.md)
 {% endcontent-ref %}
 
-## Find Duplicates
-
-Use `$match` operation to find duplicates
-
-{% content-ref url="find-duplicates-match.md" %}
-[find-duplicates-match.md](find-duplicates-match.md)
+{% content-ref %}
+[Find duplicates: $match](match-operation.md)
 {% endcontent-ref %}
 
-## Merge and Unmerge Records
-
-Use `$merge` and `$unmerge` operations to manage duplicate records
-
-{% content-ref url="merging-and-unmerging-records-usdmerge-and-usdunmerge.md" %}
-[merging-and-unmerging-records-usdmerge-and-usdunmerge.md](merging-and-unmerging-records-usdmerge-and-usdunmerge.md)
+{% content-ref %}
+[Bulk matching](bulk-match.md)
 {% endcontent-ref %}
 
-## How It Works
-
-Learn more about:
-
-1. How our matching model works
-
-{% content-ref url="matching-model-explanation.md" %}
-[matching-model-explanation.md](matching-model-explanation.md)
+{% content-ref %}
+[Merge operation](merge-operation.md)
 {% endcontent-ref %}
 
-2. How record merge and unmerge operations work
-
-{% content-ref url="merging-and-unmerging-records-usdmerge-and-usdunmerge.md" %}
-[merging-and-unmerging-records-usdmerge-and-usdunmerge.md](merging-and-unmerging-records-usdmerge-and-usdunmerge.md)
+{% content-ref %}
+[Mathematical details](mathematical-details.md)
 {% endcontent-ref %}
 
-3. Mathematics behind probabilistic matching
-
-{% content-ref url="mathematical-details.md" %}
-[mathematical-details.md](mathematical-details.md)
+{% content-ref %}
+[API reference](api-reference.md)
 {% endcontent-ref %}
