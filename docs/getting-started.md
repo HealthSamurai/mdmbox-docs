@@ -84,7 +84,7 @@ MDMbox maintains its own connection pool separate from the embedded FHIR engine.
 | Variable | Description | Default |
 | --- | --- | --- |
 | `MDMBOX_HTTP_PORT` | HTTP port | 3000 |
-| `MDMBOX_HTTP_HOST` | Bind address | 0.0.0.0 |
+| `MDMBOX_HTTP_HOST` | Bind address | 127.0.0.1 |
 
 ## Endpoints
 
