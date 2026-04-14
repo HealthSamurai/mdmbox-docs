@@ -88,8 +88,8 @@ Content-Type: application/json
 }
 ```
 
-- `batchSize` -- number of records per worker batch (100 to 10000)
-- `workersCount` -- number of parallel workers (1 to 16)
+- `batchSize` — number of records per worker batch (100 to 10000)
+- `workersCount` — number of parallel workers (1 to 16)
 
 Response (HTTP 202):
 
@@ -150,7 +150,7 @@ POST /api/bulk-match/patient-bulk/stop?force=true
 POST /api/bulk-match/patient-bulk/continue
 ```
 
-Resumes from where it left off -- completed batches are not reprocessed.
+Resumes from where it left off — completed batches are not reprocessed.
 
 ### Archive a job
 
@@ -165,7 +165,7 @@ Moves a completed, stopped, or failed job to archived status.
 - **Batch size** affects memory usage per worker. Larger batches reduce overhead but use more memory.
 - **Worker count** should not exceed available CPU cores or database connections.
 - The flat table uses PostgreSQL unlogged tables (no WAL overhead) for faster writes.
-- Indexes on block columns are critical -- without them, the comparison query does a full cross-join.
+- Indexes on block columns are critical — without them, the comparison query does a full cross-join.
 
 {% hint style="warning" %}
 Each bulk match worker holds a database connection for the duration of its work. Make sure `MDMBOX_DB_MAX_POOL_SIZE` is large enough to accommodate the number of workers plus normal application traffic.

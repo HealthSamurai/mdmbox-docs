@@ -4,14 +4,14 @@ description: Use the $merge operation to merge duplicate FHIR resources with ful
 
 # Merge operation
 
-The `$merge` operation merges two FHIR resources by executing a client-provided FHIR transaction Bundle. The client controls exactly what changes are made -- MDMbox executes them atomically and adds audit records.
+The `$merge` operation merges two FHIR resources by executing a client-provided FHIR transaction Bundle. The client controls exactly what changes are made — MDMbox executes them atomically and adds audit records.
 
 ## How it works
 
 1. The client identifies a duplicate pair (source and target)
 2. The client builds a FHIR transaction Bundle describing the merge (update target, reassign references, delete source)
 3. MDMbox validates the request, adds audit resources (Task and Provenance), and executes the Bundle as a single transaction
-4. If anything fails, the entire transaction rolls back -- including audit records
+4. If anything fails, the entire transaction rolls back — including audit records
 
 ## Request
 
@@ -175,16 +175,16 @@ On success, the response is a Parameters resource containing:
 
 Every merge creates two audit resources inside the same transaction:
 
-**Task** -- records the merge event:
-- `for` -- the source (merged away)
-- `focus` -- the target (survivor)
-- `businessStatus` -- `merged`
-- `code` -- `merge`
+**Task** — records the merge event:
+- `for` — the source (merged away)
+- `focus` — the target (survivor)
+- `businessStatus` — `merged`
+- `code` — `merge`
 
-**Provenance** -- records what was changed:
-- `entity[]` -- versioned references to all affected resources before the merge
-- `agent` -- `Device/mdmbox-merge`
-- `activity` -- MDATA (merge data)
+**Provenance** — records what was changed:
+- `entity[]` — versioned references to all affected resources before the merge
+- `agent` — `Device/mdmbox-merge`
+- `activity` — MDATA (merge data)
 
 These audit resources enable future unmerge by preserving the pre-merge state of every affected resource.
 
@@ -204,6 +204,6 @@ MDMbox validates the merge request before execution:
 
 ## Finding related resources
 
-Use the `$referencing` operation to discover resources that reference a given resource. This is useful when building the merge plan -- you need to know which Encounters, Observations, etc. point to the source and need to be reassigned.
+Use the `$referencing` operation to discover resources that reference a given resource. This is useful when building the merge plan — you need to know which Encounters, Observations, etc. point to the source and need to be reassigned.
 
 See [Referencing operation](referencing-operation.md).

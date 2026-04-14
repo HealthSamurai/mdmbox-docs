@@ -8,8 +8,8 @@ A matching model defines how MDMbox compares records to find duplicates. It spec
 
 MDMbox supports two types of models:
 
-- **MatchingModel** -- for online `$match` queries against individual resources
-- **BulkMatchingModel** -- for batch processing across the entire dataset
+- **MatchingModel** — for online `$match` queries against individual resources
+- **BulkMatchingModel** — for batch processing across the entire dataset
 
 Both are stored as FHIR resources and managed via the REST API or the Admin UI.
 
@@ -32,7 +32,7 @@ The `#` prefix is replaced with the table alias at query time (`l.` for the left
 
 ### Blocks
 
-Blocks define how candidate pairs are selected before comparison. Each block is a condition that narrows the search space. Blocks are combined with OR -- a pair only needs to match one block.
+Blocks define how candidate pairs are selected before comparison. Each block is a condition that narrows the search space. Blocks are combined with OR — a pair only needs to match one block.
 
 ```json
 {
@@ -83,9 +83,9 @@ Thresholds classify match results into grades:
 }
 ```
 
-- Score >= `certain` -- match grade `certain` (high confidence)
-- Score >= `probable` -- match grade `probable` (review recommended)
-- Score < `probable` -- match grade `possible` (only returned if threshold is overridden below `probable`)
+- Score >= `certain` — match grade `certain` (high confidence)
+- Score >= `probable` — match grade `probable` (review recommended)
+- Score < `probable` — match grade `possible` (only returned if threshold is overridden below `probable`)
 
 ## MatchingModel
 
@@ -162,10 +162,10 @@ Used by the bulk match pipeline. Instead of querying FHIR JSONB at comparison ti
 
 Key differences from MatchingModel:
 
-- `column` replaces `variable` -- each column has a `source` SQL expression and a PostgreSQL `type`
+- `column` replaces `variable` — each column has a `source` SQL expression and a PostgreSQL `type`
 - `tableName` specifies the flat table to create
 - `index` defines indexes to create on the flat table after population
-- In `block` entries, `variable` refers to a `column` name (not a variable -- the field name is the same in both model types)
+- In `block` entries, `variable` refers to a `column` name (not a variable — the field name is the same in both model types)
 - In `feature` expressions, reference column names directly (e.g., `l.dob` instead of `l.#dob`)
 
 ```json

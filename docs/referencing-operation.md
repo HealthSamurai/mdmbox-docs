@@ -4,7 +4,7 @@ description: Use the $referencing operation to find all FHIR resources that refe
 
 # Referencing operation
 
-The `$referencing` operation finds all FHIR resources in the database that reference a given resource. This is useful when preparing a merge plan -- you need to know which related resources (Encounters, Observations, etc.) need their references updated.
+The `$referencing` operation finds all FHIR resources in the database that reference a given resource. This is useful when preparing a merge plan — you need to know which related resources (Encounters, Observations, etc.) need their references updated.
 
 ## Request
 

@@ -74,7 +74,7 @@ See [Bulk matching](bulk-match.md).
 
 The admin interface is available at `/admin`. It provides:
 
-- `/admin` -- model management (create, edit, delete MatchingModel and BulkMatchingModel)
-- `/admin/bulk-match` -- bulk match pipeline (prepare, start, monitor, download, stop)
+- `/admin` — model management (create, edit, delete MatchingModel and BulkMatchingModel)
+- `/admin/bulk-match` — bulk match pipeline (prepare, start, monitor, download, stop)
 
 The Admin UI uses server-sent events for real-time updates. No separate frontend deployment is required.

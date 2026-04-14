@@ -45,7 +45,7 @@ To match an existing resource against all others:
 POST /api/fhir/Patient/123/$match?model-id=patient-model
 ```
 
-No request body is needed -- MDMbox retrieves the resource by ID and runs the match.
+No request body is needed — MDMbox retrieves the resource by ID and runs the match.
 
 ## Parameters
 
@@ -64,7 +64,7 @@ No request body is needed -- MDMbox retrieves the resource by ID and runs the ma
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `model-id` | string | -- | MatchingModel ID (required) |
+| `model-id` | string | — | MatchingModel ID (required) |
 | `threshold` | number | model's `probable` | Minimum score threshold |
 | `page` | integer | 1 | Page number |
 | `size` | integer | 20 | Results per page |
@@ -73,9 +73,9 @@ No request body is needed -- MDMbox retrieves the resource by ID and runs the ma
 
 The response is a FHIR Bundle of type `searchset`. Each entry includes:
 
-- `resource` -- the matched FHIR resource
-- `search.score` -- probability (0 to 1) derived from the match weight
-- `search.extension` -- match grade (`certain`, `probable`, or `possible`)
+- `resource` — the matched FHIR resource
+- `search.score` — probability (0 to 1) derived from the match weight
+- `search.extension` — match grade (`certain`, `probable`, or `possible`)
 
 ```json
 {
