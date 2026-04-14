@@ -24,7 +24,7 @@ In shared mode, use the tag that matches your Aidbox version.
 
 In standalone mode, MDMbox manages its own database. You need two containers: PostgreSQL and MDMbox.
 
-{% file src="/assets/examples/docker-compose.standalone.yml" %}
+{% file src="/docs/mdmbox/assets/examples/docker-compose.standalone.yml" %}
 docker-compose.yml
 {% endfile %}
 
@@ -42,7 +42,7 @@ When you already have an Aidbox instance, MDMbox can connect to the same Postgre
 
 Pass the same `BOX_*` environment variables to MDMbox that your Aidbox uses:
 
-{% file src="/assets/examples/docker-compose.shared.yml" %}
+{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml" %}
 docker-compose.yml
 {% endfile %}
 
