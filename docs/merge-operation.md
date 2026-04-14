@@ -186,7 +186,7 @@ Every merge creates two audit resources inside the same transaction:
 - `agent` — `Device/mdmbox-merge`
 - `activity` — MDATA (merge data)
 
-These audit resources enable future unmerge by preserving the pre-merge state of every affected resource.
+These audit resources enable future unmerge by preserving the pre-merge state of every affected resource. They also power [Notifications](notifications.md) — downstream systems can subscribe to merge and unmerge events via Topic-Based Subscriptions.
 
 ## Validation
 

@@ -6,6 +6,7 @@
   * [Find duplicates: $match](match-operation.md)
   * [Bulk matching](bulk-match.md)
   * [Merge operation](merge-operation.md)
+  * [Notifications](notifications.md)
   * [Referencing operation](referencing-operation.md)
   * [Mathematical details](mathematical-details.md)
   * [API reference](api-reference.md)
