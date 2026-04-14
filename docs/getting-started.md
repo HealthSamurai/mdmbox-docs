@@ -24,7 +24,7 @@ In shared mode, use the tag that matches your Aidbox version.
 
 In standalone mode, MDMbox manages its own database. You need two containers: PostgreSQL and MDMbox.
 
-{% file src="examples/docker-compose.standalone.yml" %}
+{% file src="/assets/examples/docker-compose.standalone.yml" %}
 docker-compose.yml
 {% endfile %}
 
@@ -42,7 +42,7 @@ When you already have an Aidbox instance, MDMbox can connect to the same Postgre
 
 Pass the same `BOX_*` environment variables to MDMbox that your Aidbox uses:
 
-{% file src="examples/docker-compose.shared.yml" %}
+{% file src="/assets/examples/docker-compose.shared.yml" %}
 docker-compose.yml
 {% endfile %}
 
@@ -84,11 +84,6 @@ MDMbox maintains its own connection pool separate from the embedded FHIR engine.
 | Variable | Description | Default |
 | --- | --- | --- |
 | `MDMBOX_HTTP_PORT` | HTTP port | 3000 |
-| `MDMBOX_HTTP_HOST` | Bind address | 127.0.0.1 |
-
-{% hint style="warning" %}
-When running in Docker, set `MDMBOX_HTTP_HOST` to `0.0.0.0`. The default `127.0.0.1` binds to loopback only and the service will be unreachable from outside the container.
-{% endhint %}
 
 ## Endpoints
 

@@ -216,7 +216,7 @@ The example weights above are for demonstration. Production deployment requires 
 - **Database indexes** are critical for performance with large datasets. Create indexes on columns used in blocks.
 
 {% hint style="info" %}
-Professional tuning services are available. Contact [Health Samurai](https://www.health-samurai.io) for assistance with model calibration using machine learning and expert analysis.
+Professional tuning services are available. Contact [Health Samurai](https://www.health-samurai.io/company#contact-form) for assistance with model calibration using machine learning and expert analysis.
 {% endhint %}
 
 ## Next steps
