@@ -8,21 +8,9 @@ MDMbox is distributed as a Docker image: `healthsamurai/mdmbox`.
 
 It requires a PostgreSQL 14+ database. All configuration is done through environment variables.
 
-## Image versions
-
-Each MDMbox release is built for a specific Aidbox version. Image tags follow the pattern `{mdmbox-version}-aidbox-{aidbox-version}`:
-
-| Tag | Description |
-| --- | --- |
-| `edge` | Latest development build, compatible with Aidbox `edge` |
-| `2504.1-aidbox-2410` | MDMbox 2504.1, compatible with Aidbox 2410 |
-| `latest` | Latest numbered release |
-
-In shared mode, use the tag that matches your Aidbox version.
-
 ## Standalone deployment
 
-In standalone mode, MDMbox manages its own database. You need two containers: PostgreSQL and MDMbox.
+In standalone mode, MDMbox manages its own database. You need two containers:  PostgreSQL and MDMbox.
 
 {% file src="/docs/mdmbox/assets/examples/docker-compose.standalone.yml" %}
 docker-compose.yml
@@ -36,9 +24,11 @@ docker compose up
 
 MDMbox is available at `http://localhost:3000`. Open `http://localhost:3000/api/docs` for the Swagger UI.
 
-## Shared deployment with Aidbox
+## As Aidbox plugin
 
 When you already have an Aidbox instance, MDMbox can connect to the same PostgreSQL database. Both services share FHIR data.
+
+Each MDMbox release is built for a specific Aidbox version. Contact us to get a build compatible with your Aidbox version.
 
 Pass the same `BOX_*` environment variables to MDMbox that your Aidbox uses:
 
