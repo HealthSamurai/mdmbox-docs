@@ -65,6 +65,9 @@ services:
     ports:
       - "3000:3000"
     environment:
+      # License — get a JWT from https://aidbox.app/ui/portal (select MDMbox product).
+      # Leave unset to activate via browser on first visit to http://localhost:3000.
+      # MDMBOX_LICENSE: "<paste JWT here>"
       # Same database as Aidbox
       BOX_DB_HOST: db
       BOX_DB_PORT: "5432"
