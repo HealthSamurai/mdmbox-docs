@@ -6,16 +6,14 @@ description: Use the $match operation to find potential duplicate FHIR resources
 
 The `$match` operation performs a probabilistic search using a matching model and returns potential duplicates ranked by match score.
 
-{% hint style="warning" %}
-A MatchingModel must be created before using `$match`. See [Matching models](matching-models.md).
-{% endhint %}
+A [MatchingModel](matching-models.md) must be created before using `$match`.
 
 ## Match a resource
 
 Send a FHIR Parameters resource containing the record to match:
 
 ```http
-POST /api/fhir/Patient/$match
+POST https://<mdmbox-host>/api/fhir/Patient/$match
 Content-Type: application/json
 ```
 
@@ -42,7 +40,7 @@ Content-Type: application/json
 To match an existing resource against all others:
 
 ```http
-POST /api/fhir/Patient/123/$match?model-id=patient-model
+POST https://<mdmbox-host>/api/fhir/Patient/123/$match?model-id=patient-model
 ```
 
 No request body is needed — MDMbox retrieves the resource by ID and runs the match.

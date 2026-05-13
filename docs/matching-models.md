@@ -94,7 +94,7 @@ Used by the `$match` operation for online queries. Works directly against FHIR r
 ### Create a model
 
 ```http
-POST /api/models
+POST https://<mdmbox-host>/api/models
 Content-Type: application/json
 ```
 

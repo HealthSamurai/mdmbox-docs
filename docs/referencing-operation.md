@@ -9,7 +9,7 @@ The `$referencing` operation finds all FHIR resources in the database that refer
 ## Request
 
 ```http
-POST /api/fhir/Patient/123/$referencing
+POST https://<mdmbox-host>/api/fhir/Patient/123/$referencing
 Content-Type: application/json
 ```
 

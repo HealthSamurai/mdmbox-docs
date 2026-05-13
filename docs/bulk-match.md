@@ -41,13 +41,13 @@ The Admin UI at `/admin/bulk-match` is the recommended way to run bulk matching.
 ### Step 1: Prepare the flat table
 
 ```http
-POST /api/bulk-match/patient-bulk/prepare
+POST https://<mdmbox-host>/api/bulk-match/patient-bulk/prepare
 ```
 
 This creates the flat table, populates it from FHIR resources, and creates indexes. The operation runs asynchronously. Poll the status endpoint to track progress:
 
 ```http
-GET /api/bulk-match/patient-bulk/status
+GET https://<mdmbox-host>/api/bulk-match/patient-bulk/status
 ```
 
 The response is an OperationOutcome. The `diagnostics` field contains preparation details as a string:
@@ -71,13 +71,13 @@ Possible statuses: `pending`, `preparing`, `ready`, `failed`.
 To force re-creation of the flat table (e.g., after data changes):
 
 ```http
-POST /api/bulk-match/patient-bulk/prepare?force=true
+POST https://<mdmbox-host>/api/bulk-match/patient-bulk/prepare?force=true
 ```
 
 ### Step 2: Start the bulk match
 
 ```http
-POST /api/bulk-match/patient-bulk/start
+POST https://<mdmbox-host>/api/bulk-match/patient-bulk/start
 Content-Type: application/json
 ```
 
@@ -118,7 +118,7 @@ Poll the status endpoint or use the Admin UI which auto-refreshes every 2 second
 Once the job completes:
 
 ```http
-GET /api/bulk-match/patient-bulk/download/{job-id}
+GET https://<mdmbox-host>/api/bulk-match/patient-bulk/download/{job-id}
 ```
 
 Returns a CSV file with columns:
@@ -135,19 +135,19 @@ Returns a CSV file with columns:
 ### Stop a running job
 
 ```http
-POST /api/bulk-match/patient-bulk/stop
+POST https://<mdmbox-host>/api/bulk-match/patient-bulk/stop
 ```
 
 Workers finish their current batch and exit. For immediate cancellation:
 
 ```http
-POST /api/bulk-match/patient-bulk/stop?force=true
+POST https://<mdmbox-host>/api/bulk-match/patient-bulk/stop?force=true
 ```
 
 ### Resume a stopped job
 
 ```http
-POST /api/bulk-match/patient-bulk/continue
+POST https://<mdmbox-host>/api/bulk-match/patient-bulk/continue
 ```
 
 Resumes from where it left off — completed batches are not reprocessed.
@@ -155,7 +155,7 @@ Resumes from where it left off — completed batches are not reprocessed.
 ### Archive a job
 
 ```http
-POST /api/bulk-match/patient-bulk/archive
+POST https://<mdmbox-host>/api/bulk-match/patient-bulk/archive
 ```
 
 Moves a completed, stopped, or failed job to archived status.

@@ -16,7 +16,7 @@ The `$merge` operation merges two FHIR resources by executing a client-provided 
 ## Request
 
 ```http
-POST /api/$merge
+POST https://<mdmbox-host>/api/$merge
 Content-Type: application/json
 ```
 
