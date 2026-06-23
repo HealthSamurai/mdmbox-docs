@@ -27,6 +27,28 @@ The full OpenAPI specification is available at `/api/openapi.json`. The interact
 
 Both MatchingModel and BulkMatchingModel are managed through this endpoint. The `resourceType` field in the request body determines the type.
 
+## Users and clients
+
+`User` and `Client` resources can be managed through the IAM endpoints. These
+endpoints require normal API authentication. MDMbox currently has no role split,
+so any valid authenticated `User` or `Client` can call them. Responses omit
+`User.password` and `Client.secret`.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/iam/User` | List users |
+| `POST` | `/api/iam/User` | Create user |
+| `GET` | `/api/iam/User/:id` | Get user by ID |
+| `PUT` | `/api/iam/User/:id` | Update user |
+| `PATCH` | `/api/iam/User/:id` | Patch user |
+| `DELETE` | `/api/iam/User/:id` | Delete user |
+| `GET` | `/api/iam/Client` | List clients |
+| `POST` | `/api/iam/Client` | Create client |
+| `GET` | `/api/iam/Client/:id` | Get client by ID |
+| `PUT` | `/api/iam/Client/:id` | Update client |
+| `PATCH` | `/api/iam/Client/:id` | Patch client |
+| `DELETE` | `/api/iam/Client/:id` | Delete client |
+
 ## FHIR operations
 
 ### $match

@@ -99,6 +99,24 @@ MDMbox requires a license to start. There are two ways to activate it:
 
 ## Configuration reference
 
+### Authentication
+
+Authentication is enabled by default. When enabled, MDMbox protects both API
+endpoints and the Admin UI:
+
+- API endpoints require a valid `Authorization` header.
+- The Admin UI uses browser session authentication and redirects unauthenticated
+  users to `/login`.
+- Health checks, Swagger UI, and the OpenAPI specification remain public.
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `MDMBOX_AUTH_ENABLED` | Enable authentication for API endpoints and the Admin UI. Accepted values: `true` or `false`. | `true` |
+| `MDMBOX_ADMIN_ID` | Admin `User` id to bootstrap for browser login. Must be set together with `MDMBOX_ADMIN_PASSWORD`. | unset |
+| `MDMBOX_ADMIN_PASSWORD` | Password for the bootstrapped admin `User`. Must be set together with `MDMBOX_ADMIN_ID`. | unset |
+| `MDMBOX_API_CLIENT_ID` | API `Client` id to bootstrap for Basic auth. Must be set together with `MDMBOX_API_CLIENT_SECRET`. | unset |
+| `MDMBOX_API_CLIENT_SECRET` | Secret for the bootstrapped API `Client`. Must be set together with `MDMBOX_API_CLIENT_ID`. | unset |
+
 ### Database
 
 MDMbox uses the standard Aidbox database environment variables:
