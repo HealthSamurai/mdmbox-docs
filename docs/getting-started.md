@@ -86,63 +86,14 @@ config:
 
 The full list of values is in the [chart README](https://github.com/HealthSamurai/helm-charts/blob/main/mdmbox/README.md).
 
-## License
+## Configuration
 
-MDMbox requires a license to start. There are two ways to activate it:
+For production, pass `MDMBOX_LICENSE` as an environment variable. For local
+trial runs, you can leave it unset and activate MDMbox in the browser after
+startup.
 
-1. **Environment variable.** Sign in to the [Aidbox portal](https://aidbox.app/ui/portal), open the MDMbox project, copy the license JWT, and pass it to the MDMbox container as `MDMBOX_LICENSE`. Recommended for production and CI.
-2. **Browser activation.** Leave `MDMBOX_LICENSE` unset and start MDMbox. Open `http://localhost:3000`, click **Continue with Aidbox account**, sign in to the portal — a development MDMbox license is generated and stored in the database automatically. Useful for local development.
-
-| Variable | Description | Required |
-| --- | --- | --- |
-| `MDMBOX_LICENSE` | License JWT copied from the Aidbox portal | No — falls back to browser activation |
-
-## Configuration reference
-
-### Authentication
-
-Authentication is enabled by default. When enabled, MDMbox protects both API
-endpoints and the Admin UI:
-
-- API endpoints require a valid `Authorization` header.
-- The Admin UI uses browser session authentication and redirects unauthenticated
-  users to `/login`.
-- Health checks, Swagger UI, and the OpenAPI specification remain public.
-
-| Variable | Description | Default |
-| --- | --- | --- |
-| `MDMBOX_AUTH_ENABLED` | Enable authentication for API endpoints and the Admin UI. Accepted values: `true` or `false`. | `true` |
-| `MDMBOX_ADMIN_ID` | Admin `User` id to bootstrap for browser login. Must be set together with `MDMBOX_ADMIN_PASSWORD`. | unset |
-| `MDMBOX_ADMIN_PASSWORD` | Password for the bootstrapped admin `User`. Must be set together with `MDMBOX_ADMIN_ID`. | unset |
-| `MDMBOX_API_CLIENT_ID` | API `Client` id to bootstrap for Basic auth. Must be set together with `MDMBOX_API_CLIENT_SECRET`. | unset |
-| `MDMBOX_API_CLIENT_SECRET` | Secret for the bootstrapped API `Client`. Must be set together with `MDMBOX_API_CLIENT_ID`. | unset |
-
-### Database
-
-MDMbox uses the standard Aidbox database environment variables:
-
-| Variable | Description | Required |
-| --- | --- | --- |
-| `BOX_DB_HOST` | PostgreSQL host | Yes |
-| `BOX_DB_PORT` | PostgreSQL port (default: 5432) | No |
-| `BOX_DB_DATABASE` | Database name | Yes |
-| `BOX_DB_USER` | Database user | Yes |
-| `BOX_DB_PASSWORD` | Database password | Yes |
-
-### MDMbox connection pool
-
-MDMbox maintains its own connection pool separate from the embedded FHIR engine. Both pools connect to the same database but are sized independently.
-
-| Variable | Description | Default |
-| --- | --- | --- |
-| `MDMBOX_DB_MAX_POOL_SIZE` | Maximum pool connections | 10 |
-| `MDMBOX_DB_MIN_IDLE` | Minimum idle connections | 1 |
-
-### HTTP server
-
-| Variable | Description | Default |
-| --- | --- | --- |
-| `MDMBOX_HTTP_PORT` | HTTP port | 3000 |
+See [Configuration reference](config-reference.md) for all environment
+variables, authentication settings, and runtime defaults.
 
 ## Endpoints
 

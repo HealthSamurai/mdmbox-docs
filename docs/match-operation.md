@@ -58,6 +58,10 @@ No request body is needed — MDMbox retrieves the resource by ID and runs the m
 | `onlySingleMatch` | valueBoolean | No | Return at most one result (empty if ambiguous) |
 | `count` | valueInteger | No | Maximum number of results (default: 10) |
 
+The default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and is `10`
+unless configured otherwise. When `onlyCertainMatches=false`, MDMbox returns no
+more than 100 potential matches.
+
 ### Query parameters (for by-ID match)
 
 | Name | Type | Default | Description |
