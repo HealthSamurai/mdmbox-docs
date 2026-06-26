@@ -8,6 +8,13 @@ The `$match` operation performs a probabilistic search using a matching model an
 
 A [MatchingModel](matching-models.md) must be created before using `$match`.
 
+MDMbox follows the request and response shape of the FHIR R6
+[`Patient/$match`](https://build.fhir.org/patient-operation-match.html)
+operation: clients send a FHIR `Parameters` resource and receive a `Bundle` of
+type `searchset`. MDMbox generalizes the operation to any configured FHIR
+resource type and adds `modelId` and `threshold` parameters so callers can choose
+the matching model and score cutoff.
+
 ## Match a resource
 
 Send a FHIR Parameters resource containing the record to match:
@@ -40,10 +47,22 @@ Content-Type: application/json
 To match an existing resource against all others:
 
 ```http
-POST https://<mdmbox-host>/api/fhir/Patient/123/$match?model-id=patient-model
+POST https://<mdmbox-host>/api/fhir/Patient/123/$match
+Content-Type: application/json
 ```
 
-No request body is needed — MDMbox retrieves the resource by ID and runs the match.
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {"name": "modelId", "valueString": "patient-model"}
+  ]
+}
+```
+
+MDMbox retrieves `Patient/123` by ID and uses it as the source resource. The
+source resource itself is excluded from the response by ID, so `Patient/123`
+will not be returned as its own match.
 
 ## Parameters
 
@@ -52,7 +71,7 @@ No request body is needed — MDMbox retrieves the resource by ID and runs the m
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `modelId` | valueString | Yes | ID of the MatchingModel to use |
-| `resource` | resource | Yes | The FHIR resource to find matches for |
+| `resource` | resource | Only for `/api/fhir/:resource/$match` | The FHIR resource to find matches for. Omit this parameter when matching an existing resource by ID. |
 | `threshold` | valueDecimal | No | Override the model's `probable` threshold |
 | `onlyCertainMatches` | valueBoolean | No | Only return matches above the `certain` threshold |
 | `onlySingleMatch` | valueBoolean | No | Return at most one result (empty if ambiguous) |
@@ -62,21 +81,29 @@ The default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and is `10`
 unless configured otherwise. When `onlyCertainMatches=false`, MDMbox returns no
 more than 100 potential matches.
 
-### Query parameters (for by-ID match)
+### Flag behavior
 
-| Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `model-id` | string | — | MatchingModel ID (required) |
-| `threshold` | number | model's `probable` | Minimum score threshold |
-| `page` | integer | 1 | Page number |
-| `size` | integer | 20 | Results per page |
+`onlyCertainMatches=true` returns only candidates above the model's `certain`
+threshold. If `threshold` is also provided, MDMbox uses the stricter of the two
+values.
+
+`onlySingleMatch=true` returns one candidate only when exactly one candidate
+passes the effective `certain` threshold. If no candidates pass, or if more than
+one candidate passes, the response is an empty searchset. `onlySingleMatch`
+ignores `count`.
+
+`count` limits the number of returned entries for normal matching and
+`onlyCertainMatches=true`. In normal potential-match mode, MDMbox also applies a
+100-result safety cap even when `count` is larger.
 
 ## Response
 
 The response is a FHIR Bundle of type `searchset`. Each entry includes:
 
 - `resource` — the matched FHIR resource
-- `search.score` — probability (0 to 1) derived from the match weight
+- `search.score` — raw match weight
+- `search.normalizedScore` — probability-like score from 0 to 1 derived from the
+  match weight
 - `search.extension` — match grade (`certain`, `probable`, or `possible`)
 
 ```json
@@ -94,7 +121,8 @@ The response is a FHIR Bundle of type `searchset`. Each entry includes:
       },
       "search": {
         "mode": "match",
-        "score": 0.99,
+        "score": 12.4,
+        "normalizedScore": 0.9998,
         "extension": [
           {
             "url": "http://hl7.org/fhir/StructureDefinition/match-grade",
