@@ -74,7 +74,7 @@ will not be returned as its own match.
 | `resource` | resource | Only for `/api/fhir/:resource/$match` | The FHIR resource to find matches for. Omit this parameter when matching an existing resource by ID. |
 | `threshold` | valueDecimal | No | Override the model's `probable` threshold |
 | `onlyCertainMatches` | valueBoolean | No | Only return matches above the `certain` threshold |
-| `onlySingleMatch` | valueBoolean | No | Return at most one result (empty if ambiguous) |
+| `onlySingleMatch` | valueBoolean | No | Return the single most appropriate match |
 | `count` | valueInteger | No | Maximum number of results (default: 10) |
 
 The default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and is `10`
@@ -87,10 +87,11 @@ more than 100 potential matches.
 threshold. If `threshold` is also provided, MDMbox uses the stricter of the two
 values.
 
-`onlySingleMatch=true` returns one candidate only when exactly one candidate
-passes the effective `certain` threshold. If no candidates pass, or if more than
-one candidate passes, the response is an empty searchset. `onlySingleMatch`
-ignores `count`.
+`onlySingleMatch=true` returns the single most appropriate candidate above the
+effective `certain` threshold. If more than one candidate passes, MDMbox returns
+the highest-scored candidate. If scores are tied, MDMbox uses resource ID as a
+stable tie-breaker. If no candidate passes, the response is an empty searchset.
+`onlySingleMatch` ignores `count`.
 
 `count` limits the number of returned entries for normal matching and
 `onlyCertainMatches=true`. In normal potential-match mode, MDMbox also applies a
