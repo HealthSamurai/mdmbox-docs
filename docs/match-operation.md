@@ -102,10 +102,10 @@ stable tie-breaker. If no candidate passes, the response is an empty searchset.
 The response is a FHIR Bundle of type `searchset`. Each entry includes:
 
 - `resource` — the matched FHIR resource
-- `search.score` — raw match weight
-- `search.normalizedScore` — probability-like score from 0 to 1 derived from the
-  match weight
-- `search.extension` — match grade (`certain`, `probable`, or `possible`)
+- `search.score` — probability-like FHIR search score from 0 to 1 derived from
+  the raw match weight
+- `search.extension` — match grade (`certain`, `probable`, or `possible`), raw
+  match weight, and per-feature match details
 
 ```json
 {
@@ -122,12 +122,23 @@ The response is a FHIR Bundle of type `searchset`. Each entry includes:
       },
       "search": {
         "mode": "match",
-        "score": 12.4,
-        "normalizedScore": 0.9998,
+        "score": 0.9998,
         "extension": [
           {
             "url": "http://hl7.org/fhir/StructureDefinition/match-grade",
             "valueCode": "certain"
+          },
+          {
+            "url": "https://mdmbox.health-samurai.io/fhir/StructureDefinition/match-weight",
+            "valueDecimal": 12.4
+          },
+          {
+            "url": "https://mdmbox.health-samurai.io/fhir/StructureDefinition/match-details",
+            "extension": [
+              {"url": "given", "valueDecimal": 4.5},
+              {"url": "family", "valueDecimal": 5.1},
+              {"url": "birthDate", "valueDecimal": 2.8}
+            ]
           }
         ]
       }
@@ -140,10 +151,12 @@ The response is a FHIR Bundle of type `searchset`. Each entry includes:
 For large datasets, create database indexes on columns used in matching model blocks. Without indexes, `$match` performs a full table scan for each block, which can be very slow.
 {% endhint %}
 
-## Score calculation
+## Weight and score calculation
 
-Match scores are log2 Bayes factor sums, converted to probabilities using a sigmoid function:
+Match weights are log2 Bayes factor sums. MDMbox exposes the raw weight in the
+`https://mdmbox.health-samurai.io/fhir/StructureDefinition/match-weight`
+extension and converts it to `search.score` using a sigmoid function:
 
 `probability = 1 / (1 + 2^(-weight))`
 
-A weight of 25 corresponds to a probability of ~0.99999997. See [Mathematical details](mathematical-details.md) for the full derivation.
+See [Mathematical details](mathematical-details.md) for the full derivation.
