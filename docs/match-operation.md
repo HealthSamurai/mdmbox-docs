@@ -15,6 +15,12 @@ type `searchset`. MDMbox generalizes the operation to any configured FHIR
 resource type and adds `modelId` and `threshold` parameters so callers can choose
 the matching model and score cutoff.
 
+Unversioned routes such as `/api/fhir/Patient/$match` use the FHIR release
+selected by `MDMBOX_DEFAULT_FHIR_RELEASE`. Versioned routes are also available
+as `/api/fhir/r4/:resource/$match` and `/api/fhir/r6/:resource/$match`.
+Instance-level matching is available at
+`/api/fhir/r4/:resource/:id/$match` and `/api/fhir/r6/:resource/:id/$match`.
+
 ## Match a resource
 
 Send a FHIR Parameters resource containing the record to match:
@@ -66,36 +72,50 @@ will not be returned as its own match.
 
 ## Parameters
 
-### Request body parameters (FHIR Parameters)
+### Common request body parameters
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `modelId` | valueString | Yes | ID of the MatchingModel to use |
 | `resource` | resource | Only for `/api/fhir/:resource/$match` | The FHIR resource to find matches for. Omit this parameter when matching an existing resource by ID. |
-| `threshold` | valueDecimal | No | Override the model's `probable` threshold |
-| `onlyCertainMatches` | valueBoolean | No | Only return matches above the `certain` threshold |
-| `onlySingleMatch` | valueBoolean | No | Return the single most appropriate match |
-| `count` | valueInteger | No | Maximum number of results (default: 10) |
+| `threshold` | valueDecimal | No | Override the model's `probable` threshold in normal potential-match mode. Cannot be combined with `onlyCertainMatches`. |
+| `count` | valueInteger | No | Maximum number of returned entries (default: 10). `Bundle.total` still reports the full number of matches above the effective threshold. |
 
 The default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and is `10`
-unless configured otherwise. When `onlyCertainMatches=false`, MDMbox returns no
-more than 100 potential matches.
+unless configured otherwise.
 
-### Flag behavior
+### R6 flag behavior
 
-`onlyCertainMatches=true` returns only candidates above the model's `certain`
-threshold. If `threshold` is also provided, MDMbox uses the stricter of the two
-values.
+| Name | Type | Description |
+| --- | --- | --- |
+| `onlyCertainMatches` | valueBoolean | Sets the effective threshold to the model's `certain` threshold. Cannot be combined with `threshold` or `onlySingleMatch`. `count` still applies. |
+| `onlySingleMatch` | valueBoolean | Returns one best candidate. Cannot be combined with `threshold`, `count`, or `onlyCertainMatches`. |
 
-`onlySingleMatch=true` returns the single most appropriate candidate above the
-effective `certain` threshold. If more than one candidate passes, MDMbox returns
-the highest-scored candidate. If scores are tied, MDMbox uses resource ID as a
-stable tie-breaker. If no candidate passes, the response is an empty searchset.
-`onlySingleMatch` ignores `count`.
+In normal R6 mode, MDMbox uses `threshold` when supplied, otherwise the model's
+`probable` threshold. There is no 100-entry TEFCA cap for R6.
 
-`count` limits the number of returned entries for normal matching and
-`onlyCertainMatches=true`. In normal potential-match mode, MDMbox also applies a
-100-result safety cap even when `count` is larger.
+In R6 `onlySingleMatch=true` mode, MDMbox asks the server-side matching
+algorithm to designate one best candidate. If several candidates are eligible,
+MDMbox returns the highest-scored one; if scores are tied, MDMbox uses resource
+ID as a stable tie-breaker. If no candidate is eligible, the response is an
+empty searchset.
+
+### R4 flag behavior
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `onlyCertainMatches` | valueBoolean | Sets the effective threshold to the model's `certain` threshold. Cannot be combined with `threshold`. `count` still applies. |
+
+R4 routes do not implement `onlySingleMatch`; use an R6 route when that behavior
+is required.
+
+In normal R4 potential-match mode (`onlyCertainMatches` omitted or `false`),
+MDMbox uses `threshold` when supplied, otherwise the model's `probable`
+threshold.
+
+When `MDMBOX_TEFCA_MODE=true`, R4 potential-match responses return no more than
+100 entries, even when `count` is larger. The TEFCA cap is not applied when
+`onlyCertainMatches=true`.
 
 ## Response
 

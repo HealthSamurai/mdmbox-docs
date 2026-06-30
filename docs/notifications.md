@@ -4,7 +4,7 @@ description: Subscribe to merge and unmerge events using Aidbox Topic-Based Subs
 
 # Notifications
 
-After a `$merge` or `$unmerge` operation completes, external systems often need to react — update search indexes, sync to a data warehouse, trigger workflows. MDMbox supports this via [Aidbox Topic-Based Subscriptions](https://docs.aidbox.app/modules/topic-based-subscriptions/aidbox-topic-based-subscriptions), a built-in publish/subscribe mechanism that delivers events to webhooks, Kafka, GCP Pub/Sub, and other destinations.
+After a `$merge` or `$unmerge` operation completes, external systems often need to react — update search indexes, sync to a data warehouse, trigger workflows. MDMbox supports this via [Aidbox Topic-Based Subscriptions](https://www.health-samurai.io/docs/aidbox/modules/topic-based-subscriptions/aidbox-topic-based-subscriptions), a built-in publish/subscribe mechanism that delivers events to webhooks, Kafka, GCP Pub/Sub, and other destinations.
 
 ## How it works
 
@@ -93,4 +93,4 @@ Defines the delivery target and parameters. Example using a webhook with at-leas
 | `topic` | Canonical URL of the AidboxSubscriptionTopic to subscribe to |
 | `parameter` | Destination-specific settings (endpoint URL, batch size, timeout, etc.) |
 
-See [Aidbox Topic-Based Subscriptions docs](https://docs.aidbox.app/modules/topic-based-subscriptions/aidbox-topic-based-subscriptions) for the full list of destination kinds and their parameters.
+See [Aidbox Topic-Based Subscriptions docs](https://www.health-samurai.io/docs/aidbox/modules/topic-based-subscriptions/aidbox-topic-based-subscriptions) for the full list of destination kinds and their parameters.

@@ -6,3 +6,6 @@ checks:
   warn_only:
     - title-mismatch
     - absolute-links
+  absolute-links:
+    domains:
+      - docs.aidbox.app

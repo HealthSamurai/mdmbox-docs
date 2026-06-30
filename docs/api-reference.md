@@ -57,6 +57,13 @@ so any valid authenticated `User` or `Client` can call them. Responses omit
 | --- | --- | --- |
 | `POST` | `/api/fhir/:resource/$match` | Match a resource (FHIR Parameters body) |
 | `POST` | `/api/fhir/:resource/:id/$match` | Match existing resource by ID |
+| `POST` | `/api/fhir/r4/:resource/$match` | Match a resource using the R4 operation implementation |
+| `POST` | `/api/fhir/r4/:resource/:id/$match` | Match an existing resource by ID using the R4 operation implementation |
+| `POST` | `/api/fhir/r6/:resource/$match` | Match a resource using the R6 operation implementation |
+| `POST` | `/api/fhir/r6/:resource/:id/$match` | Match an existing resource by ID using the R6 operation implementation |
+
+The unversioned routes use the release selected by
+`MDMBOX_DEFAULT_FHIR_RELEASE`.
 
 See [Find duplicates: $match](match-operation.md).
 
@@ -64,9 +71,21 @@ See [Find duplicates: $match](match-operation.md).
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/$merge` | Execute or preview a merge |
+| `POST` | `/api/fhir/$merge` | Execute or preview a merge |
 
 See [Merge operation](merge-operation.md).
+
+### $unmerge
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/fhir/$unmerge` | Reverse a previous merge from its merge Task |
+
+### $mark-not-a-match
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/fhir/$mark-not-a-match` | Record that two resources are not the same real-world entity |
 
 ### $referencing
 
