@@ -61,6 +61,11 @@ so any valid authenticated `User` or `Client` can call them. Responses omit
 | `POST` | `/fhir-server-api/$import` | Start asynchronous FHIR bulk import |
 | `POST` | `/fhir-server-api/$fhir-package-install` | Install FHIR packages such as US Core |
 
+Use `$fhir-package-install` before sending resources that declare profiles from
+external ImplementationGuide packages, such as US Core. The endpoint accepts a
+FHIR `Parameters` body with a `package` `valueString`, for example
+`hl7.fhir.us.core@6.1.0`.
+
 ### $match
 
 | Method | Path | Description |
@@ -74,6 +79,12 @@ so any valid authenticated `User` or `Client` can call them. Responses omit
 
 The unversioned routes use the release selected by
 `MDMBOX_DEFAULT_FHIR_RELEASE`.
+
+For body-based `$match`, MDMbox validates the input `resource` before running
+matching. If the resource declares `meta.profile`, the referenced profile must
+be available in the FHIR package registry and the resource must satisfy it.
+Validation failures return `422 Unprocessable Entity` with an
+`OperationOutcome`.
 
 See [Find duplicates: $match](match-operation.md).
 

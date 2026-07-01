@@ -21,6 +21,13 @@ as `/api/fhir/r4/:resource/$match` and `/api/fhir/r6/:resource/$match`.
 Instance-level matching is available at
 `/api/fhir/r4/:resource/:id/$match` and `/api/fhir/r6/:resource/:id/$match`.
 
+For body-based `$match`, MDMbox validates the input `resource` before matching.
+If the resource declares `meta.profile`, the corresponding FHIR package must be
+installed and the resource must satisfy that profile. For example, a Patient
+with `meta.profile` set to the US Core Patient profile requires the US Core
+package to be installed first. Profile validation failures return
+`422 Unprocessable Entity` with an `OperationOutcome`.
+
 ## Match a resource
 
 Send a FHIR Parameters resource containing the record to match:
@@ -83,6 +90,29 @@ will not be returned as its own match.
 
 The default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and is `10`
 unless configured otherwise.
+
+### Profiled input resources
+
+If `$match` input includes `meta.profile`, install the package that contains the
+profile before calling `$match`. For US Core 6.1.0:
+
+```http
+POST https://<mdmbox-host>/fhir-server-api/$fhir-package-install
+Content-Type: application/json
+```
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {"name": "package", "valueString": "hl7.fhir.us.core@6.1.0"}
+  ]
+}
+```
+
+After the package is installed, a profiled input resource that violates the
+profile is rejected before matching. The response is a `422` `OperationOutcome`;
+no candidate search is executed for that request.
 
 ### R6 flag behavior
 

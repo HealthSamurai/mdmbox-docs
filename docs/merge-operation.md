@@ -202,6 +202,14 @@ MDMbox validates the merge request before execution:
 - Source must not already be merged (no active merge Task)
 - Target must not already be a source in another merge (no circular merges)
 
+**FHIR transaction validation (4xx OperationOutcome):**
+- Resources in the plan are validated by the FHIR storage API when the
+  transaction executes
+- If a resource declares `meta.profile`, the corresponding FHIR package must be
+  installed and the resource must satisfy the profile
+- If validation fails, the transaction rolls back, including Task and
+  Provenance audit records
+
 ## Finding related resources
 
 Use the `$referencing` operation to discover resources that reference a given resource. This is useful when building the merge plan — you need to know which Encounters, Observations, etc. point to the source and need to be reassigned.
