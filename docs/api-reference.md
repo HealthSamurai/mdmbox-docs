@@ -51,6 +51,16 @@ so any valid authenticated `User` or `Client` can call them. Responses omit
 
 ## FHIR operations
 
+### FHIR storage API proxy
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/fhir-server-api/*path` | Read FHIR metadata, resources, searches, and history |
+| `POST` | `/fhir-server-api` | Submit a FHIR batch or transaction Bundle |
+| `POST` | `/fhir-server-api/$load` | Run synchronous FHIR bulk load |
+| `POST` | `/fhir-server-api/$import` | Start asynchronous FHIR bulk import |
+| `POST` | `/fhir-server-api/$fhir-package-install` | Install FHIR packages such as US Core |
+
 ### $match
 
 | Method | Path | Description |
