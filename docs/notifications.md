@@ -43,13 +43,13 @@ Defines the trigger criteria. Example for merge tasks:
 {
   "resourceType": "AidboxSubscriptionTopic",
   "id": "task-merge",
-  "url": "http://mdmbox.dev/SubscriptionTopic/task-merge",
+  "url": "https://mdm.health-samurai.io/fhir/SubscriptionTopic/task-merge",
   "status": "active",
   "trigger": [
     {
       "resource": "Task",
       "supportedInteraction": ["create", "update"],
-      "fhirPathCriteria": "code.coding.where(system='http://mdmbox.dev/fhir/CodeSystem/task-code' and code='merge').exists()"
+      "fhirPathCriteria": "code.coding.where(system='https://mdm.health-samurai.io/fhir/CodeSystem/operation-task-code' and code='merge').exists()"
     }
   ]
 }
@@ -78,7 +78,7 @@ Defines the delivery target and parameters. Example using a webhook with at-leas
     ]
   },
   "kind": "webhook-at-least-once",
-  "topic": "http://mdmbox.dev/SubscriptionTopic/task-merge",
+  "topic": "https://mdm.health-samurai.io/fhir/SubscriptionTopic/task-merge",
   "parameter": [
     {"name": "endpoint", "valueUrl": "https://your-service.example.com/on-merge"},
     {"name": "maxMessagesInBatch", "valueUnsignedInt": 1},

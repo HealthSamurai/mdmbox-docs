@@ -183,7 +183,7 @@ Every merge creates two audit resources inside the same transaction:
 
 **Provenance** — records what was changed:
 - `entity[]` — versioned references to all affected resources before the merge
-- `agent` — `Device/mdmbox-merge`
+- `agent` — `Device/mdmbox`
 - `activity` — MDATA (merge data)
 
 These audit resources enable future unmerge by preserving the pre-merge state of every affected resource. They also power [Notifications](notifications.md) — downstream systems can subscribe to merge and unmerge events via Topic-Based Subscriptions.

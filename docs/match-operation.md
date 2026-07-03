@@ -179,11 +179,11 @@ The response is a FHIR Bundle of type `searchset`. Each entry includes:
             "valueCode": "certain"
           },
           {
-            "url": "https://mdmbox.health-samurai.io/fhir/StructureDefinition/match-weight",
+            "url": "https://mdm.health-samurai.io/fhir/StructureDefinition/match-weight",
             "valueDecimal": 12.4
           },
           {
-            "url": "https://mdmbox.health-samurai.io/fhir/StructureDefinition/match-details",
+            "url": "https://mdm.health-samurai.io/fhir/StructureDefinition/match-details",
             "extension": [
               {"url": "given", "valueDecimal": 4.5},
               {"url": "family", "valueDecimal": 5.1},
@@ -204,7 +204,7 @@ For large datasets, create database indexes on columns used in matching model bl
 ## Weight and score calculation
 
 Match weights are log2 Bayes factor sums. MDMbox exposes the raw weight in the
-`https://mdmbox.health-samurai.io/fhir/StructureDefinition/match-weight`
+`https://mdm.health-samurai.io/fhir/StructureDefinition/match-weight`
 extension and converts it to `search.score` using a sigmoid function:
 
 `probability = 1 / (1 + 2^(-weight))`
