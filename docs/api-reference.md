@@ -86,19 +86,23 @@ Validation failures return `422 Unprocessable Entity` with an
 
 See [Find duplicates: $match](match-operation.md).
 
-### $merge
+### Merge lifecycle
 
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/api/fhir/$merge` | Execute or preview a merge |
+| `POST` | `/api/fhir/$unmerge` | Reverse a previous merge from its merge Task |
 
-See [Merge operation](merge-operation.md).
+See [Merge operation](merge-operation.md) and [Unmerge operation](unmerge-operation.md).
 
-### $unmerge
+### Link lifecycle
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/fhir/$unmerge` | Reverse a previous merge from its merge Task |
+| `POST` | `/api/fhir/$link` | Execute or preview a link plan |
+| `POST` | `/api/fhir/$unlink` | Reverse a previous link from its link Task |
+
+See [Link operation](link-operation.md) and [Unlink operation](unlink-operation.md).
 
 ### $mark-not-a-match
 

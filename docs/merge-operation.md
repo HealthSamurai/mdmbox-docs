@@ -188,6 +188,15 @@ Every merge creates two audit resources inside the same transaction:
 
 These audit resources enable future unmerge by preserving the pre-merge state of every affected resource. They also power [Notifications](notifications.md) — downstream systems can subscribe to merge and unmerge events via Topic-Based Subscriptions.
 
+## Unmerge
+
+A completed merge can be reversed with `$unmerge`. The unmerge request points to
+the original merge Task and supplies a client-built reverse transaction Bundle.
+MDMbox executes that reverse plan atomically, creates its own audit Task and
+Provenance, and updates the original merge Task to `businessStatus=unmerged`.
+
+See [Unmerge operation](unmerge-operation.md).
+
 ## Validation
 
 MDMbox validates the merge request before execution:
