@@ -53,18 +53,16 @@ so any valid authenticated `User` or `Client` can call them. Responses omit
 
 ### FHIR storage API proxy
 
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/fhir-server-api/*path` | Read FHIR metadata, resources, searches, and history |
-| `POST` | `/fhir-server-api` | Submit a FHIR batch or transaction Bundle |
-| `POST` | `/fhir-server-api/$load` | Run synchronous FHIR bulk load |
-| `POST` | `/fhir-server-api/$import` | Start asynchronous FHIR bulk import |
-| `POST` | `/fhir-server-api/$fhir-package-install` | Install FHIR packages such as US Core |
+| Method | Path | Description | Aidbox docs |
+| --- | --- | --- | --- |
+| `GET` | `/fhir-server-api/*path` | Read FHIR metadata, resources, searches, and history | [REST API](https://www.health-samurai.io/docs/aidbox/api/rest-api), [FHIR search](https://www.health-samurai.io/docs/aidbox/api/rest-api/fhir-search) |
+| `POST` | `/fhir-server-api` | Submit a FHIR batch or transaction Bundle | [Batch/Transaction](https://www.health-samurai.io/docs/aidbox/api/batch-transaction) |
+| `POST` | `/fhir-server-api/$load` | Run synchronous FHIR bulk load | [FHIR bulk load](https://www.health-samurai.io/docs/aidbox/api/bulk-api/load-and-fhir-load#resource-requirements-for-all-load-operations) |
+| `POST` | `/fhir-server-api/$import` | Start asynchronous FHIR bulk import | [FHIR bulk import](https://www.health-samurai.io/docs/aidbox/api/bulk-api/import-and-fhir-import) |
+| `POST` | `/fhir-server-api/$fhir-package-install` | Install FHIR packages such as US Core | [Package registry API](https://www.health-samurai.io/docs/aidbox/reference/package-registry-api#fhir-package-install) |
 
-Use `$fhir-package-install` before sending resources that declare profiles from
-external ImplementationGuide packages, such as US Core. The endpoint accepts a
-FHIR `Parameters` body with a `package` `valueString`, for example
-`hl7.fhir.us.core@6.1.0`.
+POST endpoints in this proxy accept FHIR JSON bodies with
+`Content-Type: application/fhir+json` or `Content-Type: application/json`.
 
 ### $match
 
