@@ -58,7 +58,7 @@ services:
       start_period: 30s
 
   mdmbox:
-    image: healthsamurai/mdmbox:latest
+    image: healthsamurai/mdmbox:${MDMBOX_VERSION:?Set MDMBOX_VERSION to a published release tag}
     depends_on:
       aidbox:
         condition: service_healthy

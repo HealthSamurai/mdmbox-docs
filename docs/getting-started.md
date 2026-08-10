@@ -4,11 +4,19 @@ description: Deploy MDMbox with Docker Compose in standalone or shared Aidbox mo
 
 # Getting started
 
-MDMbox is distributed as a Docker image: `healthsamurai/mdmbox`.
+MDMbox is distributed as versioned Docker images under
+`healthsamurai/mdmbox`. Select a
+[published release tag](https://hub.docker.com/r/healthsamurai/mdmbox/tags) and
+set `MDMBOX_VERSION` before using the Compose examples. Release tags include the
+compatible Aidbox version, for example `2604.2-aidbox2603.0`.
 
 It requires a PostgreSQL 14+ database. All configuration is done through environment variables.
 
 The `docker-compose.yml` snippets below are minimal **examples for local trial runs** — clone, tweak, `docker compose up`. For Kubernetes, see [Kubernetes (Helm)](#kubernetes-helm).
+
+```bash
+export MDMBOX_VERSION=2604.2-aidbox2603.0
+```
 
 ## Standalone deployment
 
@@ -45,6 +53,13 @@ The `BOX_*` environment variables must match your Aidbox configuration exactly. 
 ## Kubernetes (Helm)
 
 For Kubernetes, MDMbox is published as a Helm chart: [HealthSamurai/helm-charts/mdmbox](https://github.com/HealthSamurai/helm-charts/tree/main/mdmbox). The chart does not provision PostgreSQL — bring your own (managed service, in-cluster operator, or [bitnami/postgresql](https://artifacthub.io/packages/helm/bitnami/postgresql)) — and supports the same two modes as the Compose examples above.
+
+Pin the same release tag in `values.yaml`:
+
+```yaml
+image:
+  tag: 2604.2-aidbox2603.0
+```
 
 ```bash
 helm repo add healthsamurai https://healthsamurai.github.io/helm-charts
