@@ -132,6 +132,17 @@ All bulk match endpoints are scoped to a BulkMatchingModel by ID.
 | `POST` | `/api/bulk-match/:model-id/archive` | Archive a completed or stopped job |
 | `GET` | `/api/bulk-match/:model-id/download/:job-id` | Download results as CSV |
 
+The fault-tolerant runtime reuses the prepared flat table:
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/bulk-match2/:model-id/start` | Start a leased, retryable job (body: `{batchSize, workersCount}`) |
+| `POST` | `/api/bulk-match2/:model-id/stop` | Gracefully stop (`?force=true` fences in-flight workers) |
+| `POST` | `/api/bulk-match2/:model-id/continue` | Resume a stopped job on its pinned flat-table generation |
+| `GET` | `/api/bulk-match2/:model-id/status` | Get job and durable progress counters |
+| `POST` | `/api/bulk-match2/:model-id/archive` | Archive a completed, stopped, or failed job |
+| `GET` | `/api/bulk-match2/:model-id/download/:job-id` | Download results from a sealed current attempt |
+
 See [Bulk matching](bulk-match.md).
 
 ## Admin UI
@@ -140,5 +151,6 @@ The admin interface is available at `/admin`. It provides:
 
 - `/admin` — model management (create, edit, delete MatchingModel and BulkMatchingModel)
 - `/admin/bulk-match` — bulk match pipeline (prepare, start, monitor, download, stop)
+- `/admin/bulk-match2` — fault-tolerant bulk match with attempts, retries, and error journal
 
 The Admin UI uses server-sent events for real-time updates. No separate frontend deployment is required.

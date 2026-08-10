@@ -36,6 +36,45 @@ The Admin UI at `/admin/bulk-match` is the recommended way to run bulk matching.
 - Download results as CSV
 - Stop, resume, or archive jobs
 
+The fault-tolerant runtime is available at `/admin/bulk-match2`. It uses the
+same prepared flat table and matching model, but adds durable attempts, leased
+batches, automatic retry, and an error journal.
+
+## Fault-tolerant runtime
+
+Use the `/api/bulk-match2/:model-id` endpoints when a job must survive worker
+failure or an application restart. Prepare the model first through the regular
+`/api/bulk-match/:model-id/prepare` endpoint.
+
+The runtime provides these guarantees:
+
+- A job pins the model version and the immutable flat-table generation that
+  existed when it started. Re-preparing the same model cannot change the data
+  seen by a stopped job when it resumes.
+- At most one active job exists for a particular model ID and model version.
+  Different immutable versions may run independently.
+- Workers commit a result batch and its progress marker in one transaction.
+  Every lease has a token and an increasing epoch, so a stale worker cannot
+  commit after reassignment or force-stop.
+- Transient database failures are recorded and retried up to three times. A
+  non-transient failure, or the next failure after retry exhaustion, fails the
+  job and cancels unfinished batches.
+- CSV download is allowed only after both the job and its current attempt are
+  sealed as `completed` or `stopped`. Streaming failures are added to the job's
+  error journal.
+
+The job endpoints use the same operation names as the regular runtime:
+
+```http
+POST /api/bulk-match2/:model-id/start
+POST /api/bulk-match2/:model-id/stop
+POST /api/bulk-match2/:model-id/stop?force=true
+POST /api/bulk-match2/:model-id/continue
+GET  /api/bulk-match2/:model-id/status
+GET  /api/bulk-match2/:model-id/download/:job-id
+POST /api/bulk-match2/:model-id/archive
+```
+
 ## API workflow
 
 ### Step 1: Prepare the flat table
