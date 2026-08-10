@@ -143,6 +143,19 @@ The fault-tolerant runtime reuses the prepared flat table:
 | `POST` | `/api/bulk-match2/:model-id/archive` | Archive a completed, stopped, or failed job |
 | `GET` | `/api/bulk-match2/:model-id/download/:job-id` | Download results from a sealed current attempt |
 
+The independent multi-instance runtime uses explicit job and attempt IDs:
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/bulk-match3/:model-id/prepare` | Prepare or reclaim an immutable generation (`?force=true` to replace) |
+| `GET` | `/api/bulk-match3/:model-id/preparation` | Get current and in-progress generation status |
+| `POST` | `/api/bulk-match3/:model-id/start` | Start a session-bound, retryable job (body: `{batchSize, workersCount}`) |
+| `GET` | `/api/bulk-match3/:model-id/jobs/:job-id/status` | Get one explicitly identified job and progress counters |
+| `POST` | `/api/bulk-match3/:model-id/jobs/:job-id/stop` | Gracefully stop (`?force=true` fences before cancellation) |
+| `POST` | `/api/bulk-match3/:model-id/jobs/:job-id/continue` | Resume a stopped job on its pinned generation |
+| `POST` | `/api/bulk-match3/:model-id/jobs/:job-id/archive` | Archive a completed, stopped, or failed job |
+| `GET` | `/api/bulk-match3/:model-id/jobs/:job-id/attempts/:attempt-id/download` | Download one sealed historical attempt |
+
 See [Bulk matching](bulk-match.md).
 
 ## Admin UI

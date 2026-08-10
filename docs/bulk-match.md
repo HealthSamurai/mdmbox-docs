@@ -75,6 +75,89 @@ GET  /api/bulk-match2/:model-id/download/:job-id
 POST /api/bulk-match2/:model-id/archive
 ```
 
+## Session-bound runtime (v3)
+
+Bulk match v3 is an independent API for deployments with multiple MDMbox
+instances. It does not use the prepared tables, jobs, leases, or result rows of
+the earlier runtimes.
+
+Each job creates a fixed number of global worker slots. Instances compete for
+those slots through PostgreSQL session advisory locks, so `workersCount` is the
+limit across all instances processing that job, not a per-instance multiplier.
+Intervals still run in parallel on separate database connections. If a process
+or connection disappears, PostgreSQL rolls back its current interval and
+releases its slot for another instance.
+
+V3 does not use heartbeat-based leases. A result interval, its progress marker,
+and the final attempt-fence check commit in one database transaction. Force
+stop changes the durable fence before best-effort backend cancellation, so an
+old transaction cannot commit after stop or resume. Server-side statement and
+idle-transaction timeouts bound stuck SQL and idle transactions. The protocol
+does not promise bounded takeover from a PostgreSQL session that stays alive
+forever outside either timeout; that stronger requirement would need an
+expiring lease and a monotonic lease epoch.
+
+Preparation creates an immutable, internally named generation and ignores the
+model's `tableName` for DDL. Publishing the current-generation pointer happens
+only after the table is complete. A preparation whose MDMbox process died can
+be reclaimed by another request without exposing its partial table. V3 uses
+WAL-logged generation tables so PostgreSQL crash recovery does not empty a
+snapshot whose metadata is still ready.
+
+V3 is API-only; it is not wired to the `/admin/bulk-match` or
+`/admin/bulk-match2` pages.
+
+### V3 endpoints
+
+All job operations require an explicit model ID and job ID. Downloads also
+require the sealed attempt ID, so a stopped attempt remains reproducibly
+downloadable after the job is resumed.
+
+```http
+POST /api/bulk-match3/:model-id/prepare
+POST /api/bulk-match3/:model-id/prepare?force=true
+GET  /api/bulk-match3/:model-id/preparation
+
+POST /api/bulk-match3/:model-id/start
+GET  /api/bulk-match3/:model-id/jobs/:job-id/status
+POST /api/bulk-match3/:model-id/jobs/:job-id/stop
+POST /api/bulk-match3/:model-id/jobs/:job-id/stop?force=true
+POST /api/bulk-match3/:model-id/jobs/:job-id/continue
+POST /api/bulk-match3/:model-id/jobs/:job-id/archive
+GET  /api/bulk-match3/:model-id/jobs/:job-id/attempts/:attempt-id/download
+```
+
+Start accepts `batchSize` from 1 to 1,000,000 and `workersCount` from 1 to 16:
+
+```json
+{
+  "batchSize": 1000,
+  "workersCount": 4
+}
+```
+
+Only one v3 job may be `running` or `stopping` for a model ID, including across
+model versions. Continue is allowed only for a stopped job and always uses the
+generation pinned by the original start. Download is allowed only for a
+`stopped` or `completed` attempt. Archive is allowed for completed, stopped, or
+failed jobs.
+
+### V3 runtime configuration
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `MDMBOX_BULK_MATCH3_POLL_INTERVAL_MS` | `100` | Dispatcher polling interval on each instance |
+| `MDMBOX_BULK_MATCH3_MAX_LOCAL_WORKERS` | `8` | Maximum v3 worker threads on one MDMbox instance |
+| `MDMBOX_BULK_MATCH3_MAX_PREPARATION_WORKERS` | `1` | Maximum concurrent preparation/GC tasks on one instance |
+| `MDMBOX_BULK_MATCH3_MAX_RETRIES` | `3` | Durable retries per interval for retryable database errors |
+| `MDMBOX_BULK_MATCH3_STATEMENT_TIMEOUT_MS` | `3600000` | PostgreSQL statement timeout on worker sessions |
+| `MDMBOX_BULK_MATCH3_LOCK_TIMEOUT_MS` | `30000` | PostgreSQL lock timeout on worker transactions |
+| `MDMBOX_BULK_MATCH3_IDLE_TRANSACTION_TIMEOUT_MS` | `120000` | PostgreSQL idle-in-transaction timeout on worker sessions |
+
+Each active local worker holds one database connection. Size the MDMbox pool
+for `MAX_LOCAL_WORKERS`, preparation work, reconciliation, HTTP traffic, and
+other application components.
+
 ## API workflow
 
 ### Step 1: Prepare the flat table
