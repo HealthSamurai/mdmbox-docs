@@ -127,6 +127,17 @@ POST /api/bulk-match3/:model-id/jobs/:job-id/archive
 GET  /api/bulk-match3/:model-id/jobs/:job-id/attempts/:attempt-id/download
 ```
 
+Preparation runs on a bounded, per-instance maintenance queue. Repeating the
+same request while its generation is already queued or running is idempotent:
+it does not add another task. If the queue is full, prepare returns `503`; the
+durable `preparing` claim remains available for a later retry.
+
+The preparation status response contains both `current` and `latest`.
+`current` remains the last completely published generation, while `latest`
+also exposes an in-progress or failed replacement. A failed occurrence has
+`latest.status = "failed"` and includes `latest.error_message`; a first failed
+preparation therefore returns status information instead of `404`.
+
 Start accepts `batchSize` from 1 to 1,000,000 and `workersCount` from 1 to 16:
 
 ```json
@@ -147,8 +158,11 @@ failed jobs.
 | Variable | Default | Description |
 | --- | --- | --- |
 | `MDMBOX_BULK_MATCH3_POLL_INTERVAL_MS` | `100` | Dispatcher polling interval on each instance |
+| `MDMBOX_BULK_MATCH3_REMOTE_SLOT_RETRY_MS` | `1000` | Base local backoff after another instance owns a worker slot; up to 25% jitter is added |
 | `MDMBOX_BULK_MATCH3_MAX_LOCAL_WORKERS` | `8` | Maximum v3 worker threads on one MDMbox instance |
 | `MDMBOX_BULK_MATCH3_MAX_PREPARATION_WORKERS` | `1` | Maximum concurrent preparation/GC tasks on one instance |
+| `MDMBOX_BULK_MATCH3_MAX_MAINTENANCE_QUEUE_SIZE` | `64` | Maximum queued preparation/GC tasks on one instance |
+| `MDMBOX_BULK_MATCH3_GENERATION_GC_INTERVAL_MS` | `60000` | Retry interval for collecting obsolete immutable generations |
 | `MDMBOX_BULK_MATCH3_MAX_RETRIES` | `3` | Durable retries per interval for retryable database errors |
 | `MDMBOX_BULK_MATCH3_STATEMENT_TIMEOUT_MS` | `3600000` | PostgreSQL statement timeout on worker sessions |
 | `MDMBOX_BULK_MATCH3_LOCK_TIMEOUT_MS` | `30000` | PostgreSQL lock timeout on worker transactions |
@@ -157,6 +171,11 @@ failed jobs.
 Each active local worker holds one database connection. Size the MDMbox pool
 for `MAX_LOCAL_WORKERS`, preparation work, reconciliation, HTTP traffic, and
 other application components.
+
+Publishing a replacement immediately tries to remove obsolete generation
+tables. Collection is retried when a worker session drains and periodically,
+so a table temporarily retained by a live PostgreSQL session is eventually
+released without another archive request.
 
 ## API workflow
 
