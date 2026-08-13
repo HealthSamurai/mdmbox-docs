@@ -3,9 +3,12 @@
   "private": true,
   "scripts": {
     "postinstall": "install-hooks",
-    "lint": "docs-lint",
-    "lint:check": "docs-lint --check",
-    "lint:json": "docs-lint --json",
+    "lint": "bun run assets:check && docs-lint",
+    "lint:check": "bun run assets:check && docs-lint --check",
+    "lint:json": "bun run assets:check && docs-lint --json",
+    "assets:version": "bun scripts/version-file-assets.ts",
+    "assets:check": "bun scripts/version-file-assets.ts --check",
+    "test": "bun test",
     "images:check": "docs-images check",
     "images:optimize": "docs-images optimize",
     "images:dry-run": "docs-images optimize --dry-run"

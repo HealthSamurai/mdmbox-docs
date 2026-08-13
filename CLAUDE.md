@@ -196,6 +196,11 @@ Download Archive
 {% endfile %}
 ```
 
+Downloadable assets are served through an immutable CDN cache. After changing
+any file referenced by `{% file %}`, run `bun run assets:version`. This updates
+the directive's content-derived `?v=` parameter. `bun lint`, the pre-push hook,
+and CI fail if a hash is missing or stale.
+
 ### Carousel (image slideshow)
 
 ```markdown
@@ -218,6 +223,8 @@ Quote text here.
 ```
 bun lint          — fix lint issues automatically
 bun lint:check    — check for issues without fixing
+bun run assets:version — refresh content hashes on downloadable file links
+bun run assets:check — verify downloadable file hashes without editing
 bun images:check  — find unoptimized images
 bun images:optimize — convert images to AVIF format
 ```

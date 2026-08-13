@@ -22,7 +22,7 @@ export MDMBOX_VERSION=2604.2-aidbox2603.0
 
 In standalone mode, MDMbox manages its own database. You need two containers:  PostgreSQL and MDMbox.
 
-{% file src="/docs/mdmbox/assets/examples/docker-compose.standalone.yml" %}
+{% file src="/docs/mdmbox/assets/examples/docker-compose.standalone.yml?v=352046fa84ff2a5f" %}
 docker-compose.yml
 {% endfile %}
 
@@ -42,7 +42,7 @@ Each MDMbox release is built for a specific Aidbox version. Contact us to get a 
 
 Pass the same `BOX_*` environment variables to MDMbox that your Aidbox uses:
 
-{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml" %}
+{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=adfa501b29a8c1a6" %}
 docker-compose.yml
 {% endfile %}
 
