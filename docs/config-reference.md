@@ -27,6 +27,12 @@ endpoints and the Admin UI:
   users to `/login`.
 - Health checks, Swagger UI, and the OpenAPI specification remain public.
 
+For API Bearer authentication, MDMbox uses Aidbox's authentication pipeline and
+the `TokenIntrospector` resources configured in Aidbox. MDMbox does not evaluate
+`AccessPolicy`; every successfully authenticated credential has the same access
+to protected MDMbox endpoints. See [Authentication](authentication.md) for
+configuration and request examples.
+
 | Variable | Description | Default |
 | --- | --- | --- |
 | `MDMBOX_AUTH_ENABLED` | Enable authentication for API endpoints and the Admin UI. Accepted values: `true` or `false`. | `true` |
@@ -73,4 +79,5 @@ MDMbox maintains its own connection pool separate from the embedded FHIR engine.
 ## Related Pages
 
 - [Getting started](getting-started.md)
+- [Authentication](authentication.md)
 - [Find duplicates: $match](match-operation.md)

@@ -107,8 +107,9 @@ For production, pass `MDMBOX_LICENSE` as an environment variable. For local
 trial runs, you can leave it unset and activate MDMbox in the browser after
 startup.
 
+See [Authentication](authentication.md) for API and Admin UI authentication.
 See [Configuration reference](config-reference.md) for all environment
-variables, authentication settings, and runtime defaults.
+variables and runtime defaults.
 
 ## Endpoints
 

@@ -3,6 +3,7 @@
 * [MDMbox](README.md)
   * [Getting started](getting-started.md)
   * [Configuration reference](config-reference.md)
+  * [Authentication](authentication.md)
   * [Matching models](matching-models.md)
   * [Find duplicates: $match](match-operation.md)
   * [Bulk matching](bulk-match.md)

@@ -31,8 +31,9 @@ Both MatchingModel and BulkMatchingModel are managed through this endpoint. The 
 
 `User` and `Client` resources can be managed through the IAM endpoints. These
 endpoints require normal API authentication. MDMbox currently has no role split,
-so any valid authenticated `User` or `Client` can call them. Responses omit
-`User.password` and `Client.secret`.
+so any authenticated `Client`, Aidbox access token, or `TokenIntrospector` JWT
+can call them. Responses omit `User.password` and `Client.secret`. See
+[Authentication](authentication.md) for the supported authentication flows.
 
 | Method | Path | Description |
 | --- | --- | --- |
@@ -47,7 +48,7 @@ so any valid authenticated `User` or `Client` can call them. Responses omit
 | `GET` | `/api/iam/Client/:id` | Get client by ID |
 | `PUT` | `/api/iam/Client/:id` | Update client |
 | `PATCH` | `/api/iam/Client/:id` | Patch client |
-| `DELETE` | `/api/iam/Client/:id` | Delete client |
+| `DELETE` | `/api/iam/Client/:id` | Delete client |/
 
 ## FHIR operations
 
