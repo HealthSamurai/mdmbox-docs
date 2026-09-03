@@ -80,9 +80,12 @@ Defines the delivery target and parameters. Example using a webhook with at-leas
   "kind": "webhook-at-least-once",
   "topic": "https://mdm.health-samurai.io/fhir/SubscriptionTopic/task-merge",
   "parameter": [
-    {"name": "endpoint", "valueUrl": "https://your-service.example.com/on-merge"},
-    {"name": "maxMessagesInBatch", "valueUnsignedInt": 1},
-    {"name": "timeout", "valueUnsignedInt": 10}
+    {
+      "name": "endpoint",
+      "valueUrl": "https://your-service.example.com/on-merge"
+    },
+    { "name": "maxMessagesInBatch", "valueUnsignedInt": 1 },
+    { "name": "timeout", "valueUnsignedInt": 10 }
   ]
 }
 ```

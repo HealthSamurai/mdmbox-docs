@@ -59,7 +59,7 @@ The response is an OperationOutcome. The `diagnostics` field contains preparatio
     {
       "severity": "information",
       "code": "informational",
-      "details": {"text": "Flat table ready (150000 records)"},
+      "details": { "text": "Flat table ready (150000 records)" },
       "diagnostics": "{:model-id \"patient-bulk\", :prepare-status \"ready\", :stage nil, :source-count 150000, :prepare-duration-ms 12500, :prepared-at \"2025-04-10T14:30:00Z\"}"
     }
   ]
@@ -100,7 +100,7 @@ Response (HTTP 202):
     {
       "severity": "information",
       "code": "informational",
-      "details": {"text": "Bulk match started, job #42"},
+      "details": { "text": "Bulk match started, job #42" },
       "diagnostics": "{:id 42, :model-id \"patient-bulk\", :status \"in-progress\"}"
     }
   ]
@@ -123,12 +123,12 @@ GET https://<mdmbox-host>/api/bulk-match/patient-bulk/download/{job-id}
 
 Returns a CSV file with columns:
 
-| Column | Description |
-| --- | --- |
-| `resource_id_1` | First resource ID |
-| `resource_id_2` | Second resource ID |
-| `match_weight` | Total match score |
-| `{feature}_w` | Individual feature weight (one column per feature) |
+| Column          | Description                                        |
+| --------------- | -------------------------------------------------- |
+| `resource_id_1` | First resource ID                                  |
+| `resource_id_2` | Second resource ID                                 |
+| `match_weight`  | Total match score                                  |
+| `{feature}_w`   | Individual feature weight (one column per feature) |
 
 ## Managing jobs
 

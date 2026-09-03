@@ -43,8 +43,6 @@ redirects.yaml  # URL redirects
 5. Run `bun lint` to check before pushing
 6. Submit a pull request
 
-Download links include a content-derived `?v=` parameter because the production
-CDN caches assets as immutable. CI rejects stale hashes, preventing an updated
-file from being published at an already-cached URL.
+Download links include a content-derived `?v=` parameter because the production CDN caches assets as immutable. CI rejects stale hashes, preventing an updated file from being published at an already-cached URL.
 
 CI runs lint automatically on PRs. Image optimization runs on push to main.

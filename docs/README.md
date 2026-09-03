@@ -20,16 +20,11 @@ MDMbox is a master data management service for healthcare organizations. It iden
 
 ## Deployment architecture
 
-MDMbox is deployed together with Aidbox. They run as separate services and
-connect to the same PostgreSQL database, so MDMbox operations work with the
-FHIR resources stored in Aidbox.
+MDMbox is deployed together with Aidbox. They run as separate services and connect to the same PostgreSQL database, so MDMbox operations work with the FHIR resources stored in Aidbox.
 
-Aidbox provides the FHIR API and storage platform. MDMbox provides matching,
-linking, merging, bulk matching, and its Admin UI.
+Aidbox provides the FHIR API and storage platform. MDMbox provides matching, linking, merging, bulk matching, and its Admin UI.
 
-Each MDMbox release is built for an Aidbox version. Use a compatible MDMbox and
-Aidbox release pair and pass the same database connection and relevant
-`BOX_FHIR_*` settings to both services.
+Each MDMbox release is built for an Aidbox version. Use a compatible MDMbox and Aidbox release pair and pass the same database connection and relevant `BOX_FHIR_*` settings to both services.
 
 {% content-ref %}
 [Getting started](getting-started.md)

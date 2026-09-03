@@ -4,9 +4,7 @@ description: Authenticate MDMbox API requests and Admin UI sessions.
 
 # Authentication
 
-Authentication is enabled by default and is controlled by
-`MDMBOX_AUTH_ENABLED`. MDMbox supports separate authentication flows for API
-requests and the Admin UI.
+Authentication is enabled by default and is controlled by `MDMBOX_AUTH_ENABLED`. MDMbox supports separate authentication flows for API requests and the Admin UI.
 
 | Interface | Authentication |
 | --- | --- |
@@ -15,11 +13,9 @@ requests and the Admin UI.
 
 ## External JWT authentication
 
-MDMbox uses Aidbox `TokenIntrospector` resources. Configure the introspector in
-Aidbox; there is no separate MDMbox configuration.
+MDMbox uses Aidbox `TokenIntrospector` resources. Configure the introspector in Aidbox; there is no separate MDMbox configuration.
 
-For example, a Keycloak deployment can validate RS256 tokens through its JWKS
-endpoint:
+For example, a Keycloak deployment can validate RS256 tokens through its JWKS endpoint:
 
 ```http
 PUT /TokenIntrospector/keycloak
@@ -36,8 +32,7 @@ Content-Type: application/json
 }
 ```
 
-The JWT issuer must exactly match `jwt.iss`. After Aidbox stores the
-introspector, send the token directly to MDMbox:
+The JWT issuer must exactly match `jwt.iss`. After Aidbox stores the introspector, send the token directly to MDMbox:
 
 ```bash
 curl http://localhost:3000/api/models \
@@ -46,21 +41,12 @@ curl http://localhost:3000/api/models \
 
 MDMbox validates the token through Aidbox's authentication pipeline.
 
-For one runnable example of this setup, see the
-[Keycloak authentication example](https://github.com/HealthSamurai/mdmbox-playground/tree/main/examples/token-introspector-without-user).
-It uses a preconfigured Keycloak realm and an RS256 token with no corresponding
-Aidbox `User`. Keycloak is the provider chosen for the example, not an MDMbox
-requirement.
+For one runnable example of this setup, see the [Keycloak authentication example](https://github.com/HealthSamurai/mdmbox-playground/tree/main/examples/token-introspector-without-user). It uses a preconfigured Keycloak realm and an RS256 token with no corresponding Aidbox `User`. Keycloak is the provider chosen for the example, not an MDMbox requirement.
 
-See the Aidbox documentation for the other supported `TokenIntrospector`
-configurations, including shared secrets, explicit keys, and opaque tokens:
-[Token Introspector](https://www.health-samurai.io/docs/aidbox/access-control/authentication/token-introspector).
+See the Aidbox documentation for the other supported `TokenIntrospector` configurations, including shared secrets, explicit keys, and opaque tokens: [Token Introspector](https://www.health-samurai.io/docs/aidbox/access-control/authentication/token-introspector).
 
 {% hint style="warning" %}
-MDMbox uses Aidbox for authentication but does not evaluate Aidbox
-`AccessPolicy` resources. Every successfully authenticated credential has the
-same access to protected MDMbox endpoints. Restrict network access to MDMbox and
-only configure trusted token issuers.
+MDMbox uses Aidbox for authentication but does not evaluate Aidbox `AccessPolicy` resources. Every successfully authenticated credential has the same access to protected MDMbox endpoints. Restrict network access to MDMbox and only configure trusted token issuers.
 {% endhint %}
 
 ## Basic API authentication
@@ -81,21 +67,18 @@ curl --user "mdmbox-api:$MDMBOX_API_CLIENT_SECRET" \
 
 ## Admin UI authentication
 
-The Admin UI uses an Aidbox `User` and browser session. To bootstrap an admin
-for browser login, set both variables:
+The Admin UI uses an Aidbox `User` and browser session. To bootstrap an admin for browser login, set both variables:
 
 ```bash
 MDMBOX_ADMIN_ID=admin
 MDMBOX_ADMIN_PASSWORD=<password>
 ```
 
-External JWT authentication applies to API requests only; it does not create an
-Admin UI session.
+External JWT authentication applies to API requests only; it does not create an Admin UI session.
 
 ## Public endpoints
 
-The health checks, Swagger UI, and OpenAPI specification remain public when
-authentication is enabled:
+The health checks, Swagger UI, and OpenAPI specification remain public when authentication is enabled:
 
 - `/healthz`
 - `/readyz`

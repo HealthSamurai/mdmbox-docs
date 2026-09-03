@@ -8,25 +8,11 @@ The `$match` operation performs a probabilistic search using a matching model an
 
 A [MatchingModel](matching-models.md) must be created before using `$match`.
 
-MDMbox follows the request and response shape of the FHIR R6
-[`Patient/$match`](https://build.fhir.org/patient-operation-match.html)
-operation: clients send a FHIR `Parameters` resource and receive a `Bundle` of
-type `searchset`. MDMbox generalizes the operation to any configured FHIR
-resource type and adds `modelId` and `threshold` parameters so callers can choose
-the matching model and score cutoff.
+MDMbox follows the request and response shape of the FHIR R6 [`Patient/$match`](https://build.fhir.org/patient-operation-match.html) operation: clients send a FHIR `Parameters` resource and receive a `Bundle` of type `searchset`. MDMbox generalizes the operation to any configured FHIR resource type and adds `modelId` and `threshold` parameters so callers can choose the matching model and score cutoff.
 
-Unversioned routes such as `/api/fhir/Patient/$match` use the FHIR release
-selected by `MDMBOX_DEFAULT_FHIR_RELEASE`. Versioned routes are also available
-as `/api/fhir/r4/:resource/$match` and `/api/fhir/r6/:resource/$match`.
-Instance-level matching is available at
-`/api/fhir/r4/:resource/:id/$match` and `/api/fhir/r6/:resource/:id/$match`.
+Unversioned routes such as `/api/fhir/Patient/$match` use the FHIR release selected by `MDMBOX_DEFAULT_FHIR_RELEASE`. Versioned routes are also available as `/api/fhir/r4/:resource/$match` and `/api/fhir/r6/:resource/$match`. Instance-level matching is available at `/api/fhir/r4/:resource/:id/$match` and `/api/fhir/r6/:resource/:id/$match`.
 
-For body-based `$match`, MDMbox validates the input `resource` before matching.
-If the resource declares `meta.profile`, the corresponding FHIR package must be
-installed and the resource must satisfy that profile. For example, a Patient
-with `meta.profile` set to the US Core Patient profile requires the US Core
-package to be installed first. Profile validation failures return
-`422 Unprocessable Entity` with an `OperationOutcome`.
+For body-based `$match`, MDMbox validates the input `resource` before matching. If the resource declares `meta.profile`, the corresponding FHIR package must be installed and the resource must satisfy that profile. For example, a Patient with `meta.profile` set to the US Core Patient profile requires the US Core package to be installed first. Profile validation failures return `422 Unprocessable Entity` with an `OperationOutcome`.
 
 ## Match a resource
 
@@ -41,12 +27,12 @@ Content-Type: application/json
 {
   "resourceType": "Parameters",
   "parameter": [
-    {"name": "modelId", "valueString": "patient-model"},
+    { "name": "modelId", "valueString": "patient-model" },
     {
       "name": "resource",
       "resource": {
         "resourceType": "Patient",
-        "name": [{"given": ["Freya"], "family": "Shah"}],
+        "name": [{ "given": ["Freya"], "family": "Shah" }],
         "birthDate": "1990-01-15",
         "gender": "female"
       }
@@ -67,15 +53,11 @@ Content-Type: application/json
 ```json
 {
   "resourceType": "Parameters",
-  "parameter": [
-    {"name": "modelId", "valueString": "patient-model"}
-  ]
+  "parameter": [{ "name": "modelId", "valueString": "patient-model" }]
 }
 ```
 
-MDMbox retrieves `Patient/123` by ID and uses it as the source resource. The
-source resource itself is excluded from the response by ID, so `Patient/123`
-will not be returned as its own match.
+MDMbox retrieves `Patient/123` by ID and uses it as the source resource. The source resource itself is excluded from the response by ID, so `Patient/123` will not be returned as its own match.
 
 ## Parameters
 
@@ -88,13 +70,11 @@ will not be returned as its own match.
 | `threshold` | valueDecimal | No | Override the model's `probable` threshold in normal potential-match mode. Cannot be combined with `onlyCertainMatches`. |
 | `count` | valueInteger | No | Maximum number of returned entries (default: 10). `Bundle.total` still reports the full number of matches above the effective threshold. |
 
-The default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and is `10`
-unless configured otherwise.
+The default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and is `10` unless configured otherwise.
 
 ### Profiled input resources
 
-If `$match` input includes `meta.profile`, install the package that contains the
-profile before calling `$match`. For US Core 6.1.0:
+If `$match` input includes `meta.profile`, install the package that contains the profile before calling `$match`. For US Core 6.1.0:
 
 ```http
 POST https://<aidbox-host>/fhir/$fhir-package-install
@@ -104,15 +84,11 @@ Content-Type: application/json
 ```json
 {
   "resourceType": "Parameters",
-  "parameter": [
-    {"name": "package", "valueString": "hl7.fhir.us.core@6.1.0"}
-  ]
+  "parameter": [{ "name": "package", "valueString": "hl7.fhir.us.core@6.1.0" }]
 }
 ```
 
-After the package is installed, a profiled input resource that violates the
-profile is rejected before matching. The response is a `422` `OperationOutcome`;
-no candidate search is executed for that request.
+After the package is installed, a profiled input resource that violates the profile is rejected before matching. The response is a `422` `OperationOutcome`; no candidate search is executed for that request.
 
 ### R6 flag behavior
 
@@ -121,14 +97,9 @@ no candidate search is executed for that request.
 | `onlyCertainMatches` | valueBoolean | Sets the effective threshold to the model's `certain` threshold. Cannot be combined with `threshold` or `onlySingleMatch`. `count` still applies. |
 | `onlySingleMatch` | valueBoolean | Returns one best candidate. Cannot be combined with `threshold`, `count`, or `onlyCertainMatches`. |
 
-In normal R6 mode, MDMbox uses `threshold` when supplied, otherwise the model's
-`probable` threshold. There is no 100-entry TEFCA cap for R6.
+In normal R6 mode, MDMbox uses `threshold` when supplied, otherwise the model's `probable` threshold. There is no 100-entry TEFCA cap for R6.
 
-In R6 `onlySingleMatch=true` mode, MDMbox asks the server-side matching
-algorithm to designate one best candidate. If several candidates are eligible,
-MDMbox returns the highest-scored one; if scores are tied, MDMbox uses resource
-ID as a stable tie-breaker. If no candidate is eligible, the response is an
-empty searchset.
+In R6 `onlySingleMatch=true` mode, MDMbox asks the server-side matching algorithm to designate one best candidate. If several candidates are eligible, MDMbox returns the highest-scored one; if scores are tied, MDMbox uses resource ID as a stable tie-breaker. If no candidate is eligible, the response is an empty searchset.
 
 ### R4 flag behavior
 
@@ -136,26 +107,19 @@ empty searchset.
 | --- | --- | --- |
 | `onlyCertainMatches` | valueBoolean | Sets the effective threshold to the model's `certain` threshold. Cannot be combined with `threshold`. `count` still applies. |
 
-R4 routes do not implement `onlySingleMatch`; use an R6 route when that behavior
-is required.
+R4 routes do not implement `onlySingleMatch`; use an R6 route when that behavior is required.
 
-In normal R4 potential-match mode (`onlyCertainMatches` omitted or `false`),
-MDMbox uses `threshold` when supplied, otherwise the model's `probable`
-threshold.
+In normal R4 potential-match mode (`onlyCertainMatches` omitted or `false`), MDMbox uses `threshold` when supplied, otherwise the model's `probable` threshold.
 
-When `MDMBOX_TEFCA_MODE=true`, R4 potential-match responses return no more than
-100 entries, even when `count` is larger. The TEFCA cap is not applied when
-`onlyCertainMatches=true`.
+When `MDMBOX_TEFCA_MODE=true`, R4 potential-match responses return no more than 100 entries, even when `count` is larger. The TEFCA cap is not applied when `onlyCertainMatches=true`.
 
 ## Response
 
 The response is a FHIR Bundle of type `searchset`. Each entry includes:
 
 - `resource` — the matched FHIR resource
-- `search.score` — probability-like FHIR search score from 0 to 1 derived from
-  the raw match weight
-- `search.extension` — match grade (`certain`, `probable`, or `possible`), raw
-  match weight, and per-feature match details
+- `search.score` — probability-like FHIR search score from 0 to 1 derived from the raw match weight
+- `search.extension` — match grade (`certain`, `probable`, or `possible`), raw match weight, and per-feature match details
 
 ```json
 {
@@ -167,7 +131,7 @@ The response is a FHIR Bundle of type `searchset`. Each entry includes:
       "resource": {
         "resourceType": "Patient",
         "id": "456",
-        "name": [{"given": ["Freya"], "family": "Shah"}],
+        "name": [{ "given": ["Freya"], "family": "Shah" }],
         "birthDate": "1990-01-15"
       },
       "search": {
@@ -185,9 +149,9 @@ The response is a FHIR Bundle of type `searchset`. Each entry includes:
           {
             "url": "https://mdm.health-samurai.io/fhir/StructureDefinition/match-details",
             "extension": [
-              {"url": "given", "valueDecimal": 4.5},
-              {"url": "family", "valueDecimal": 5.1},
-              {"url": "birthDate", "valueDecimal": 2.8}
+              { "url": "given", "valueDecimal": 4.5 },
+              { "url": "family", "valueDecimal": 5.1 },
+              { "url": "birthDate", "valueDecimal": 2.8 }
             ]
           }
         ]
@@ -203,9 +167,7 @@ For large datasets, create database indexes on columns used in matching model bl
 
 ## Weight and score calculation
 
-Match weights are log2 Bayes factor sums. MDMbox exposes the raw weight in the
-`https://mdm.health-samurai.io/fhir/StructureDefinition/match-weight`
-extension and converts it to `search.score` using a sigmoid function:
+Match weights are log2 Bayes factor sums. MDMbox exposes the raw weight in the `https://mdm.health-samurai.io/fhir/StructureDefinition/match-weight` extension and converts it to `search.score` using a sigmoid function:
 
 `probability = 1 / (1 + 2^(-weight))`
 

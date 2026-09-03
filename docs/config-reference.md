@@ -8,14 +8,12 @@ MDMbox is configured through environment variables.
 
 ## License
 
-MDMbox requires an active license for API access. There are two ways to
-activate it:
+MDMbox requires an active license for API access. There are two ways to activate it:
 
 1. **Environment variable.** Sign in to the [Aidbox portal](https://aidbox.app/ui/portal), open the MDMbox project, copy the license JWT, and pass it to the MDMbox container as `MDMBOX_LICENSE`. Recommended for production and CI.
 2. **Browser activation.** Leave `MDMBOX_LICENSE` unset and start MDMbox. Open `http://localhost:3000`, click **Continue with Aidbox account**, sign in to the portal — a development MDMbox license is generated and stored in the database automatically. Useful for local development.
 
-MDMbox reuses a browser-issued license when its container is restarted or
-recreated, as long as the database is retained.
+MDMbox reuses a browser-issued license when its container is restarted or recreated, as long as the database is retained.
 
 | Variable | Description | Required |
 | --- | --- | --- |
@@ -23,19 +21,13 @@ recreated, as long as the database is retained.
 
 ## Authentication
 
-Authentication is enabled by default. When enabled, MDMbox protects both API
-endpoints and the Admin UI:
+Authentication is enabled by default. When enabled, MDMbox protects both API endpoints and the Admin UI:
 
 - API endpoints require a valid `Authorization` header.
-- The Admin UI uses browser session authentication and redirects unauthenticated
-  users to `/login`.
+- The Admin UI uses browser session authentication and redirects unauthenticated users to `/login`.
 - Health checks, Swagger UI, and the OpenAPI specification remain public.
 
-For API Bearer authentication, MDMbox uses Aidbox's authentication pipeline and
-the `TokenIntrospector` resources configured in Aidbox. MDMbox does not evaluate
-`AccessPolicy`; every successfully authenticated credential has the same access
-to protected MDMbox endpoints. See [Authentication](authentication.md) for
-configuration and request examples.
+For API Bearer authentication, MDMbox uses Aidbox's authentication pipeline and the `TokenIntrospector` resources configured in Aidbox. MDMbox does not evaluate `AccessPolicy`; every successfully authenticated credential has the same access to protected MDMbox endpoints. See [Authentication](authentication.md) for configuration and request examples.
 
 | Variable | Description | Default |
 | --- | --- | --- |
@@ -55,36 +47,30 @@ configuration and request examples.
 
 ## Shared database configuration
 
-Aidbox and MDMbox run as separate applications against the same PostgreSQL
-database. MDMbox accepts the standard Aidbox `BOX_DB_*` environment variables
-so the database connection configuration can be shared between both
-application environments. Pass the same values to Aidbox and MDMbox.
+Aidbox and MDMbox run as separate applications against the same PostgreSQL database. MDMbox accepts the standard Aidbox `BOX_DB_*` environment variables so the database connection configuration can be shared between both application environments. Pass the same values to Aidbox and MDMbox.
 
-| Variable | Description | Required |
-| --- | --- | --- |
-| `BOX_DB_HOST` | PostgreSQL host | Yes |
-| `BOX_DB_PORT` | PostgreSQL port (default: 5432) | No |
-| `BOX_DB_DATABASE` | Database name | Yes |
-| `BOX_DB_USER` | Database user | Yes |
-| `BOX_DB_PASSWORD` | Database password | Yes |
+| Variable          | Description                     | Required |
+| ----------------- | ------------------------------- | -------- |
+| `BOX_DB_HOST`     | PostgreSQL host                 | Yes      |
+| `BOX_DB_PORT`     | PostgreSQL port (default: 5432) | No       |
+| `BOX_DB_DATABASE` | Database name                   | Yes      |
+| `BOX_DB_USER`     | Database user                   | Yes      |
+| `BOX_DB_PASSWORD` | Database password               | Yes      |
 
 ## MDMbox connection pool
 
-The database connection settings are shared, but connection pool sizing is
-application-specific. Configure the MDMbox pool independently for its workload
-using the variables below; these values do not change the Aidbox application's
-pool size.
+The database connection settings are shared, but connection pool sizing is application-specific. Configure the MDMbox pool independently for its workload using the variables below; these values do not change the Aidbox application's pool size.
 
-| Variable | Description | Default |
-| --- | --- | --- |
-| `MDMBOX_DB_MAX_POOL_SIZE` | Maximum pool connections | 10 |
-| `MDMBOX_DB_MIN_IDLE` | Minimum idle connections | 1 |
+| Variable                  | Description              | Default |
+| ------------------------- | ------------------------ | ------- |
+| `MDMBOX_DB_MAX_POOL_SIZE` | Maximum pool connections | 10      |
+| `MDMBOX_DB_MIN_IDLE`      | Minimum idle connections | 1       |
 
 ## HTTP Server
 
-| Variable | Description | Default |
-| --- | --- | --- |
-| `MDMBOX_HTTP_PORT` | HTTP port | 3000 |
+| Variable           | Description | Default |
+| ------------------ | ----------- | ------- |
+| `MDMBOX_HTTP_PORT` | HTTP port   | 3000    |
 
 ## Related Pages
 

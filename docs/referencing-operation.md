@@ -17,10 +17,10 @@ Content-Type: application/json
 {
   "resourceType": "Parameters",
   "parameter": [
-    {"name": "type", "valueString": "Encounter"},
-    {"name": "type", "valueString": "Observation"},
-    {"name": "count", "valueInteger": 50},
-    {"name": "offset", "valueInteger": 0}
+    { "name": "type", "valueString": "Encounter" },
+    { "name": "type", "valueString": "Observation" },
+    { "name": "count", "valueInteger": 50 },
+    { "name": "offset", "valueInteger": 0 }
   ]
 }
 ```
@@ -47,14 +47,14 @@ A FHIR Bundle containing all resources that reference the target:
       "resource": {
         "resourceType": "Encounter",
         "id": "enc-1",
-        "subject": {"reference": "Patient/123"}
+        "subject": { "reference": "Patient/123" }
       }
     },
     {
       "resource": {
         "resourceType": "Observation",
         "id": "obs-1",
-        "subject": {"reference": "Patient/123"}
+        "subject": { "reference": "Patient/123" }
       }
     }
   ]

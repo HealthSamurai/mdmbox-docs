@@ -24,9 +24,15 @@ Content-Type: application/json
 {
   "resourceType": "Parameters",
   "parameter": [
-    {"name": "source", "valueReference": {"reference": "Patient/duplicate-123"}},
-    {"name": "target", "valueReference": {"reference": "Patient/primary-456"}},
-    {"name": "preview", "valueBoolean": false},
+    {
+      "name": "source",
+      "valueReference": { "reference": "Patient/duplicate-123" }
+    },
+    {
+      "name": "target",
+      "valueReference": { "reference": "Patient/primary-456" }
+    },
+    { "name": "preview", "valueBoolean": false },
     {
       "name": "plan",
       "resource": {
@@ -34,24 +40,32 @@ Content-Type: application/json
         "type": "transaction",
         "entry": [
           {
-            "request": {"method": "PUT", "url": "Patient/primary-456", "ifMatch": "3"},
+            "request": {
+              "method": "PUT",
+              "url": "Patient/primary-456",
+              "ifMatch": "3"
+            },
             "resource": {
               "resourceType": "Patient",
               "id": "primary-456",
-              "name": [{"given": ["John"], "family": "Smith"}],
+              "name": [{ "given": ["John"], "family": "Smith" }],
               "birthDate": "1985-03-20"
             }
           },
           {
-            "request": {"method": "PUT", "url": "Encounter/enc-789", "ifMatch": "1"},
+            "request": {
+              "method": "PUT",
+              "url": "Encounter/enc-789",
+              "ifMatch": "1"
+            },
             "resource": {
               "resourceType": "Encounter",
               "id": "enc-789",
-              "subject": {"reference": "Patient/primary-456"}
+              "subject": { "reference": "Patient/primary-456" }
             }
           },
           {
-            "request": {"method": "DELETE", "url": "Patient/duplicate-123"}
+            "request": { "method": "DELETE", "url": "Patient/duplicate-123" }
           }
         ]
       }
@@ -87,10 +101,23 @@ Set `preview` to `true` to see the assembled Bundle (including audit resources) 
 {
   "resourceType": "Parameters",
   "parameter": [
-    {"name": "source", "valueReference": {"reference": "Patient/duplicate-123"}},
-    {"name": "target", "valueReference": {"reference": "Patient/primary-456"}},
-    {"name": "preview", "valueBoolean": true},
-    {"name": "plan", "resource": {"resourceType": "Bundle", "type": "transaction", "entry": []}}
+    {
+      "name": "source",
+      "valueReference": { "reference": "Patient/duplicate-123" }
+    },
+    {
+      "name": "target",
+      "valueReference": { "reference": "Patient/primary-456" }
+    },
+    { "name": "preview", "valueBoolean": true },
+    {
+      "name": "plan",
+      "resource": {
+        "resourceType": "Bundle",
+        "type": "transaction",
+        "entry": []
+      }
+    }
   ]
 }
 ```
@@ -105,8 +132,13 @@ Preview response:
       "name": "outcome",
       "resource": {
         "resourceType": "OperationOutcome",
-        "issue": [{"severity": "information", "code": "informational",
-                    "details": {"text": "Merge plan is valid and ready to execute"}}]
+        "issue": [
+          {
+            "severity": "information",
+            "code": "informational",
+            "details": { "text": "Merge plan is valid and ready to execute" }
+          }
+        ]
       }
     },
     {
@@ -133,8 +165,15 @@ On success, the response is a Parameters resource containing:
       "name": "outcome",
       "resource": {
         "resourceType": "OperationOutcome",
-        "issue": [{"severity": "information", "code": "informational",
-                    "details": {"text": "Merge completed: Patient/duplicate-123 -> Patient/primary-456"}}]
+        "issue": [
+          {
+            "severity": "information",
+            "code": "informational",
+            "details": {
+              "text": "Merge completed: Patient/duplicate-123 -> Patient/primary-456"
+            }
+          }
+        ]
       }
     },
     {
@@ -142,9 +181,15 @@ On success, the response is a Parameters resource containing:
       "resource": {
         "resourceType": "Parameters",
         "parameter": [
-          {"name": "source", "valueReference": {"reference": "Patient/duplicate-123"}},
-          {"name": "target", "valueReference": {"reference": "Patient/primary-456"}},
-          {"name": "preview", "valueBoolean": false}
+          {
+            "name": "source",
+            "valueReference": { "reference": "Patient/duplicate-123" }
+          },
+          {
+            "name": "target",
+            "valueReference": { "reference": "Patient/primary-456" }
+          },
+          { "name": "preview", "valueBoolean": false }
         ]
       }
     },
@@ -154,10 +199,10 @@ On success, the response is a Parameters resource containing:
         "resourceType": "Task",
         "id": "generated-task-id",
         "status": "completed",
-        "code": {"coding": [{"code": "merge"}]},
-        "businessStatus": {"coding": [{"code": "merged"}]},
-        "for": {"reference": "Patient/duplicate-123"},
-        "focus": {"reference": "Patient/primary-456"}
+        "code": { "coding": [{ "code": "merge" }] },
+        "businessStatus": { "coding": [{ "code": "merged" }] },
+        "for": { "reference": "Patient/duplicate-123" },
+        "focus": { "reference": "Patient/primary-456" }
       }
     },
     {
@@ -176,12 +221,14 @@ On success, the response is a Parameters resource containing:
 Every merge creates two audit resources inside the same transaction:
 
 **Task** — records the merge event:
+
 - `for` — the source (merged away)
 - `focus` — the target (survivor)
 - `businessStatus` — `merged`
 - `code` — `merge`
 
 **Provenance** — records what was changed:
+
 - `entity[]` — versioned references to all affected resources before the merge
 - `agent` — `Device/mdmbox`
 - `activity` — `merge` from `http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle`
@@ -190,10 +237,7 @@ These audit resources enable future unmerge by preserving the pre-merge state of
 
 ## Unmerge
 
-A completed merge can be reversed with `$unmerge`. The unmerge request points to
-the original merge Task and supplies a client-built reverse transaction Bundle.
-MDMbox executes that reverse plan atomically, creates its own audit Task and
-Provenance, and updates the original merge Task to `businessStatus=unmerged`.
+A completed merge can be reversed with `$unmerge`. The unmerge request points to the original merge Task and supplies a client-built reverse transaction Bundle. MDMbox executes that reverse plan atomically, creates its own audit Task and Provenance, and updates the original merge Task to `businessStatus=unmerged`.
 
 See [Unmerge operation](unmerge-operation.md).
 
@@ -202,27 +246,26 @@ See [Unmerge operation](unmerge-operation.md).
 MDMbox validates the merge request before execution:
 
 **Structural validation (400 Bad Request):**
+
 - Source and target must be different resources
 - Plan must be a transaction Bundle with at least one entry
 - No duplicate PUT/DELETE URLs in the plan
 
 **State validation (422 Unprocessable Entity):**
+
 - Both source and target must exist
 - Source must not already be merged (no active merge Task)
 - Target must not already be a source in another merge (no circular merges)
 
 **FHIR transaction validation (4xx OperationOutcome):**
+
 - Resources in the plan are validated when the FHIR transaction executes
-- If a resource declares `meta.profile`, the corresponding FHIR package must be
-  installed and the resource must satisfy the profile
-- If validation fails, the transaction rolls back, including Task and
-  Provenance audit records
+- If a resource declares `meta.profile`, the corresponding FHIR package must be installed and the resource must satisfy the profile
+- If validation fails, the transaction rolls back, including Task and Provenance audit records
 
 ### Profiled resources in the merge plan
 
-If a resource written by the merge `plan` declares `meta.profile`, install the
-package that contains the profile in Aidbox before calling `$merge`. For US
-Core 6.1.0:
+If a resource written by the merge `plan` declares `meta.profile`, install the package that contains the profile in Aidbox before calling `$merge`. For US Core 6.1.0:
 
 ```http
 POST https://<aidbox-host>/fhir/$fhir-package-install
@@ -232,15 +275,11 @@ Content-Type: application/json
 ```json
 {
   "resourceType": "Parameters",
-  "parameter": [
-    {"name": "package", "valueString": "hl7.fhir.us.core@6.1.0"}
-  ]
+  "parameter": [{ "name": "package", "valueString": "hl7.fhir.us.core@6.1.0" }]
 }
 ```
 
-During `$merge`, every profiled resource in the transaction is validated. If
-any resource violates its declared profile, MDMbox returns the FHIR validation
-`OperationOutcome` and rolls back the complete merge transaction.
+During `$merge`, every profiled resource in the transaction is validated. If any resource violates its declared profile, MDMbox returns the FHIR validation `OperationOutcome` and rolls back the complete merge transaction.
 
 ## Finding related resources
 

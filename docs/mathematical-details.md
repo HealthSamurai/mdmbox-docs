@@ -12,20 +12,20 @@ The algorithm is based on comparisons between pairs of records (FHIR resources).
 
 Define a set of comparison functions over pairs of records. Each comparison function returns a single category, for example:
 
-* null (value missing)
-* significantly different
-* slightly different
-* exactly equal
+- null (value missing)
+- significantly different
+- slightly different
+- exactly equal
 
 Different comparison functions can have different sets of possible categories. In MDMbox, these correspond to the `case` entries within a feature definition.
 
 An example comparison function for surnames:
 
-* -1, if the surname of one of the records is missing
-* 0, if Levenshtein distance between surnames is greater than 2
-* 1, if Levenshtein distance is 2
-* 2, if Levenshtein distance is 1
-* 3, if surnames are equal
+- -1, if the surname of one of the records is missing
+- 0, if Levenshtein distance between surnames is greater than 2
+- 1, if Levenshtein distance is 2
+- 2, if Levenshtein distance is 1
+- 3, if surnames are equal
 
 ## Bayes factors
 
@@ -35,8 +35,8 @@ Using Bayes' theorem, we define the _prior probability_ as the probability that 
 
 For each comparison function value, define:
 
-* **m-probability**: probability of this value given that records match
-* **u-probability**: probability of this value given that records do not match
+- **m-probability**: probability of this value given that records match
+- **u-probability**: probability of this value given that records do not match
 
 The ratio m/u is the **Bayes factor**. In MDMbox, the `weight` field in feature cases represents log2 of the Bayes factor.
 

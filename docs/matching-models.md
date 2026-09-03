@@ -11,9 +11,7 @@ MDMbox supports two types of models:
 - **MatchingModel** — for online `$match` queries against individual resources
 - **BulkMatchingModel** — for batch processing across the entire dataset
 
-Both are stored as FHIR resources. `MatchingModel` has dedicated MDMbox REST
-endpoints. `BulkMatchingModel` is managed through the Admin UI or the adjacent
-Aidbox FHIR API.
+Both are stored as FHIR resources. `MatchingModel` has dedicated MDMbox REST endpoints. `BulkMatchingModel` is managed through the Admin UI or the adjacent Aidbox FHIR API.
 
 ## Concepts
 
@@ -24,8 +22,11 @@ Variables extract values from FHIR resources using SQL expressions. They are ref
 ```json
 {
   "variable": [
-    {"name": "dob", "expression": "(#.resource->>'birthDate')"},
-    {"name": "family", "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'family')"}
+    { "name": "dob", "expression": "(#.resource->>'birthDate')" },
+    {
+      "name": "family",
+      "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'family')"
+    }
   ]
 }
 ```
@@ -39,8 +40,8 @@ Blocks define how candidate pairs are selected before comparison. Each block is 
 ```json
 {
   "block": [
-    {"name": "dob", "variable": "dob"},
-    {"name": "fn", "variable": "family"}
+    { "name": "dob", "variable": "dob" },
+    { "name": "fn", "variable": "family" }
   ]
 }
 ```
@@ -48,7 +49,7 @@ Blocks define how candidate pairs are selected before comparison. Each block is 
 A block with `"variable": "dob"` means "candidates must have the same date of birth". For custom logic, use `"sql"` instead of `"variable"`:
 
 ```json
-{"name": "custom", "sql": "l.some_column = r.some_column"}
+{ "name": "custom", "sql": "l.some_column = r.some_column" }
 ```
 
 ### Features
@@ -61,9 +62,9 @@ Features define the comparison logic. Each feature has a list of cases evaluated
     {
       "name": "dob",
       "case": [
-        {"expression": "l.#dob = r.#dob", "weight": 10.59},
-        {"expression": "levenshtein(l.#dob, r.#dob) <= 1", "weight": 3.99},
-        {"else": -10.32}
+        { "expression": "l.#dob = r.#dob", "weight": 10.59 },
+        { "expression": "levenshtein(l.#dob, r.#dob) <= 1", "weight": 3.99 },
+        { "else": -10.32 }
       ]
     }
   ]
@@ -110,38 +111,50 @@ Content-Type: application/json
     "probable": 16
   },
   "variable": [
-    {"name": "dob", "expression": "(#.resource->>'birthDate')"},
-    {"name": "given", "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'given')"},
-    {"name": "family", "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'family')"},
-    {"name": "gender", "expression": "(#.resource->>'gender')"}
+    { "name": "dob", "expression": "(#.resource->>'birthDate')" },
+    {
+      "name": "given",
+      "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'given')"
+    },
+    {
+      "name": "family",
+      "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'family')"
+    },
+    { "name": "gender", "expression": "(#.resource->>'gender')" }
   ],
   "block": [
-    {"name": "dob", "variable": "dob"},
-    {"name": "fn", "variable": "family"}
+    { "name": "dob", "variable": "dob" },
+    { "name": "fn", "variable": "family" }
   ],
   "feature": [
     {
       "name": "dob",
       "case": [
-        {"expression": "l.#dob = r.#dob", "weight": 10.59},
-        {"expression": "levenshtein(l.#dob, r.#dob) <= 1", "weight": 3.99},
-        {"else": -10.32}
+        { "expression": "l.#dob = r.#dob", "weight": 10.59 },
+        { "expression": "levenshtein(l.#dob, r.#dob) <= 1", "weight": 3.99 },
+        { "else": -10.32 }
       ]
     },
     {
       "name": "name",
       "case": [
-        {"expression": "l.#given = r.#given AND l.#family = r.#family", "weight": 13.34},
-        {"expression": "l.#given = r.#family AND l.#family = r.#given", "weight": 13.10},
-        {"expression": "l.#family = r.#family", "weight": 2.40},
-        {"else": -12.37}
+        {
+          "expression": "l.#given = r.#given AND l.#family = r.#family",
+          "weight": 13.34
+        },
+        {
+          "expression": "l.#given = r.#family AND l.#family = r.#given",
+          "weight": 13.1
+        },
+        { "expression": "l.#family = r.#family", "weight": 2.4 },
+        { "else": -12.37 }
       ]
     },
     {
       "name": "sex",
       "case": [
-        {"expression": "l.#gender = r.#gender", "weight": 1.85},
-        {"else": -4.84}
+        { "expression": "l.#gender = r.#gender", "weight": 1.85 },
+        { "else": -4.84 }
       ]
     }
   ]
@@ -162,9 +175,7 @@ Content-Type: application/json
 
 Used by the bulk match pipeline. Instead of querying FHIR JSONB at comparison time, it pre-extracts data into typed PostgreSQL columns for faster batch processing.
 
-Create and update these resources through Aidbox's FHIR API, for example
-`PUT https://<aidbox-host>/fhir/BulkMatchingModel/<id>`, or use the MDMbox
-Admin UI.
+Create and update these resources through Aidbox's FHIR API, for example `PUT https://<aidbox-host>/fhir/BulkMatchingModel/<id>`, or use the MDMbox Admin UI.
 
 Key differences from MatchingModel:
 
@@ -185,23 +196,27 @@ Key differences from MatchingModel:
     "probable": 16
   },
   "column": [
-    {"name": "dob", "type": "text", "source": "resource->>'birthDate'"},
-    {"name": "family", "type": "text", "source": "immutable_unaccent_upper(resource->'name'->0->>'family')"}
+    { "name": "dob", "type": "text", "source": "resource->>'birthDate'" },
+    {
+      "name": "family",
+      "type": "text",
+      "source": "immutable_unaccent_upper(resource->'name'->0->>'family')"
+    }
   ],
   "index": [
-    {"name": "idx_dob", "column": "dob", "type": "btree"},
-    {"name": "idx_family", "column": "family", "type": "btree"}
+    { "name": "idx_dob", "column": "dob", "type": "btree" },
+    { "name": "idx_family", "column": "family", "type": "btree" }
   ],
   "block": [
-    {"name": "dob", "variable": "dob"},
-    {"name": "fn", "variable": "family"}
+    { "name": "dob", "variable": "dob" },
+    { "name": "fn", "variable": "family" }
   ],
   "feature": [
     {
       "name": "dob",
       "case": [
-        {"expression": "l.dob = r.dob", "weight": 10.59},
-        {"else": -10.32}
+        { "expression": "l.dob = r.dob", "weight": 10.59 },
+        { "else": -10.32 }
       ]
     }
   ]
