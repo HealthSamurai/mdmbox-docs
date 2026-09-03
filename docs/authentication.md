@@ -46,6 +46,12 @@ curl http://localhost:3000/api/models \
 
 MDMbox validates the token through Aidbox's authentication pipeline.
 
+For one runnable example of this setup, see the
+[Keycloak authentication example](https://github.com/HealthSamurai/mdmbox-playground/tree/main/examples/token-introspector-without-user).
+It uses a preconfigured Keycloak realm and an RS256 token with no corresponding
+Aidbox `User`. Keycloak is the provider chosen for the example, not an MDMbox
+requirement.
+
 See the Aidbox documentation for the other supported `TokenIntrospector`
 configurations, including shared secrets, explicit keys, and opaque tokens:
 [Token Introspector](https://www.health-samurai.io/docs/aidbox/access-control/authentication/token-introspector).

@@ -8,10 +8,14 @@ MDMbox is configured through environment variables.
 
 ## License
 
-MDMbox requires a license to start. There are two ways to activate it:
+MDMbox requires an active license for API access. There are two ways to
+activate it:
 
 1. **Environment variable.** Sign in to the [Aidbox portal](https://aidbox.app/ui/portal), open the MDMbox project, copy the license JWT, and pass it to the MDMbox container as `MDMBOX_LICENSE`. Recommended for production and CI.
 2. **Browser activation.** Leave `MDMBOX_LICENSE` unset and start MDMbox. Open `http://localhost:3000`, click **Continue with Aidbox account**, sign in to the portal — a development MDMbox license is generated and stored in the database automatically. Useful for local development.
+
+MDMbox reuses a browser-issued license when its container is restarted or
+recreated, as long as the database is retained.
 
 | Variable | Description | Required |
 | --- | --- | --- |
