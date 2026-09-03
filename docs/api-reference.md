@@ -11,7 +11,7 @@ The full OpenAPI specification is available at `/api/openapi.json`. The interact
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/healthz` | Liveness check |
-| `GET` | `/readyz` | Readiness check (database and FHIR engine) |
+| `GET` | `/readyz` | Readiness check |
 | `GET` | `/api/docs` | Swagger UI |
 | `GET` | `/api/openapi.json` | OpenAPI specification |
 
@@ -25,45 +25,11 @@ The full OpenAPI specification is available at `/api/openapi.json`. The interact
 | `PUT` | `/api/models/:id` | Update model |
 | `DELETE` | `/api/models/:id` | Delete model |
 
-Both MatchingModel and BulkMatchingModel are managed through this endpoint. The `resourceType` field in the request body determines the type.
-
-## Users and clients
-
-`User` and `Client` resources can be managed through the IAM endpoints. These
-endpoints require normal API authentication. MDMbox currently has no role split,
-so any authenticated `Client`, Aidbox access token, or `TokenIntrospector` JWT
-can call them. Responses omit `User.password` and `Client.secret`. See
-[Authentication](authentication.md) for the supported authentication flows.
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/iam/User` | List users |
-| `POST` | `/api/iam/User` | Create user |
-| `GET` | `/api/iam/User/:id` | Get user by ID |
-| `PUT` | `/api/iam/User/:id` | Update user |
-| `PATCH` | `/api/iam/User/:id` | Patch user |
-| `DELETE` | `/api/iam/User/:id` | Delete user |
-| `GET` | `/api/iam/Client` | List clients |
-| `POST` | `/api/iam/Client` | Create client |
-| `GET` | `/api/iam/Client/:id` | Get client by ID |
-| `PUT` | `/api/iam/Client/:id` | Update client |
-| `PATCH` | `/api/iam/Client/:id` | Patch client |
-| `DELETE` | `/api/iam/Client/:id` | Delete client |/
+These endpoints manage `MatchingModel` resources. Manage
+`BulkMatchingModel` resources through the Admin UI or the adjacent Aidbox FHIR
+API.
 
 ## FHIR operations
-
-### FHIR storage API proxy
-
-| Method | Path | Description | Aidbox docs |
-| --- | --- | --- | --- |
-| `GET` | `/fhir-server-api/*path` | Read FHIR metadata, resources, searches, and history | [REST API](https://www.health-samurai.io/docs/aidbox/api/rest-api), [FHIR search](https://www.health-samurai.io/docs/aidbox/api/rest-api/fhir-search) |
-| `POST` | `/fhir-server-api` | Submit a FHIR batch or transaction Bundle | [Batch/Transaction](https://www.health-samurai.io/docs/aidbox/api/batch-transaction) |
-| `POST` | `/fhir-server-api/$load` | Run synchronous FHIR bulk load | [FHIR bulk load](https://www.health-samurai.io/docs/aidbox/api/bulk-api/load-and-fhir-load#resource-requirements-for-all-load-operations) |
-| `POST` | `/fhir-server-api/$import` | Start asynchronous FHIR bulk import | [FHIR bulk import](https://www.health-samurai.io/docs/aidbox/api/bulk-api/import-and-fhir-import) |
-| `POST` | `/fhir-server-api/$fhir-package-install` | Install FHIR packages such as US Core | [Package registry API](https://www.health-samurai.io/docs/aidbox/reference/package-registry-api#fhir-package-install) |
-
-POST endpoints in this proxy accept FHIR JSON bodies with
-`Content-Type: application/fhir+json` or `Content-Type: application/json`.
 
 ### $match
 

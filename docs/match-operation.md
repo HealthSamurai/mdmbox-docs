@@ -97,7 +97,7 @@ If `$match` input includes `meta.profile`, install the package that contains the
 profile before calling `$match`. For US Core 6.1.0:
 
 ```http
-POST https://<mdmbox-host>/fhir-server-api/$fhir-package-install
+POST https://<aidbox-host>/fhir/$fhir-package-install
 Content-Type: application/json
 ```
 

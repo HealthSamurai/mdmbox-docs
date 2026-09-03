@@ -11,7 +11,9 @@ MDMbox supports two types of models:
 - **MatchingModel** — for online `$match` queries against individual resources
 - **BulkMatchingModel** — for batch processing across the entire dataset
 
-Both are stored as FHIR resources and managed via the REST API or the Admin UI.
+Both are stored as FHIR resources. `MatchingModel` has dedicated MDMbox REST
+endpoints. `BulkMatchingModel` is managed through the Admin UI or the adjacent
+Aidbox FHIR API.
 
 ## Concepts
 
@@ -159,6 +161,10 @@ Content-Type: application/json
 ## BulkMatchingModel
 
 Used by the bulk match pipeline. Instead of querying FHIR JSONB at comparison time, it pre-extracts data into typed PostgreSQL columns for faster batch processing.
+
+Create and update these resources through Aidbox's FHIR API, for example
+`PUT https://<aidbox-host>/fhir/BulkMatchingModel/<id>`, or use the MDMbox
+Admin UI.
 
 Key differences from MatchingModel:
 

@@ -212,12 +212,35 @@ MDMbox validates the merge request before execution:
 - Target must not already be a source in another merge (no circular merges)
 
 **FHIR transaction validation (4xx OperationOutcome):**
-- Resources in the plan are validated by the FHIR storage API when the
-  transaction executes
+- Resources in the plan are validated when the FHIR transaction executes
 - If a resource declares `meta.profile`, the corresponding FHIR package must be
   installed and the resource must satisfy the profile
 - If validation fails, the transaction rolls back, including Task and
   Provenance audit records
+
+### Profiled resources in the merge plan
+
+If a resource written by the merge `plan` declares `meta.profile`, install the
+package that contains the profile in Aidbox before calling `$merge`. For US
+Core 6.1.0:
+
+```http
+POST https://<aidbox-host>/fhir/$fhir-package-install
+Content-Type: application/json
+```
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {"name": "package", "valueString": "hl7.fhir.us.core@6.1.0"}
+  ]
+}
+```
+
+During `$merge`, every profiled resource in the transaction is validated. If
+any resource violates its declared profile, MDMbox returns the FHIR validation
+`OperationOutcome` and rolls back the complete merge transaction.
 
 ## Finding related resources
 

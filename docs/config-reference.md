@@ -49,9 +49,12 @@ configuration and request examples.
 | `MDMBOX_TEFCA_MODE` | Enable R4 TEFCA `$match` behavior. When enabled, potential-match responses (`onlyCertainMatches=false`) return no more than 100 entries. | unset (`false`) |
 | `MDMBOX_DEFAULT_FHIR_RELEASE` | FHIR release used by unversioned `/api/fhir/:resource/...` routes. Accepted values: `4.0.1` and `6.0.0`. | `6.0.0` |
 
-## Database
+## Shared database configuration
 
-MDMbox uses the standard Aidbox database environment variables:
+Aidbox and MDMbox run as separate applications against the same PostgreSQL
+database. MDMbox accepts the standard Aidbox `BOX_DB_*` environment variables
+so the database connection configuration can be shared between both
+application environments. Pass the same values to Aidbox and MDMbox.
 
 | Variable | Description | Required |
 | --- | --- | --- |
@@ -61,9 +64,12 @@ MDMbox uses the standard Aidbox database environment variables:
 | `BOX_DB_USER` | Database user | Yes |
 | `BOX_DB_PASSWORD` | Database password | Yes |
 
-## MDMbox Connection Pool
+## MDMbox connection pool
 
-MDMbox maintains its own connection pool separate from the embedded FHIR engine. Both pools connect to the same database but are sized independently.
+The database connection settings are shared, but connection pool sizing is
+application-specific. Configure the MDMbox pool independently for its workload
+using the variables below; these values do not change the Aidbox application's
+pool size.
 
 | Variable | Description | Default |
 | --- | --- | --- |

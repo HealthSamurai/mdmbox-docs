@@ -137,76 +137,36 @@ the audit Task input.
 
 If you know the `Linkage.id`, retrieve the MDM Linkage and its Patient members:
 
-{% tabs %}
-{% tab title="Standalone" %}
-```http
-GET https://<mdmbox-host>/fhir-server-api/Linkage?_id=linkage-123&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage&_include=Linkage:item:Patient
-Accept: application/json
-```
-{% endtab %}
-{% tab title="Aidbox" %}
 ```http
 GET https://<aidbox-host>/fhir/Linkage?_id=linkage-123&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage&_include=Linkage:item:Patient
 Accept: application/json
 ```
-{% endtab %}
-{% endtabs %}
 
 To include resources that reference those Patients, add standard FHIR
 `_revinclude:iterate` parameters:
 
-{% tabs %}
-{% tab title="Standalone" %}
-```http
-GET https://<mdmbox-host>/fhir-server-api/Linkage?_id=linkage-123&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage&_include=Linkage:item:Patient&_revinclude:iterate=Encounter:subject:Patient
-Accept: application/json
-```
-{% endtab %}
-{% tab title="Aidbox" %}
 ```http
 GET https://<aidbox-host>/fhir/Linkage?_id=linkage-123&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage&_include=Linkage:item:Patient&_revinclude:iterate=Encounter:subject:Patient
 Accept: application/json
 ```
-{% endtab %}
-{% endtabs %}
 
 If you do not know the `Linkage.id`, search Linkage by a known member reference
 and the MDM Linkage profile:
 
-{% tabs %}
-{% tab title="Standalone" %}
-```http
-GET https://<mdmbox-host>/fhir-server-api/Linkage?item=Patient/pat-1&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage
-Accept: application/json
-```
-{% endtab %}
-{% tab title="Aidbox" %}
 ```http
 GET https://<aidbox-host>/fhir/Linkage?item=Patient/pat-1&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage
 Accept: application/json
 ```
-{% endtab %}
-{% endtabs %}
 
 Use the returned `Linkage.id` as the cluster id for follow-up searches.
 
 To retrieve the whole cluster and its Encounters without a separate Linkage
 lookup, combine the same profile and member filters with includes:
 
-{% tabs %}
-{% tab title="Standalone" %}
-```http
-GET https://<mdmbox-host>/fhir-server-api/Linkage?item=Patient/pat-1&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage&_include=Linkage:item:Patient&_revinclude:iterate=Encounter:subject:Patient
-Accept: application/json
-```
-{% endtab %}
-{% tab title="Aidbox" %}
 ```http
 GET https://<aidbox-host>/fhir/Linkage?item=Patient/pat-1&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage&_include=Linkage:item:Patient&_revinclude:iterate=Encounter:subject:Patient
 Accept: application/json
 ```
-{% endtab %}
-{% endtabs %}
 
 ## Preview mode
 

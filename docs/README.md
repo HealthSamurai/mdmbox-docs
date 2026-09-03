@@ -1,5 +1,5 @@
 ---
-description: MDMbox is a standalone service for probabilistic record matching, deduplication, and merging of FHIR resources.
+description: MDMbox adds probabilistic record matching, deduplication, and merging workflows to Aidbox.
 ---
 
 # MDMbox
@@ -18,13 +18,18 @@ MDMbox is a master data management service for healthcare organizations. It iden
 
 **FHIR R4 to R6.** Matching, merging, and referencing operations work with any FHIR resource type — Patient, Practitioner, Organization, or any other. Configure a matching model for the resource type you need.
 
-## Deployment modes
+## Deployment architecture
 
-MDMbox runs as a single Docker container with an embedded FHIR engine. It connects to a PostgreSQL database.
+MDMbox is deployed together with Aidbox. They run as separate services and
+connect to the same PostgreSQL database, so MDMbox operations work with the
+FHIR resources stored in Aidbox.
 
-**Standalone** — MDMbox manages its own database. Deploy MDMbox and PostgreSQL, and you are ready to go.
+Aidbox provides the FHIR API and storage platform. MDMbox provides matching,
+linking, merging, bulk matching, and its Admin UI.
 
-**Shared with Aidbox** — MDMbox connects to an existing Aidbox database. Both services share the same PostgreSQL instance and FHIR data. Pass the same `BOX_*` environment variables to both services.
+Each MDMbox release is built for an Aidbox version. Use a compatible MDMbox and
+Aidbox release pair and pass the same database connection and relevant
+`BOX_FHIR_*` settings to both services.
 
 {% content-ref %}
 [Getting started](getting-started.md)
