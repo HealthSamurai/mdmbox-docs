@@ -4,14 +4,67 @@ description: Use the $unmerge operation to reverse a previous merge with an audi
 
 # Unmerge operation
 
-The `$unmerge` operation reverses a previous `$merge` by executing a client-provided FHIR transaction Bundle. The client decides exactly how to restore resources; MDMbox validates the referenced merge Task, adds audit resources, flips the original merge Task to `unmerged`, and executes everything atomically.
+MDMbox provides two versions of `$unmerge`: server-computed `$unmerge/v2`, which reconstructs the reversal from the merge audit trail, and client-plan `$unmerge`, which executes a reverse transaction supplied by the caller. Both versions create an unmerge Task and Provenance, change the original merge Task to `businessStatus=unmerged`, and commit all changes atomically.
 
 Use `$unmerge` when a merge was accepted by mistake and the affected resources must be restored or reassigned.
+
+## Server-computed unmerge v2
+
+`$unmerge/v2` needs only the original merge Task, an optional algorithm, and preview mode. MDMbox reads the Task's Provenance and the versioned references in `Provenance.entity`, fetches the pre-merge versions from FHIR history, computes the reverse transaction in sandboxed JavaScript, and executes it in the same database transaction.
+
+```http
+POST https://<mdmbox-host>/api/fhir/$unmerge/v2
+Content-Type: application/fhir+json
+```
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "task",
+      "valueReference": { "reference": "Task/merge-task-123" }
+    },
+    { "name": "unmerge-algorithm", "valueString": "restore" },
+    { "name": "preview", "valueBoolean": true }
+  ]
+}
+```
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `task` | valueReference | Yes | Reference to the active pair-merge Task to reverse |
+| `unmerge-algorithm` | valueString | No | `restore` (default) or `strict` |
+| `preview` | valueBoolean | No | Compute and return the audited transaction plan without executing it (default: false) |
+
+### Algorithms
+
+The built-in `restore` algorithm restores the source Patient, target Patient, and resources changed by the merge to their recorded pre-merge versions. Changes made after merge are deliberately overwritten. Each overwritten or deleted resource is reported as a warning in the response `OperationOutcome`. A resource created after merge that references the target is not moved because its ownership is ambiguous; it remains linked to the target and is also reported as a warning.
+
+The built-in `strict` algorithm returns `409 Conflict` when either Patient changed after merge or when a resource created after merge references the target Patient. Changes to a related resource that already existed at merge time do not block the operation: MDMbox changes only the Patient reference back to the restored source and preserves every other later edit. A later deletion of such a resource is also preserved.
+
+Both algorithms run in the same sandbox used by merge v2. They can read only the merge Task, Provenance, versioned resource history, current resource state, and reference paths exposed through the MDMbox algorithm API.
+
+### Later merge chain
+
+Pair unmerge is last-in-first-out for merges into the same target Patient. Before computing a plan, MDMbox verifies that the Task's target Patient still exists and looks for active merge Tasks into that Patient created after the requested Task. If any exist, the response is `409 Conflict`; `OperationOutcome.issue.diagnostics` contains the full chronological Task chain and identifies the latest Task that must be unmerged first.
+
+### Preview and response
+
+For preview, the response is a `Parameters` resource containing `outcome` (`OperationOutcome`) and `plan` (the complete audited transaction Bundle). Preview performs no writes.
+
+For successful execution, the response contains `outcome` and the new unmerge `task`. Warnings do not change the HTTP 200 status. A strict drift conflict returns the `OperationOutcome` directly with HTTP 409 and writes nothing.
+
+The original merge Task records the source and target history versions plus every `related-resource-type` scope selected by merge v2. This lets unmerge v2 restore a target that the merge algorithm did not modify and detect a new referenced resource even when no resource of that type existed at merge time.
+
+## Client-plan unmerge v1
+
+The original `$unmerge` operation reverses a previous `$merge` by executing a client-provided FHIR transaction Bundle. The client decides exactly how to restore resources; MDMbox validates the referenced merge Task, adds audit resources, flips the original merge Task to `unmerged`, and executes everything atomically.
 
 ## How it works
 
 1. The client finds the original merge `Task`.
-2. The client reads the merge audit trail, usually the `Provenance` referenced by `Task.relevantHistory`, and builds a reverse transaction Bundle.
+2. The client reads the merge audit trail with `GET /Provenance?target=Task/<task-id>` and builds a reverse transaction Bundle.
 3. The client calls `$unmerge` with the merge Task reference and the reverse plan.
 4. MDMbox adds an unmerge `Task`, adds `Provenance`, updates the original merge Task to `businessStatus=unmerged`, and executes the Bundle as one transaction.
 5. If anything fails, the entire transaction rolls back, including audit records and the merge Task status update.

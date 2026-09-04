@@ -27,7 +27,7 @@ The setup consists of two resources:
 
 The notification payload contains the Task resource. From the Task, the recipient can reconstruct the full picture of what happened:
 
-- **Task** — contains `focus` (target resource), `for` (source resource), `businessStatus` (outcome), and `relevantHistory` pointing at the Provenance
+- **Task** — contains `focus` (target resource), `for` (source resource), and `businessStatus` (outcome)
 - **Provenance** — fetch via `GET /Provenance?target=Task/<task-id>`:
   - `target` — every resource affected by the operation
   - `entity[].what` — versioned references to pre-operation resource states (e.g. `Patient/456/_history/3`)

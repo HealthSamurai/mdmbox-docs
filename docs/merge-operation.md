@@ -229,11 +229,12 @@ Every merge creates two audit resources inside the same transaction:
 
 **Provenance** — records what was changed:
 
+- `target` — all affected resources plus the operation Task
 - `entity[]` — versioned references to all affected resources before the merge
 - `agent` — `Device/mdmbox`
 - `activity` — `merge` from `http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle`
 
-These audit resources enable future unmerge by preserving the pre-merge state of every affected resource. They also power [Notifications](notifications.md) — downstream systems can subscribe to merge and unmerge events via Topic-Based Subscriptions.
+Find the audit record for a Task with `GET /Provenance?target=Task/<task-id>`. These audit resources enable future unmerge by preserving the pre-merge state of every affected resource. They also power [Notifications](notifications.md) — downstream systems can subscribe to merge and unmerge events via Topic-Based Subscriptions.
 
 ## Unmerge
 
