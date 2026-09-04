@@ -4,7 +4,7 @@ description: Use the $unmerge operation to reverse a previous merge with an audi
 
 # Unmerge operation
 
-MDMbox provides two versions of `$unmerge`: server-computed `$unmerge/v2`, which reconstructs the reversal from the merge audit trail, and client-plan `$unmerge`, which executes a reverse transaction supplied by the caller. Both versions create an unmerge Task and Provenance, change the original merge Task to `businessStatus=unmerged`, and commit all changes atomically.
+MDMbox provides two versions of `$unmerge`: server-computed `$unmerge/v2`, which reconstructs the reversal from the merge audit trail, and client-plan `$unmerge`, which executes a reverse transaction supplied by the caller. Both versions create an unmerge Task, Provenance, and AuditEvent, change the original merge Task to `businessStatus=unmerged`, and commit all successful changes atomically.
 
 Use `$unmerge` when a merge was accepted by mistake and the affected resources must be restored or reassigned.
 
@@ -66,8 +66,8 @@ The original `$unmerge` operation reverses a previous `$merge` by executing a cl
 1. The client finds the original merge `Task`.
 2. The client reads the merge audit trail with `GET /Provenance?target=Task/<task-id>` and builds a reverse transaction Bundle.
 3. The client calls `$unmerge` with the merge Task reference and the reverse plan.
-4. MDMbox adds an unmerge `Task`, adds `Provenance`, updates the original merge Task to `businessStatus=unmerged`, and executes the Bundle as one transaction.
-5. If anything fails, the entire transaction rolls back, including audit records and the merge Task status update.
+4. MDMbox adds an unmerge `Task`, `Provenance`, and `AuditEvent`, updates the original merge Task to `businessStatus=unmerged`, and executes the Bundle as one transaction.
+5. If anything fails, the business transaction rolls back, including the merge Task status update; MDMbox separately makes a best-effort write of a failure `AuditEvent`.
 
 ## Request
 
@@ -271,6 +271,18 @@ Every executed unmerge creates or updates these resources in the same transactio
 - `target` - every reverse-plan target plus the unmerge Task
 - `entity[]` - versioned references to pre-unmerge revisions when available
 - `agent` - `Device/mdmbox`
+
+**AuditEvent**
+
+- subtypes - `operation` and `unmerge`
+- `action` - `E`; `outcome` - `0`
+- agents - the authenticated User or Client and `Device/mdmbox`
+- entities - the operation Task, Provenance, original merge Task, Patient references, affected plan resources, and BALP `XrequestId`
+
+The request id is returned in `X-Request-Id`. Rejected authentication,
+malformed JSON, validation, rollback, and server failures produce a separate
+best-effort AuditEvent with outcome `4` or `8`. Preview does not persist an
+AuditEvent.
 
 After a successful unmerge, the original source can be merged again because the previous merge Task is no longer active.
 

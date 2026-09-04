@@ -10,8 +10,8 @@ The `$merge` operation merges two FHIR resources by executing a client-provided 
 
 1. The client identifies a duplicate pair (source and target)
 2. The client builds a FHIR transaction Bundle describing the merge (update target, reassign references, delete source)
-3. MDMbox validates the request, adds audit resources (Task and Provenance), and executes the Bundle as a single transaction
-4. If anything fails, the entire transaction rolls back — including audit records
+3. MDMbox validates the request, adds `Task`, `Provenance`, and `AuditEvent`, and executes the Bundle as a single transaction
+4. If anything fails, the business transaction rolls back; MDMbox separately makes a best-effort write of a failure `AuditEvent`
 
 ## Request
 
@@ -218,7 +218,7 @@ On success, the response is a Parameters resource containing:
 
 ## Audit trail
 
-Every merge creates two audit resources inside the same transaction:
+Every successful merge creates three records inside the same transaction:
 
 **Task** — records the merge event:
 
@@ -234,11 +234,25 @@ Every merge creates two audit resources inside the same transaction:
 - `agent` — `Device/mdmbox`
 - `activity` — `merge` from `http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle`
 
+**AuditEvent** — records the operation and security context:
+
+- `type` — `rest`; subtypes — `operation` and `merge`
+- `action` — `E`; `outcome` — `0`
+- requestor agent — the authenticated `User/<id>` or `Client/<id>`
+- service agent and source observer — `Device/mdmbox`
+- entities — the operation Task, Provenance, source, target, affected plan resources, and BALP `XrequestId`
+
+The safe request id is also returned in the `X-Request-Id` response header.
+Authentication, malformed JSON, validation, rollback, and server failures are
+recorded with a separate best-effort AuditEvent (`outcome=4` for client errors,
+`outcome=8` for server errors). Credentials and complete request/response
+bodies are not stored. Preview does not persist any of these records.
+
 Find the audit record for a Task with `GET /Provenance?target=Task/<task-id>`. These audit resources enable future unmerge by preserving the pre-merge state of every affected resource. They also power [Notifications](notifications.md) — downstream systems can subscribe to merge and unmerge events via Topic-Based Subscriptions.
 
 ## Unmerge
 
-A completed merge can be reversed with `$unmerge`. The unmerge request points to the original merge Task and supplies a client-built reverse transaction Bundle. MDMbox executes that reverse plan atomically, creates its own audit Task and Provenance, and updates the original merge Task to `businessStatus=unmerged`.
+A completed merge can be reversed with `$unmerge`. The unmerge request points to the original merge Task and supplies a client-built reverse transaction Bundle. MDMbox executes that reverse plan atomically, creates its own Task, Provenance, and AuditEvent, and updates the original merge Task to `businessStatus=unmerged`.
 
 See [Unmerge operation](unmerge-operation.md).
 
@@ -262,7 +276,7 @@ MDMbox validates the merge request before execution:
 
 - Resources in the plan are validated when the FHIR transaction executes
 - If a resource declares `meta.profile`, the corresponding FHIR package must be installed and the resource must satisfy the profile
-- If validation fails, the transaction rolls back, including Task and Provenance audit records
+- If validation fails, the transaction rolls back, including the successful Task, Provenance, and AuditEvent records; a separate failure AuditEvent is attempted
 
 ### Profiled resources in the merge plan
 
