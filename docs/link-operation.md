@@ -14,8 +14,8 @@ Use `$link` when records should remain separate resources but should be tracked 
 2. The client builds a transaction Bundle that creates or patches a profiled `Linkage`.
 3. If needed, the client includes a contained golden view in the Linkage: a client-built canonical view of the linked records.
 4. MDMbox validates that linked records do not already belong to another active profiled Linkage.
-5. MDMbox adds a link `Task`, `Provenance`, and `AuditEvent`, then executes the Bundle as one transaction.
-6. If anything fails, the business transaction rolls back; MDMbox separately makes a best-effort write of a failure `AuditEvent`.
+5. MDMbox adds a link `Task` and `Provenance`, then executes the Bundle as one transaction.
+6. If anything fails, the entire transaction rolls back, including audit records.
 
 ## Request
 
@@ -200,7 +200,7 @@ Preview response:
 }
 ```
 
-Preview does not persist the Linkage, Task, Provenance, or AuditEvent.
+Preview does not persist the Linkage, Task, or Provenance.
 
 ## Response
 
@@ -268,20 +268,9 @@ Every executed link creates audit resources in the same transaction:
 - `entity[]` - pre-change revisions for patched Linkages when available
 - `agent` - `Device/mdmbox`
 
-**AuditEvent**
-
-- subtypes - `operation` and `link`
-- `action` - `E`; `outcome` - `0`
-- agents - the authenticated User or Client and `Device/mdmbox`
-- entities - the operation Task, Provenance, linked records, affected plan resources, and BALP `XrequestId`
-
-The request id is returned in `X-Request-Id`. Rejected authentication,
-malformed JSON, validation, rollback, and server failures produce a separate
-best-effort AuditEvent; preview remains write-free.
-
 ## Unlink
 
-A completed link can be reversed with `$unlink`. The unlink request points to the original link Task and supplies a client-built reverse transaction Bundle, usually deleting the profiled Linkage. MDMbox executes that reverse plan atomically, creates its own Task, Provenance, and AuditEvent, and updates the original link Task to `businessStatus=unlinked`.
+A completed link can be reversed with `$unlink`. The unlink request points to the original link Task and supplies a client-built reverse transaction Bundle, usually deleting the profiled Linkage. MDMbox executes that reverse plan atomically, creates its own audit Task and Provenance, and updates the original link Task to `businessStatus=unlinked`.
 
 See [Unlink operation](unlink-operation.md).
 

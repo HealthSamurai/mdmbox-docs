@@ -13,8 +13,8 @@ Use `$unlink` when a link cluster was created by mistake or when a client needs 
 1. The client finds the original link `Task`.
 2. The client builds a reverse transaction Bundle, typically deleting the Linkage created by `$link`.
 3. The client calls `$unlink` with the link Task reference and the reverse plan.
-4. MDMbox adds an unlink `Task`, `Provenance`, and `AuditEvent`, updates the original link Task to `businessStatus=unlinked`, and executes the Bundle as one transaction.
-5. If anything fails, the business transaction rolls back, including the link Task status update; MDMbox separately makes a best-effort write of a failure `AuditEvent`.
+4. MDMbox adds an unlink `Task`, adds `Provenance`, updates the original link Task to `businessStatus=unlinked`, and executes the Bundle as one transaction.
+5. If anything fails, the entire transaction rolls back, including audit records and the link Task status update.
 
 ## Request
 
@@ -182,17 +182,6 @@ Every executed unlink creates or updates these resources in the same transaction
 - `target` - every reverse-plan target plus the unlink Task
 - `entity[]` - versioned references to pre-unlink revisions when available
 - `agent` - `Device/mdmbox`
-
-**AuditEvent**
-
-- subtypes - `operation` and `unlink`
-- `action` - `E`; `outcome` - `0`
-- agents - the authenticated User or Client and `Device/mdmbox`
-- entities - the operation Task, Provenance, original link Task, linked records, affected plan resources, and BALP `XrequestId`
-
-The request id is returned in `X-Request-Id`. Rejected authentication,
-malformed JSON, validation, rollback, and server failures produce a separate
-best-effort AuditEvent; preview remains write-free.
 
 After a successful unlink, the same records can be linked again because the previous link Task is no longer active.
 
