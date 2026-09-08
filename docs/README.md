@@ -10,7 +10,7 @@ MDMbox is a master data management service for healthcare organizations. It iden
 
 **Probabilistic matching.** Configurable Fellegi-Sunter models compare records across multiple dimensions (name, date of birth, address, phone) and produce a match score. Handles typos, incomplete data, and transpositions.
 
-**Merging.** FHIR R5-aligned `$merge` operation with a client-driven approach — the client builds the merge plan as a FHIR transaction Bundle, giving full control over which fields survive and how related resources are reassigned. Full audit trail and preview mode.
+**Merging.** FHIR R5-aligned merge lifecycle with server-computed `$merge/v2` and `$unmerge/v2` operations, plus client-plan `$merge` and `$unmerge` endpoints for callers that need full control over the transaction Bundle. Both modes provide an atomic audit trail and write-free preview.
 
 **Bulk matching.** Find all duplicate pairs across millions of records in parallel. Download results as CSV.
 

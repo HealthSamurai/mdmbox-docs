@@ -50,6 +50,8 @@ See [Find duplicates: $match](match-operation.md).
 
 | Method | Path                 | Description                                  |
 | ------ | -------------------- | -------------------------------------------- |
+| `POST` | `/api/fhir/$merge/v2`   | Compute and execute or preview a merge plan  |
+| `POST` | `/api/fhir/$unmerge/v2` | Reconstruct and reverse a merge from history |
 | `POST` | `/api/fhir/$merge`   | Execute or preview a merge                   |
 | `POST` | `/api/fhir/$unmerge` | Reverse a previous merge from its merge Task |
 

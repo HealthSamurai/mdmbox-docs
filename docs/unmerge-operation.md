@@ -39,9 +39,15 @@ Content-Type: application/fhir+json
 
 ### Algorithms
 
-The built-in `restore` algorithm restores the source Patient, target Patient, and resources changed by the merge to their recorded pre-merge versions. Changes made after merge are deliberately overwritten. Each overwritten or deleted resource is reported as a warning in the response `OperationOutcome`. A resource created after merge that references the target is not moved because its ownership is ambiguous; it remains linked to the target and is also reported as a warning.
+The built-in `restore` algorithm restores the source Patient, target Patient, and resources changed by the merge to their recorded pre-merge versions. Changes made after merge are deliberately overwritten. Each overwritten or deleted resource is reported as a warning in the response `OperationOutcome`. A resource created by the merge is removed even if it was edited later, with a warning. A separate resource created after merge that references the target is not moved because its ownership is ambiguous; it remains linked to the target and is also reported as a warning.
 
-The built-in `strict` algorithm returns `409 Conflict` when either Patient changed after merge or when a resource created after merge references the target Patient. Changes to a related resource that already existed at merge time do not block the operation: MDMbox changes only the Patient reference back to the restored source and preserves every other later edit. A later deletion of such a resource is also preserved.
+The built-in `strict` algorithm returns `409 Conflict` when either Patient changed after merge, a resource created by the merge was edited later, or a separate resource created after merge references the target Patient. For an existing related resource, MDMbox changes only a Patient reference whose exact historical path still references the target. A later deletion of the whole related resource is preserved.
+
+For references inside arrays, `strict` uses a conservative rule: each containing array, including ancestor arrays of nested references, must match the expected state immediately after `simple` relinked the references. Reordering, adding or removing elements, or editing any field inside one of these arrays returns `409 Conflict` in both preview and execution. This applies even when the original index still references the target; the algorithm does not guess which element moved. Changes outside these arrays, such as an Observation note outside its relinked `performer` array, remain allowed and are preserved.
+
+The strict algorithm is a reference implementation for `simple`-style related-resource relinking, not a universal inverse of arbitrary custom merge mutations. Custom algorithms must account for this compatibility boundary. Merge v2 also rejects conditional creation (`ifNoneExist`) so an existing resource cannot be mistaken for one created by the merge.
+
+For a scalar Reference outside those arrays, strict changes only its `reference` value. Allowed later fields such as `display` and `extension` are preserved. Patient and merge-created resource drift is checked by version, including writes from transactions that started before merge but committed afterward.
 
 Both algorithms run in the same sandbox used by merge v2. They can read only the merge Task, Provenance, versioned resource history, current resource state, and reference paths exposed through the MDMbox algorithm API.
 
@@ -53,7 +59,11 @@ Pair unmerge is last-in-first-out for merges into the same target Patient. Befor
 
 For preview, the response is a `Parameters` resource containing `outcome` (`OperationOutcome`) and `plan` (the complete audited transaction Bundle). Preview performs no writes.
 
-For successful execution, the response contains `outcome` and the new unmerge `task`. Warnings do not change the HTTP 200 status. A strict drift conflict returns the `OperationOutcome` directly with HTTP 409 and writes nothing.
+For successful execution, the response contains `outcome` and the new unmerge `task`. Warnings do not change the HTTP 200 status. A strict drift conflict returns the `OperationOutcome` directly with HTTP 409 and makes no business changes. A non-preview failure may still write a separate best-effort failure `AuditEvent`; a preview failure does not. A missing merge Task or deleted original target Patient returns `404 Not Found`; unmerge never recreates a deleted target.
+
+Both algorithms execute against a version-protected database snapshot. Restore intentionally discards changes made before that snapshot, but does not overwrite a concurrent write made while it computes or executes its plan: such a conflict returns HTTP 409 and rolls back the restoration and its successful audit together.
+
+Keep the original Task, Provenance, and required FHIR history versions. An edited audit revision cannot substitute for a missing original. Before deleting a resource described as merge-created, MDMbox also requires its recorded creation version from that merge transaction. Missing or inconsistent evidence returns `422 Unprocessable Entity` without partial restoration.
 
 The original merge Task records the source and target history versions plus every `related-resource-type` scope selected by merge v2. This lets unmerge v2 restore a target that the merge algorithm did not modify and detect a new referenced resource even when no resource of that type existed at merge time.
 
