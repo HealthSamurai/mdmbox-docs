@@ -66,9 +66,17 @@ In v2 plans, non-POST entries must omit `fullUrl`. Their resource identity must 
 
 The v2 algorithm-plan restrictions above do not apply to client plans for `$merge`, `$unmerge`, `$link`, or `$unlink`. Those operations retain their existing contracts; their own operation rules and FHIR transaction validation still apply.
 
-Preview returns a `Parameters` resource containing `outcome` and the complete audited `plan`. Successful execution returns `outcome` and the new merge `task`. Preview creates no Device, Task, Provenance, AuditEvent, or business-resource versions.
+Preview returns a `Parameters` resource containing `outcome` and the complete audited `plan`. Successful execution returns `outcome` and the new merge `task`. Preview creates no Device, Task, Provenance, AuditEvent, or business-resource versions. Post-write audit references cannot be resolved during preview; their actual ids and versions are recorded only during execution.
+
+Merge and unmerge JavaScript algorithms both return `{plan, outcome?}`. The `plan` is a FHIR transaction Bundle, not the whole algorithm result. Existing custom merge scripts must change `return bundle` to `return {plan: bundle}`; the server does not convert the old shape implicitly. This does not change legacy v1 client plans.
+
+An algorithm may omit `outcome` when it has no specific messages. MDMbox then supplies an informational OperationOutcome, so the HTTP response still always contains `outcome`. When supplied, the outcome must contain at least one issue: `outcome: null` and `issue: []` are invalid and return HTTP 500. Algorithm warnings are preserved in both preview and execution with HTTP 200. An `error` or `fatal` issue returns the OperationOutcome directly with HTTP 409 and prevents execution, even if a plan was also supplied. `plan: null` is allowed only with a blocking issue; the `plan` key is required.
+
+Optionality here belongs to the internal JS API, not a claim that FHIR Patient `$merge` permits omitting its response outcome. The [published FHIR Patient merge operation](https://fhir.hl7.org/fhir/patient-operation-merge.html) specifies an OperationOutcome in its response, and [OperationOutcome.issue](https://hl7.org/fhir/operationoutcome-definitions.html#OperationOutcome.issue) has cardinality `1..*`. MDMbox's v2 endpoints use their own operation contract.
 
 The merge Task records the exact source and target versions, algorithm identity, and `related-resource-type` scope needed by `$unmerge/v2`. Keep the corresponding Task, Provenance, and FHIR history versions for as long as server-computed unmerge must remain available.
+
+Merge v2 records both sides of each update: `Provenance.entity.what` references the pre-merge version, and `Provenance.target` references the actual post-merge version, for example `Patient/123/_history/20`. Created resources also have version-specific targets. Deleted resources retain an unversioned target and a versioned pre-delete removal entity. The operation Task target stays unversioned for discovery with `GET /Provenance?target=Task/<id>`. Provenance is created once with the final references; its failure rolls back the business writes and Task as well. Legacy v1 audit assembly is unchanged.
 
 ## Client-plan merge v1
 

@@ -10,7 +10,7 @@ Use `$unmerge` when a merge was accepted by mistake and the affected resources m
 
 ## Server-computed unmerge v2
 
-`$unmerge/v2` needs only the original merge Task, an optional algorithm, and preview mode. MDMbox reads the Task's Provenance and the versioned references in `Provenance.entity`, fetches the pre-merge versions from FHIR history, computes the reverse transaction in sandboxed JavaScript, and executes it in the same database transaction.
+`$unmerge/v2` needs only the original merge Task, an optional algorithm, and preview mode. MDMbox reads the Task's Provenance, fetches the pre-merge versions referenced by `Provenance.entity`, and uses the post-merge versions in `Provenance.target` to detect later changes. It computes the reverse transaction in sandboxed JavaScript and executes it in the same database transaction. For an unchanged target Patient, the Task's saved target version is also the post-merge baseline.
 
 ```http
 POST https://<mdmbox-host>/api/fhir/$unmerge/v2
@@ -51,6 +51,27 @@ For a scalar Reference outside those arrays, strict changes only its `reference`
 
 Both algorithms run in the same sandbox used by merge v2. They can read only the merge Task, Provenance, versioned resource history, current resource state, and reference paths exposed through the MDMbox algorithm API.
 
+Like merge v2, JavaScript unmerge algorithms return `{plan, outcome?}`. Without specific messages they return only `{plan: bundle}`; MDMbox supplies the informational OperationOutcome for the HTTP response. If provided, `outcome` must contain at least one issue, not `null` or an empty `issue` array. An `error` or `fatal` issue blocks execution with HTTP 409 even when a plan is present. `plan: null` is allowed only with such a blocking issue; the `plan` key is required. Invalid results return HTTP 500. See the [merge result contract](merge-operation.md#server-computed-merge-v2) for details and FHIR requirements.
+
+Custom unmerge algorithms use `mdm.fhirGet('Patient/123')` for the current resource and `mdm.fhirGet('Patient/123/_history/20')` for an exact historical version. Both return a FHIR resource directly, or `null` when absent. Use `resource.meta.versionId`, not a separate metadata wrapper. This replaces `readCurrentResource`, `readHistoricalResource`, and `readOperationResource`; the saved post-merge references are supplied in `input.provenance.target`. Libox's creation timestamp remains in `meta.extension`, identified by `input.createdAtExtensionUrl`.
+
+Common FHIR helpers are provided by the server API:
+
+- `mdm.resourceReference(resource)` returns `ResourceType/id`.
+- `mdm.referenceWithoutHistoryVersion(reference)` removes an optional `/_history/version` suffix from a local reference.
+- `mdm.restorableResource(resource)` returns a copy without server lifecycle metadata (`meta.versionId`, `meta.lastUpdated`, and the configured creation-time extension), preserving other metadata. The algorithm must still set a current-version or absence precondition on its write.
+- `mdm.resourceCreatedAt(resource)` returns the configured creation-time extension's instant string without precision loss, or `null` if the resource or extension is absent.
+- `mdm.hasResourceChangedAfterMerge(currentResource, provenance, preMergeResource?)` compares the current `meta.versionId` with the matching versioned `Provenance.target`. Supply the pre-merge FHIR resource as the baseline when merge left it unchanged, as with a target without `result`. Merge-created resources need no pre-merge baseline. A missing current resource returns `false`; the algorithm handles deletion separately. No database read is performed.
+- `mdm.referenceFhirPathsToRestoreSource(preMergeResource, currentResource, sourceReference, targetReference)` returns zero-based FHIRPath paths to the Reference objects that can be safely relinked back to source, such as `Observation.subject` or `Observation.performer[0]`. These are only the original source-reference slots, not every current target reference or the `.reference` fields. The helper applies strict's conservative array checks for `simple`-style relinking. It returns `[]` if there were no source references, or `null` on ambiguity, never a partial list. It does not modify resources or execute a plan.
+- `mdm.putRequestWithPrecondition(reference, currentResource)` builds a PUT request with `ifMatch` from the current resource's `meta.versionId`, or `ifNoneMatch: "*"` when the current resource is `null`. An existing resource without a version is rejected. This helper builds a request without executing it.
+- `mdm.preMergeTargetVersion(mergeTask)` returns the saved pre-merge `target-version` string, or `null` if that input is absent. It reads the MDM merge Task input coding; it is not the current version used to protect a write.
+- `mdm.operationOutcomeIssue(severity, code, message, diagnostics?)` builds one `OperationOutcome.issue`, with `details.text` and optional diagnostics. It supports warnings, errors, and information; it does not wrap the issue in an OperationOutcome resource.
+- `mdm.resourceReferencesCreatedAfter(reference, resourceTypes, instant)` returns distinct references to current resources in the supplied types that reference `reference` and were created strictly after `instant`. Contained references are excluded; an empty type scope returns an empty array.
+
+The built-in algorithms pass `input.targetReference`, `input.relatedResourceTypes`, and `input.mergeCreatedAt` to the last helper. The server supplies only the original Task's recorded `related-resource-type` inputs. Without those inputs, the additional search scope is empty; types are not inferred from snapshots. Resources already recorded in the merge audit are still processed by the selected unmerge algorithm.
+
+Post-merge versions determine whether an audited resource changed. Creation time is still used to discover separately created resources and to recognize a deleted-and-recreated related resource; changing an existing resource does not count as creating one. Timestamp ordering is performed on the server, without JavaScript precision loss. Libox timestamps reflect transaction start, not commit order, so this creation-time check does not establish the order of concurrent commits.
+
 ### Later merge chain
 
 Pair unmerge is last-in-first-out for merges into the same target Patient. Before computing a plan, MDMbox verifies that the Task's target Patient still exists and looks for active merge Tasks into that Patient created after the requested Task. If any exist, the response is `409 Conflict`; `OperationOutcome.issue.diagnostics` contains the full chronological Task chain and identifies the latest Task that must be unmerged first.
@@ -64,6 +85,8 @@ For successful execution, the response contains `outcome` and the new unmerge `t
 Both algorithms execute against a version-protected database snapshot. Restore intentionally discards changes made before that snapshot, but does not overwrite a concurrent write made while it computes or executes its plan: such a conflict returns HTTP 409 and rolls back the restoration and its successful audit together.
 
 Keep the original Task, Provenance, and required FHIR history versions. An edited audit revision cannot substitute for a missing original. Before deleting a resource described as merge-created, MDMbox also requires its recorded creation version from that merge transaction. Missing or inconsistent evidence returns `422 Unprocessable Entity` without partial restoration.
+
+Retention must include the pinned post-merge versions as well as the pre-merge snapshots. If an explicitly recorded version is missing, neither algorithm substitutes another version. Older audits with unversioned mutation targets remain supported through server-side history lookup, provided the necessary original versions still exist; no audit migration is required.
 
 The original merge Task records the source and target history versions plus every `related-resource-type` scope selected by merge v2. This lets unmerge v2 restore a target that the merge algorithm did not modify and detect a new referenced resource even when no resource of that type existed at merge time.
 
