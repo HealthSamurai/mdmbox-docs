@@ -47,6 +47,21 @@ For API Bearer authentication, MDMbox uses Aidbox's authentication pipeline and 
 
 ## Merge and unmerge algorithms
 
+`MDMBOX_BUILT_IN_ALGORITHMS` controls built-in algorithms only. Unset means all
+are enabled (`simple`, `restore`, `strict`). An empty or whitespace-only value
+disables all built-ins. Otherwise provide a comma-separated, case-sensitive
+allowlist, for example `simple,strict`. Whitespace and duplicates are ignored;
+unknown ids prevent startup. Restart after changing the environment.
+
+Git and database algorithms are not restricted by this list. Operation defaults
+remain `simple` for merge and `restore` for unmerge: if that id is unavailable,
+the request returns HTTP 400, not another algorithm. A configured Git algorithm
+with the same id may still serve it. The database id `simple` remains reserved.
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `MDMBOX_BUILT_IN_ALGORITHMS` | Allowed built-in ids, separated by commas. Empty disables all. Example: `simple,strict`. | unset (all built-ins enabled) |
+
 Git storage is optional and read-only. Configure a small, administrator-controlled
 repository containing `merge/<id>.js` and/or `unmerge/<id>.js`. The repository is
 fetched once at startup; restart MDMbox to pick up a changed branch or tag. See

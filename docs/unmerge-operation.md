@@ -39,6 +39,13 @@ Content-Type: application/fhir+json
 
 ### Algorithms
 
+Operators can restrict built-ins with `MDMBOX_BUILT_IN_ALGORITHMS`. Unset enables
+all; empty disables all; `simple,strict` enables simple merge and strict unmerge.
+The default unmerge id remains `restore`, even when restore is disabled: such a
+request returns HTTP 400 unless a configured Git script provides that id.
+Explicitly request `strict` when only strict is enabled. Both preview and
+execution enforce the same allowlist. Custom Git algorithms are unaffected.
+
 Custom scripts can be loaded from `unmerge/<id>.js` in the configured public or
 private [Git algorithm repository](merge-operation.md#git-algorithm-storage).
 They define `unmerge(input, mdm)` and are pinned at startup. Their Task records
