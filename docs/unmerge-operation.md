@@ -10,7 +10,7 @@ Use `$unmerge` when a merge was accepted by mistake and the affected resources m
 
 ## Server-computed unmerge v2
 
-`$unmerge/v2` needs only the original merge Task, an optional algorithm, and preview mode. MDMbox reads the Task's Provenance, fetches the pre-merge versions referenced by `Provenance.entity`, and uses the post-merge versions in `Provenance.target` to detect later changes. It computes the reverse transaction in sandboxed JavaScript and executes it in the same database transaction. For an unchanged target Patient, the Task's saved target version is also the post-merge baseline.
+`$unmerge/v2` needs only the original merge Task, an optional algorithm, and preview mode. MDMbox reads the Task's Provenance, fetches the pre-merge versions referenced by `Provenance.entity`, and uses the post-merge versions in `Provenance.target` to detect later changes. It computes the reverse transaction in sandboxed JavaScript and executes it in the same database transaction. For an unchanged target resource, the Task's saved target version is also the post-merge baseline.
 
 ```http
 POST https://<mdmbox-host>/api/fhir/$unmerge/v2
@@ -39,15 +39,15 @@ Content-Type: application/fhir+json
 
 ### Algorithms
 
-The built-in `restore` algorithm restores the source Patient, target Patient, and resources changed by the merge to their recorded pre-merge versions. Changes made after merge are deliberately overwritten. Each overwritten or deleted resource is reported as a warning in the response `OperationOutcome`. A resource created by the merge is removed even if it was edited later, with a warning. A separate resource created after merge that references the target is not moved because its ownership is ambiguous; it remains linked to the target and is also reported as a warning.
+The built-in `restore` algorithm restores the source resource, target resource, and resources changed by the merge to their recorded pre-merge versions. Changes made after merge are deliberately overwritten. Each overwritten or deleted resource is reported as a warning in the response `OperationOutcome`. A resource created by the merge is removed even if it was edited later, with a warning. A separate resource created after merge that references the target is not moved because its ownership is ambiguous; it remains linked to the target and is also reported as a warning.
 
-The built-in `strict` algorithm returns `409 Conflict` when either Patient changed after merge, a resource created by the merge was edited later, or a separate resource created after merge references the target Patient. For an existing related resource, MDMbox changes only a Patient reference whose exact historical path still references the target. A later deletion of the whole related resource is preserved.
+The built-in `strict` algorithm returns `409 Conflict` when the target resource changed or the source was recreated after merge, a resource created by the merge was edited later, or a separate resource created after merge references the target resource. For an existing related resource, MDMbox changes only a reference to the original source whose exact historical path still references the target. A later deletion of the whole related resource is preserved.
 
 For references inside arrays, `strict` uses a conservative rule: each containing array, including ancestor arrays of nested references, must match the expected state immediately after `simple` relinked the references. Reordering, adding or removing elements, or editing any field inside one of these arrays returns `409 Conflict` in both preview and execution. This applies even when the original index still references the target; the algorithm does not guess which element moved. Changes outside these arrays, such as an Observation note outside its relinked `performer` array, remain allowed and are preserved.
 
 The strict algorithm is a reference implementation for `simple`-style related-resource relinking, not a universal inverse of arbitrary custom merge mutations. Custom algorithms must account for this compatibility boundary. Merge v2 also rejects conditional creation (`ifNoneExist`) so an existing resource cannot be mistaken for one created by the merge.
 
-For a scalar Reference outside those arrays, strict changes only its `reference` value. Allowed later fields such as `display` and `extension` are preserved. Patient and merge-created resource drift is checked by version, including writes from transactions that started before merge but committed afterward.
+For a scalar Reference outside those arrays, strict changes only its `reference` value. Allowed later fields such as `display` and `extension` are preserved. Source/target and merge-created resource drift is checked by version, including writes from transactions that started before merge but committed afterward.
 
 Both algorithms run in the same sandbox used by merge v2. They can read only the merge Task, Provenance, versioned resource history, current resource state, and reference paths exposed through the MDMbox algorithm API.
 
@@ -74,13 +74,13 @@ Post-merge versions determine whether an audited resource changed. Creation time
 
 ### Later merge chain
 
-Pair unmerge is last-in-first-out for merges into the same target Patient. Before computing a plan, MDMbox verifies that the Task's target Patient still exists and looks for active merge Tasks into that Patient created after the requested Task. If any exist, the response is `409 Conflict`; `OperationOutcome.issue.diagnostics` contains the full chronological Task chain and identifies the latest Task that must be unmerged first.
+Pair unmerge is last-in-first-out for merges into the same target resource. Before computing a plan, MDMbox verifies that the Task's target resource still exists and looks for active merge Tasks into that resource created after the requested Task. If any exist, the response is `409 Conflict`; `OperationOutcome.issue.diagnostics` contains the full chronological Task chain and identifies the latest Task that must be unmerged first.
 
 ### Preview and response
 
 For preview, the response is a `Parameters` resource containing `outcome` (`OperationOutcome`) and `plan` (the complete audited transaction Bundle). Preview performs no writes.
 
-For successful execution, the response contains `outcome` and the new unmerge `task`. Warnings do not change the HTTP 200 status. A strict drift conflict returns the `OperationOutcome` directly with HTTP 409 and makes no business changes. Operation-level AuditEvent emission and failure auditing are deferred to a separate change. A missing merge Task or deleted original target Patient returns `404 Not Found`; unmerge never recreates a deleted target.
+For successful execution, the response contains `outcome` and the new unmerge `task`. Warnings do not change the HTTP 200 status. A strict drift conflict returns the `OperationOutcome` directly with HTTP 409 and makes no business changes. Operation-level AuditEvent emission and failure auditing are deferred to a separate change. A missing merge Task or deleted original target resource returns `404 Not Found`; unmerge never recreates a deleted target.
 
 Both algorithms execute against a version-protected database snapshot. Restore intentionally discards changes made before that snapshot, but does not overwrite a concurrent write made while it computes or executes its plan: such a conflict returns HTTP 409 and rolls back the restoration and its successful audit together.
 
