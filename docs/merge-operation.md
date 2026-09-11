@@ -78,6 +78,66 @@ The merge Task records the exact source and target versions, algorithm identity,
 
 Merge v2 records both sides of each update: `Provenance.entity.what` references the pre-merge version, and `Provenance.target` references the actual post-merge version, for example `Patient/123/_history/20`. Created resources also have version-specific targets. Deleted resources retain an unversioned target and a versioned pre-delete removal entity. The operation Task target stays unversioned for discovery with `GET /Provenance?target=Task/<id>`. Provenance is created once with the final references; its failure rolls back the business writes and Task as well. Legacy v1 audit assembly is unchanged.
 
+### Git algorithm storage
+
+Merge and unmerge algorithms can be loaded from a public or private Git
+repository. Store one synchronous entry point per file:
+
+```text
+merge/
+  identifier-union.js    # function merge(input, mdm)
+unmerge/
+  custom-restore.js      # function unmerge(input, mdm)
+```
+
+The filename without `.js` is the algorithm id. IDs are 1–64 characters, start
+with a letter or digit, and otherwise contain letters, digits, `.`, `_`, or `-`.
+Use only regular `.js` files directly inside these two directories: nested
+files, symlinks, and submodules there are rejected. Other repository paths are
+ignored. There must be 1–100 algorithm files in total, each at most 1 MiB.
+There are no modules, imports, or build steps; each file must be self-contained.
+
+Example container environment for a private HTTPS repository:
+
+```yaml
+MDMBOX_ALGORITHM_GIT_URL: https://git.example/team/mdm-algorithms.git
+MDMBOX_ALGORITHM_GIT_REF: refs/tags/release-1
+MDMBOX_ALGORITHM_GIT_USERNAME: deploy-user
+MDMBOX_ALGORITHM_GIT_TOKEN_FILE: /run/secrets/algorithm-git-token
+```
+
+Mount the token file read-only and grant the container's `app` user permission
+to read it. Use a repository-scoped read-only token. Do not put credentials in
+the repository URL or in scripts. For an internal CA, configure
+`MDMBOX_ALGORITHM_GIT_CA_FILE`; do not disable TLS verification.
+
+For SSH, use a URL such as `ssh://git@git.example/team/mdm-algorithms.git`.
+Mount a read-only deploy key and verified `known_hosts` under the runtime user's
+`.ssh` directory, or provide an SSH agent. OpenSSH runs in batch mode with strict
+host-key checking: interactive password and trust prompts are disabled. The
+Docker image includes Git and the OpenSSH client; standalone deployments need
+these commands on `PATH` when Git storage is configured. Ambient Git credential
+helpers and Git tracing/configuration overrides are not used by this loader.
+
+Loading has a 60-second budget. MDMbox fetches into a disposable bare repository,
+reads committed blobs without a checkout, validates the appropriate entry
+points in the existing JS sandbox, and discards the temporary repository. No
+Git hooks or submodules are executed. The resulting catalog is pinned in memory
+until restart: preview and execution do not fetch or depend on Git availability.
+The remote repository must remain small enough to fetch within the budget.
+
+Merge resolution order is built-in, Git, then database. Unmerge resolution is
+built-in, then Git. The catalogs are separate, so the same custom id may name
+both entry points. Select them with `merge-algorithm` or `unmerge-algorithm`.
+An unknown id is still HTTP 400. Git-backed algorithms have exactly the same
+capabilities and plan restrictions as other server-side algorithms.
+
+The operation Task records algorithm storage `git`, the exact commit and file
+path, and the executed script's SHA-256. Repository URLs and credentials are not
+copied into Task or diagnostic errors. Git merge algorithms appear in the Admin
+UI as read-only: they can be inspected and duplicated into database storage,
+but not edited or deleted there. See [configuration reference](config-reference.md#merge-and-unmerge-algorithms).
+
 ## Client-plan merge v1
 
 The original `$merge` operation merges two FHIR resources by executing a client-provided FHIR transaction Bundle. The client controls exactly what changes are made — MDMbox executes them atomically and adds audit records.

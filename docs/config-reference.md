@@ -45,6 +45,26 @@ For API Bearer authentication, MDMbox uses Aidbox's authentication pipeline and 
 | `MDMBOX_TEFCA_MODE` | Enable R4 TEFCA `$match` behavior. When enabled, potential-match responses (`onlyCertainMatches=false`) return no more than 100 entries. | unset (`false`) |
 | `MDMBOX_DEFAULT_FHIR_RELEASE` | FHIR release used by unversioned `/api/fhir/:resource/...` routes. Accepted values: `4.0.1` and `6.0.0`. | `6.0.0` |
 
+## Merge and unmerge algorithms
+
+Git storage is optional and read-only. Configure a small, administrator-controlled
+repository containing `merge/<id>.js` and/or `unmerge/<id>.js`. The repository is
+fetched once at startup; restart MDMbox to pick up a changed branch or tag. See
+[Git algorithm storage](merge-operation.md#git-algorithm-storage) for layout,
+private access, limits, and precedence.
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `MDMBOX_ALGORITHM_GIT_URL` | HTTPS or SSH repository URL, or an absolute `file:///` URI. Do not put passwords or tokens in the URL. | unset (Git storage disabled) |
+| `MDMBOX_ALGORITHM_GIT_REF` | `HEAD`, full branch ref such as `refs/heads/main`, full tag ref such as `refs/tags/v1`, or a 40-character commit SHA. A remote must allow fetching the selected commit. | `HEAD` |
+| `MDMBOX_ALGORITHM_GIT_USERNAME` | HTTPS authentication username; use the username required by the Git host for your token type. | `git` |
+| `MDMBOX_ALGORITHM_GIT_TOKEN_FILE` | Path to a mounted read-only secret containing the HTTPS token or password. | unset |
+| `MDMBOX_ALGORITHM_GIT_CA_FILE` | Optional PEM CA bundle for a private HTTPS Git server. Certificate verification remains enabled. | system CA trust |
+
+Setting any Git option requires a valid repository URL. Invalid configuration,
+authentication failure, missing revision, or invalid scripts prevent startup;
+MDMbox does not silently substitute another revision or a stale cache.
+
 ## Shared database configuration
 
 Aidbox and MDMbox run as separate applications against the same PostgreSQL database. MDMbox accepts the standard Aidbox `BOX_DB_*` environment variables so the database connection configuration can be shared between both application environments. Pass the same values to Aidbox and MDMbox.

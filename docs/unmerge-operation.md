@@ -34,10 +34,15 @@ Content-Type: application/fhir+json
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `task` | valueReference | Yes | Reference to the active pair-merge Task to reverse |
-| `unmerge-algorithm` | valueString | No | `restore` (default) or `strict` |
+| `unmerge-algorithm` | valueString | No | Server-side algorithm id: built-in `restore` (default), `strict`, or a configured Git algorithm |
 | `preview` | valueBoolean | No | Compute and return the audited transaction plan without executing it (default: false) |
 
 ### Algorithms
+
+Custom scripts can be loaded from `unmerge/<id>.js` in the configured public or
+private [Git algorithm repository](merge-operation.md#git-algorithm-storage).
+They define `unmerge(input, mdm)` and are pinned at startup. Their Task records
+the executed commit, path, and script digest, just as for Git merge algorithms.
 
 The built-in `restore` algorithm restores the source resource, target resource, and resources changed by the merge to their recorded pre-merge versions. Changes made after merge are deliberately overwritten. Each overwritten or deleted resource is reported as a warning in the response `OperationOutcome`. A resource created by the merge is removed even if it was edited later, with a warning. A separate resource created after merge that references the target is not moved because its ownership is ambiguous; it remains linked to the target and is also reported as a warning.
 
