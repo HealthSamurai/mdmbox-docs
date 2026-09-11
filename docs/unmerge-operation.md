@@ -64,9 +64,11 @@ Git, then database; the Task records the selected storage and executed script's
 SHA-256. Built-in and Git scripts can be inspected and duplicated, but not
 changed in place.
 
-The built-in `restore` algorithm restores the source resource, target resource, and resources changed by the merge to their recorded pre-merge versions. Changes made after merge are deliberately overwritten. Each overwritten or deleted resource is reported as a warning in the response `OperationOutcome`. A resource created by the merge is removed even if it was edited later, with a warning. A separate resource created after merge that references the target is not moved because its ownership is ambiguous; it remains linked to the target and is also reported as a warning.
+The built-in `restore` algorithm restores the source resource, target resource, and resources changed by the merge to their recorded pre-merge versions. Changes made after merge are deliberately overwritten. Each overwritten or deleted resource is reported as a warning in the response `OperationOutcome`. A resource created by the merge is removed even if it was edited later, with a warning.
 
-The built-in `strict` algorithm returns `409 Conflict` when the target resource changed or the source was recreated after merge, a resource created by the merge was edited later, or a separate resource created after merge references the target resource. For an existing related resource, MDMbox changes only a reference to the original source whose exact historical path still references the target. A later deletion of the whole related resource is preserved.
+The built-in `strict` algorithm checks reversibility of the merge's own changes. It returns `409 Conflict` when the target resource changed, the source was recreated after merge, or a resource created by the merge was edited later. For an audited existing related resource, MDMbox changes only a reference to the original source whose exact historical path still references the target. A later deletion of the whole related resource is preserved.
+
+Both algorithms leave discovered target-referencing resources outside the merge changes untouched, with one warning per resource: `Resource outside merge changes remains linked to the target resource`. These resources remain at target with their current contents and versions. They may have existed before merge, been created afterward, or acquired a target reference later; MDMbox does not infer their age or ownership. Their presence does not block strict unmerge. Discovery uses the unmerge snapshot and the original `related-resource-type` scope; it does not include writes committed after that snapshot. Resources created by the merge itself are identified from its audit and handled separately.
 
 For references inside arrays, `strict` uses a conservative rule: each containing array, including ancestor arrays of nested references, must match the expected state immediately after `simple` relinked the references. Reordering, adding or removing elements, or editing any field inside one of these arrays returns `409 Conflict` in both preview and execution. This applies even when the original index still references the target; the algorithm does not guess which element moved. Changes outside these arrays, such as an Observation note outside its relinked `performer` array, remain allowed and are preserved.
 
@@ -85,14 +87,9 @@ reference for `input`, `mdm`, return values, errors, and write preconditions.
 It also explains which helpers are unmerge-only and the different Reference
 metadata behavior of `referencePatchEntries` in merge and unmerge.
 
-The built-ins call `mdm.resourceReferencesCreatedAfter` with
-`input.targetReference`, `input.relatedResourceTypes`, and `input.mergeCreatedAt`.
-The server supplies only the original Task's recorded `related-resource-type`
-inputs. Without those inputs, the additional search scope is empty; types are
-not inferred from snapshots. Resources already recorded in the merge audit are
-still processed by the selected unmerge algorithm.
+The built-ins call `mdm.referencePatchPaths(input.targetReference, input.relatedResourceTypes)` and exclude resources already represented by pre-merge snapshots or `Provenance.target` when reporting resources outside merge changes. The server supplies only the original Task's recorded `related-resource-type` inputs. Without those inputs, the additional search scope is empty; types are not inferred from snapshots. Resources already recorded in the merge audit are still processed by the selected unmerge algorithm.
 
-Post-merge versions determine whether an audited resource changed. Creation time is still used to discover separately created resources and to recognize a deleted-and-recreated related resource; changing an existing resource does not count as creating one. Timestamp ordering is performed on the server, without JavaScript precision loss. Libox timestamps reflect transaction start, not commit order, so this creation-time check does not establish the order of concurrent commits.
+Post-merge versions determine whether an audited resource changed. Strict still uses creation-time metadata to recognize a deleted-and-recreated audited related resource. External-resource discovery does not compare timestamps: a resource committed after merge may belong to a transaction that started earlier. The temporal discovery helper `resourceReferencesCreatedAfter` and `input.mergeCreatedAt` are no longer part of the JS API.
 
 ### Later merge chain
 
@@ -106,11 +103,13 @@ For successful execution, the response contains `outcome` and the new unmerge `t
 
 Both algorithms execute against a version-protected database snapshot. Restore intentionally discards changes made before that snapshot, but does not overwrite a concurrent write made while it computes or executes its plan: such a conflict returns HTTP 409 and rolls back the restoration and its successful audit together.
 
+Internal storage failures return HTTP 500 with a generic OperationOutcome and no database row diagnostics or payloads. Ordinary transaction validation failures return 422 with FHIR validation details. Both leave business resources, new audit resources, and the original merge Task unchanged. This error mapping applies to v2; legacy v1 is unchanged.
+
 Keep the original Task, Provenance, and required FHIR history versions. An edited audit revision cannot substitute for a missing original. Before deleting a resource described as merge-created, MDMbox also requires its recorded creation version from that merge transaction. Missing or inconsistent evidence returns `422 Unprocessable Entity` without partial restoration.
 
 Retention must include the pinned post-merge versions as well as the pre-merge snapshots. If an explicitly recorded version is missing, neither algorithm substitutes another version. Older audits with unversioned mutation targets remain supported through server-side history lookup, provided the necessary original versions still exist; no audit migration is required.
 
-The original merge Task records the source and target history versions plus every `related-resource-type` scope selected by merge v2. This lets unmerge v2 restore a target that the merge algorithm did not modify and detect a new referenced resource even when no resource of that type existed at merge time.
+The original merge Task records the source and target history versions plus every `related-resource-type` scope selected by merge v2. This lets unmerge v2 restore a target that the merge algorithm did not modify and report target-referencing resources outside the merge changes even when no resource of that type existed at merge time.
 
 ## Client-plan unmerge v1
 

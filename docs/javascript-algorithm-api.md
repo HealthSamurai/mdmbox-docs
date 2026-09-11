@@ -66,7 +66,6 @@ not `input.result.meta.versionId`.
 | `sourceReference` | Source reference saved by that merge |
 | `targetReference` | Target reference saved by that merge |
 | `relatedResourceTypes` | Original Task's saved related-resource-type scope; `[]` if none was recorded |
-| `mergeCreatedAt` | Server-supplied merge creation timestamp; pass it directly to `resourceReferencesCreatedAfter` |
 | `createdAtExtensionUrl` | URL identifying the configured creation-time extension in FHIR `meta.extension` |
 
 Use `provenance.entity[*].what.reference` to read pre-merge snapshots and
@@ -101,7 +100,6 @@ are not available from `merge`, even if they would be useful there.
 | `preMergeTargetVersion` | No | Yes |
 | `putRequestWithPrecondition` | No | Yes |
 | `operationOutcomeIssue` | No | Yes |
-| `resourceReferencesCreatedAfter` | No | Yes |
 
 ## Reference discovery and plan builders
 
@@ -131,6 +129,8 @@ JSON Pointer, or paths to their `.reference` fields. Storage-specific reference
 shapes are converted to FHIR paths. Contained `#id` references are excluded.
 An empty type array or no matches returns `[]`. Pass the operation's recorded
 scope rather than inferring extra types from audit snapshots.
+
+Both built-in unmerge algorithms use this discovery to warn about target-referencing resources outside the merge changes. They exclude the references represented by pre-merge snapshots and `provenance.target`, preserving all remaining resources regardless of age. This is a snapshot search, not a claim about creation or commit order. The former `resourceReferencesCreatedAfter` helper and `input.mergeCreatedAt` are no longer exposed; custom algorithms should use reference discovery and audit membership instead of timestamp-based classification.
 
 ### referencePatchEntries(targetReference, patchTargets)
 
@@ -262,19 +262,6 @@ The helper does not check target drift, source recreation, or related-resource
 deletion/recreation, build PATCH entries, or return an OperationOutcome. Those
 checks belong to the algorithm. It is not a universal inverse for custom merges;
 changing simple's metadata replacement policy may also change the expected arrays.
-
-### resourceReferencesCreatedAfter(reference, resourceTypes, instant)
-
-Returns distinct references to **current** resources in `resourceTypes` that
-reference `reference` and were created strictly after `instant`. Contained
-references are excluded. An empty type scope returns `[]`; an update of a
-pre-existing resource does not make it newly created.
-
-Built-ins call it with `input.targetReference`, `input.relatedResourceTypes`,
-and `input.mergeCreatedAt`. Comparison stays on the server to preserve timestamp
-precision. Creation timestamps reflect transaction start, not commit order;
-this helper alone cannot order concurrent commits. It does not transfer or
-delete the discovered resources, or decide whether to warn or block.
 
 ### putRequestWithPrecondition(reference, currentResource)
 
