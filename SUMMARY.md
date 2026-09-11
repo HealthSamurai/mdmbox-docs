@@ -9,6 +9,7 @@
   - [Bulk matching](bulk-match.md)
   - [Merge operation](merge-operation.md)
   - [Unmerge operation](unmerge-operation.md)
+  - [JavaScript algorithm API](javascript-algorithm-api.md)
   - [Link operation](link-operation.md)
   - [Unlink operation](unlink-operation.md)
   - [Notifications](notifications.md)

@@ -6,6 +6,9 @@ description: Complete list of MDMbox REST API endpoints.
 
 The full OpenAPI specification is available at `/api/openapi.json`. The interactive Swagger UI is at `/api/docs`.
 
+The in-process `mdm` helpers supplied to server-side scripts are documented
+separately in the [JavaScript algorithm API](javascript-algorithm-api.md).
+
 ## Infrastructure
 
 | Method | Path                | Description           |

@@ -34,7 +34,7 @@ Content-Type: application/fhir+json
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `task` | valueReference | Yes | Reference to the active pair-merge Task to reverse |
-| `unmerge-algorithm` | valueString | No | Server-side algorithm id: built-in `restore` (default), `strict`, or a configured Git algorithm |
+| `unmerge-algorithm` | valueString | No | Server-side algorithm id: built-in `restore` (default), `strict`, or a custom Git/database algorithm |
 | `preview` | valueBoolean | No | Compute and return the audited transaction plan without executing it (default: false) |
 
 ### Algorithms
@@ -42,14 +42,27 @@ Content-Type: application/fhir+json
 Operators can restrict built-ins with `MDMBOX_BUILT_IN_ALGORITHMS`. Unset enables
 all; empty disables all; `simple,strict` enables simple merge and strict unmerge.
 The default unmerge id remains `restore`, even when restore is disabled: such a
-request returns HTTP 400 unless a configured Git script provides that id.
+request returns HTTP 400 unless a custom Git or database script provides that id.
 Explicitly request `strict` when only strict is enabled. Both preview and
-execution enforce the same allowlist. Custom Git algorithms are unaffected.
+execution enforce the same allowlist. Custom Git and database algorithms are unaffected.
 
 Custom scripts can be loaded from `unmerge/<id>.js` in the configured public or
 private [Git algorithm repository](merge-operation.md#git-algorithm-storage).
-They define `unmerge(input, mdm)` and are pinned at startup. Their Task records
-the executed commit, path, and script digest, just as for Git merge algorithms.
+They define `unmerge(input, mdm)` and use the last successfully published
+revision. Use **Algorithms → Configuration → Sync** to publish updates without
+restarting; merge and unmerge catalogs from that source change together.
+Their Task records the source id, executed commit, path, and script digest,
+just as for Git merge algorithms. A sync does not change scripts already
+selected by in-flight operations.
+
+Alternatively, use **Algorithms → Unmerge** in the
+[Admin UI](merge-operation.md#managing-algorithms-in-the-admin-ui) to create,
+duplicate, edit, and delete database scripts. Database unmerge algorithms also
+define `unmerge(input, mdm)` and are available to subsequent requests without a
+restart. Merge and unmerge ids are independent. Resolution order is built-in,
+Git, then database; the Task records the selected storage and executed script's
+SHA-256. Built-in and Git scripts can be inspected and duplicated, but not
+changed in place.
 
 The built-in `restore` algorithm restores the source resource, target resource, and resources changed by the merge to their recorded pre-merge versions. Changes made after merge are deliberately overwritten. Each overwritten or deleted resource is reported as a warning in the response `OperationOutcome`. A resource created by the merge is removed even if it was edited later, with a warning. A separate resource created after merge that references the target is not moved because its ownership is ambiguous; it remains linked to the target and is also reported as a warning.
 
@@ -67,20 +80,17 @@ Like merge v2, JavaScript unmerge algorithms return `{plan, outcome?}`. Without 
 
 Custom unmerge algorithms use `mdm.fhirGet('Patient/123')` for the current resource and `mdm.fhirGet('Patient/123/_history/20')` for an exact historical version. Both return a FHIR resource directly, or `null` when absent. Use `resource.meta.versionId`, not a separate metadata wrapper. This replaces `readCurrentResource`, `readHistoricalResource`, and `readOperationResource`; the saved post-merge references are supplied in `input.provenance.target`. Libox's creation timestamp remains in `meta.extension`, identified by `input.createdAtExtensionUrl`.
 
-Common FHIR helpers are provided by the server API:
+The [JavaScript algorithm API](javascript-algorithm-api.md) is the complete
+reference for `input`, `mdm`, return values, errors, and write preconditions.
+It also explains which helpers are unmerge-only and the different Reference
+metadata behavior of `referencePatchEntries` in merge and unmerge.
 
-- `mdm.resourceReference(resource)` returns `ResourceType/id`.
-- `mdm.referenceWithoutHistoryVersion(reference)` removes an optional `/_history/version` suffix from a local reference.
-- `mdm.restorableResource(resource)` returns a copy without server lifecycle metadata (`meta.versionId`, `meta.lastUpdated`, and the configured creation-time extension), preserving other metadata. The algorithm must still set a current-version or absence precondition on its write.
-- `mdm.resourceCreatedAt(resource)` returns the configured creation-time extension's instant string without precision loss, or `null` if the resource or extension is absent.
-- `mdm.hasResourceChangedAfterMerge(currentResource, provenance, preMergeResource?)` compares the current `meta.versionId` with the matching versioned `Provenance.target`. Supply the pre-merge FHIR resource as the baseline when merge left it unchanged, as with a target without `result`. Merge-created resources need no pre-merge baseline. A missing current resource returns `false`; the algorithm handles deletion separately. No database read is performed.
-- `mdm.referenceFhirPathsToRestoreSource(preMergeResource, currentResource, sourceReference, targetReference)` returns zero-based FHIRPath paths to the Reference objects that can be safely relinked back to source, such as `Observation.subject` or `Observation.performer[0]`. These are only the original source-reference slots, not every current target reference or the `.reference` fields. The helper applies strict's conservative array checks for `simple`-style relinking. It returns `[]` if there were no source references, or `null` on ambiguity, never a partial list. It does not modify resources or execute a plan.
-- `mdm.putRequestWithPrecondition(reference, currentResource)` builds a PUT request with `ifMatch` from the current resource's `meta.versionId`, or `ifNoneMatch: "*"` when the current resource is `null`. An existing resource without a version is rejected. This helper builds a request without executing it.
-- `mdm.preMergeTargetVersion(mergeTask)` returns the saved pre-merge `target-version` string, or `null` if that input is absent. It reads the MDM merge Task input coding; it is not the current version used to protect a write.
-- `mdm.operationOutcomeIssue(severity, code, message, diagnostics?)` builds one `OperationOutcome.issue`, with `details.text` and optional diagnostics. It supports warnings, errors, and information; it does not wrap the issue in an OperationOutcome resource.
-- `mdm.resourceReferencesCreatedAfter(reference, resourceTypes, instant)` returns distinct references to current resources in the supplied types that reference `reference` and were created strictly after `instant`. Contained references are excluded; an empty type scope returns an empty array.
-
-The built-in algorithms pass `input.targetReference`, `input.relatedResourceTypes`, and `input.mergeCreatedAt` to the last helper. The server supplies only the original Task's recorded `related-resource-type` inputs. Without those inputs, the additional search scope is empty; types are not inferred from snapshots. Resources already recorded in the merge audit are still processed by the selected unmerge algorithm.
+The built-ins call `mdm.resourceReferencesCreatedAfter` with
+`input.targetReference`, `input.relatedResourceTypes`, and `input.mergeCreatedAt`.
+The server supplies only the original Task's recorded `related-resource-type`
+inputs. Without those inputs, the additional search scope is empty; types are
+not inferred from snapshots. Resources already recorded in the merge audit are
+still processed by the selected unmerge algorithm.
 
 Post-merge versions determine whether an audited resource changed. Creation time is still used to discover separately created resources and to recognize a deleted-and-recreated related resource; changing an existing resource does not count as creating one. Timestamp ordering is performed on the server, without JavaScript precision loss. Libox timestamps reflect transaction start, not commit order, so this creation-time check does not establish the order of concurrent commits.
 

@@ -87,6 +87,10 @@ Merge v2 records both sides of each update: `Provenance.entity.what` references 
 
 ### Git algorithm storage
 
+For script inputs, all `mdm` functions, examples, and plan restrictions, see the
+[JavaScript algorithm API](javascript-algorithm-api.md). Its helpers are not HTTP
+endpoints and are not described by Swagger.
+
 Merge and unmerge algorithms can be loaded from a public or private Git
 repository. Store one synchronous entry point per file:
 
@@ -101,7 +105,8 @@ The filename without `.js` is the algorithm id. IDs are 1–64 characters, start
 with a letter or digit, and otherwise contain letters, digits, `.`, `_`, or `-`.
 Use only regular `.js` files directly inside these two directories: nested
 files, symlinks, and submodules there are rejected. Other repository paths are
-ignored. There must be 1–100 algorithm files in total, each at most 1 MiB.
+ignored. There must be 1–100 algorithm files in total, each at most 1 MiB,
+with a combined source size of at most 16 MiB per repository.
 There are no modules, imports, or build steps; each file must be self-contained.
 
 Example container environment for a private HTTPS repository:
@@ -129,25 +134,109 @@ helpers and Git tracing/configuration overrides are not used by this loader.
 Loading has a 60-second budget. MDMbox fetches into a disposable bare repository,
 reads committed blobs without a checkout, validates the appropriate entry
 points in the existing JS sandbox, and discards the temporary repository. No
-Git hooks or submodules are executed. The resulting catalog is pinned in memory
-until restart: preview and execution do not fetch or depend on Git availability.
+Git hooks or submodules are executed. All scripts must pass validation before
+merge and unmerge catalogs are published together in one database transaction.
+The published scripts are stored in the shared database: preview and execution
+do not fetch or depend on Git availability. Each operation resolves its script
+once; a concurrent sync cannot change an operation already in progress.
 The remote repository must remain small enough to fetch within the budget.
+Source-size limits do not limit the downloaded Git history or temporary disk
+usage; use a small dedicated repository and deployment resource limits.
 
-Merge resolution order is built-in, Git, then database. Unmerge resolution is
-built-in, then Git. The catalogs are separate, so the same custom id may name
-both entry points. Select them with `merge-algorithm` or `unmerge-algorithm`.
-An unknown id is still HTTP 400. Git-backed algorithms have exactly the same
+Both merge and unmerge resolve algorithms in this order: built-in, Git, then
+database. The catalogs are separate, so the same custom id may name both entry
+points. Select them with `merge-algorithm` or `unmerge-algorithm`.
+Two Git sources cannot publish the same `(operation, id)`: the conflicting sync
+fails without changing either published catalog. An unknown id is still HTTP
+400. Git-backed algorithms have exactly the same
 capabilities and plan restrictions as other server-side algorithms.
 
 The allowlist removes only built-in implementations from that precedence order.
 A Git script with a disabled built-in's id remains selectable, including by the
 operation's unchanged default id. MDMbox never substitutes a different id.
 
-The operation Task records algorithm storage `git`, the exact commit and file
-path, and the executed script's SHA-256. Repository URLs and credentials are not
-copied into Task or diagnostic errors. Git merge algorithms appear in the Admin
+The operation Task records algorithm storage `git`, the Git source id, exact
+commit and file path, and the executed script's SHA-256. These use
+`merge-algorithm-git-source`, `merge-algorithm-git-commit`, and
+`merge-algorithm-git-path` inputs (or the corresponding `unmerge-` prefix).
+Repository URLs and credentials are not
+copied into Task or diagnostic errors. Git algorithms appear in the Admin
 UI as read-only: they can be inspected and duplicated into database storage,
 but not edited or deleted there. See [configuration reference](config-reference.md#merge-and-unmerge-algorithms).
+
+### Managing algorithms in the Admin UI
+
+Open **Algorithms**, then choose **Merge** or **Unmerge**. Each tab lists the
+effective algorithms for that operation, with built-ins first and storage
+labels for built-in and Git source.
+
+- **New Algorithm** creates a database script in the selected catalog.
+- **Duplicate** copies any selected script into a new, editable form in the
+  same catalog. Choose a unique id and save it.
+- Database scripts can be edited and deleted. Save validates the appropriate
+  `merge(input, mdm)` or `unmerge(input, mdm)` entry point before storing source.
+  Changes are available to subsequent operations without a restart.
+- Built-in and Git editors are read-only, including keyboard editing. Source
+  can still be selected and copied. Git details show its source id, path, and
+  published commit.
+
+Ids are unique within an operation, not across both catalogs. Existing database
+scripts remain merge algorithms after upgrading. An enabled built-in or a Git
+algorithm takes precedence over database source with the same id; the merge
+database id `simple` remains reserved even when its built-in is disabled.
+
+The **Configuration** tab manages Git sources while MDMbox is running:
+
+1. Choose **Add Git source**. Enter a unique source id, repository URL, and ref.
+   For private HTTPS access, enter the username and absolute server-side paths
+   to mounted token and optional CA files. Never paste a token into the form.
+2. Choose **Save source**. Saving configuration does not fetch or publish scripts.
+3. Choose **Sync** on the source card. The background job fetches and validates
+   the selected revision. The card shows progress, the published commit, and
+   the last successful sync. Failure shows a sanitized error and keeps the
+   complete last good catalog, including its commit metadata.
+4. After changing scripts in Git, choose **Sync** again. There is no automatic
+   branch polling. A commit SHA stays pinned; a branch or tag resolves again
+   on each sync.
+
+**Edit** changes a runtime source's configuration. Published algorithms continue
+to use the previous configuration until a successful sync. Blank credential
+fields preserve existing settings; the explicit clear checkboxes remove token
+or custom CA settings. Stored credential values and file paths are never sent
+back to the browser. A concurrent configuration edit requires reloading the
+form, including when a source was deleted and recreated with the same id.
+An older running sync cannot publish over the newer configuration.
+
+**Remove** deletes a runtime source and its published Git algorithms, with
+confirmation. It does not delete the remote repository, database-authored
+scripts, or previous operation Tasks. A previously shadowed database algorithm
+may become selectable after the Git source is removed. Already running
+operations retain the script they selected.
+
+Runtime sources and published catalogs survive restarts in the shared database.
+All MDMbox instances using that database read the same published Git scripts.
+There may be at most 20 sources, including the environment source, and two
+simultaneous sync jobs per instance. Only one job may synchronize a particular
+source across instances. An interrupted job becomes retryable after its
+90-second lease expires; expired or superseded jobs cannot start publishing.
+
+The reserved **environment** source is configured with
+`MDMBOX_ALGORITHM_GIT_*`. It can be synchronized here, but editing or removing
+its configuration requires changing the deployment environment and restarting.
+Startup refreshes this source before serving requests; a failed startup refresh
+does not silently use a stale catalog. Simultaneously starting instances with
+the same configuration can wait for the same sync. Unsetting the URL removes
+only this source, not runtime sources. Keep the environment configuration
+consistent across instances, and make required secret files, CA files, SSH keys,
+and `known_hosts` available on every instance that may perform Sync.
+
+Built-in availability remains deployment-controlled: change
+`MDMBOX_BUILT_IN_ALGORITHMS` and restart. The page shows the effective allowlist
+and whether credential files are configured, without disclosing their contents
+or stored paths. Viewing catalogs and configuration does not contact Git.
+Only trusted administrators should manage sources: repository code runs with
+the existing algorithm capabilities, and fetching uses the server's network
+and filesystem access.
 
 ## Client-plan merge v1
 

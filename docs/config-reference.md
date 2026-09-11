@@ -55,30 +55,49 @@ unknown ids prevent startup. Restart after changing the environment.
 
 Git and database algorithms are not restricted by this list. Operation defaults
 remain `simple` for merge and `restore` for unmerge: if that id is unavailable,
-the request returns HTTP 400, not another algorithm. A configured Git algorithm
-with the same id may still serve it. The database id `simple` remains reserved.
+the request returns HTTP 400, not another algorithm. A custom Git or database
+algorithm with the same id may still serve it. The merge database id `simple`
+remains reserved.
 
 | Variable | Description | Default |
 | --- | --- | --- |
 | `MDMBOX_BUILT_IN_ALGORITHMS` | Allowed built-in ids, separated by commas. Empty disables all. Example: `simple,strict`. | unset (all built-ins enabled) |
 
 Git storage is optional and read-only. Configure a small, administrator-controlled
-repository containing `merge/<id>.js` and/or `unmerge/<id>.js`. The repository is
-fetched once at startup; restart MDMbox to pick up a changed branch or tag. See
+repository containing `merge/<id>.js` and/or `unmerge/<id>.js`. Add runtime sources
+and manually synchronize revisions through **Algorithms → Configuration**;
+no restart is needed. The variables below configure a separate, reserved
+`environment` source that is refreshed at startup and can also be synchronized
+from the UI. See
 [Git algorithm storage](merge-operation.md#git-algorithm-storage) for layout,
 private access, limits, and precedence.
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `MDMBOX_ALGORITHM_GIT_URL` | HTTPS or SSH repository URL, or an absolute `file:///` URI. Do not put passwords or tokens in the URL. | unset (Git storage disabled) |
+| `MDMBOX_ALGORITHM_GIT_URL` | HTTPS or SSH repository URL, or an absolute `file:///` URI. Do not put passwords or tokens in the URL. | unset (no environment source; runtime sources remain available) |
 | `MDMBOX_ALGORITHM_GIT_REF` | `HEAD`, full branch ref such as `refs/heads/main`, full tag ref such as `refs/tags/v1`, or a 40-character commit SHA. A remote must allow fetching the selected commit. | `HEAD` |
 | `MDMBOX_ALGORITHM_GIT_USERNAME` | HTTPS authentication username; use the username required by the Git host for your token type. | `git` |
-| `MDMBOX_ALGORITHM_GIT_TOKEN_FILE` | Path to a mounted read-only secret containing the HTTPS token or password. | unset |
-| `MDMBOX_ALGORITHM_GIT_CA_FILE` | Optional PEM CA bundle for a private HTTPS Git server. Certificate verification remains enabled. | system CA trust |
+| `MDMBOX_ALGORITHM_GIT_TOKEN_FILE` | Absolute path to a mounted read-only secret containing the HTTPS token or password. | unset |
+| `MDMBOX_ALGORITHM_GIT_CA_FILE` | Absolute path to an optional PEM CA bundle for a private HTTPS Git server. Certificate verification remains enabled. | system CA trust |
 
-Setting any Git option requires a valid repository URL. Invalid configuration,
-authentication failure, missing revision, or invalid scripts prevent startup;
-MDMbox does not silently substitute another revision or a stale cache.
+Setting any Git environment option requires a valid repository URL. For the
+environment source, invalid configuration, authentication failure, a missing
+revision, or invalid scripts prevent startup; MDMbox does not silently substitute
+another revision or a stale catalog. Runtime sources and their last published
+scripts are persisted in the shared database and do not require a startup fetch.
+Use consistent environment settings across instances sharing that database.
+
+Open **Algorithms → Configuration** in the Admin UI to inspect the effective
+built-in policy, repository URL, requested ref, and loaded commit. Credential
+and CA files are shown only as configured/not configured; HTTPS authentication
+usernames, tokens, and stored secret-file locations are hidden. Viewing the page
+does not fetch Git. Add or edit a runtime source, save its configuration, then
+use **Sync** to publish both operation catalogs atomically. A failed sync keeps
+the last good scripts. Change deployment environment variables and restart only
+to change built-in availability or the reserved environment source configuration.
+Database merge and unmerge scripts are managed on their own tabs and do not
+require a restart. See the [source-management workflow](merge-operation.md#managing-algorithms-in-the-admin-ui)
+for concurrency limits, credential-file requirements, and removal behavior.
 
 ## Shared database configuration
 
