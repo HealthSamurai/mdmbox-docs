@@ -99,11 +99,14 @@ All bulk match endpoints are scoped to a BulkMatchingModel by ID.
 
 See [Bulk matching](bulk-match.md).
 
+Persistent matching processes use `/api/bulk-match-v2/:model-id`: `POST /start`, `POST /pause`, `POST /retry`, `GET /status`, `GET /pairs`, and `DELETE` on the model prefix to reset its process. See [Continuous bulk matching](bulk-matching-process.md) for request settings, version handling and conflict responses.
+
 ## Admin UI
 
 The admin interface is available at `/admin`. It provides:
 
 - `/admin` — model management (create, edit, delete MatchingModel and BulkMatchingModel)
 - `/admin/bulk-match` — bulk match pipeline (prepare, start, monitor, download, stop)
+- `/admin/bulk-match-v2` — continuous matching processes (start, pause, retry, download, reset)
 
 The Admin UI uses server-sent events for real-time updates. No separate frontend deployment is required.

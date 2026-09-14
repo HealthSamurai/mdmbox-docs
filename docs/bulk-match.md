@@ -7,7 +7,7 @@ description: Run bulk matching to find all duplicate pairs across large datasets
 Bulk matching finds all duplicate pairs across an entire dataset. Unlike `$match` which compares one resource at a time, bulk matching compares every record against every other record in parallel.
 
 {% hint style="warning" %}
-Bulk matching requires a BulkMatchingModel. See [Matching models](matching-models.md).
+Bulk matching requires a BulkMatchingModel. See [Matching models](matching-models.md). For a persistent process that also matches newly inserted records, see [Continuous bulk matching](bulk-matching-process.md).
 {% endhint %}
 
 ## How it works
@@ -168,5 +168,5 @@ Moves a completed, stopped, or failed job to archived status.
 - Indexes on block columns are critical — without them, the comparison query does a full cross-join.
 
 {% hint style="warning" %}
-Each bulk match worker holds a database connection for the duration of its work. Make sure `MDMBOX_DB_MAX_POOL_SIZE` is large enough to accommodate the number of workers plus normal application traffic.
+Each bulk match worker uses a connection from the separate bulk pool. Size `MDMBOX_BULK_DB_MAX_POOL_SIZE` for the concurrent workers and any continuous matching processes; `MDMBOX_DB_MAX_POOL_SIZE` controls the main application pool. See [Configuration reference](config-reference.md#mdmbox-connection-pools).
 {% endhint %}

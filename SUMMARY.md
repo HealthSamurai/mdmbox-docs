@@ -7,6 +7,7 @@
   - [Matching models](matching-models.md)
   - [Find duplicates: $match](match-operation.md)
   - [Bulk matching](bulk-match.md)
+  - [Continuous bulk matching](bulk-matching-process.md)
   - [Merge operation](merge-operation.md)
   - [Unmerge operation](unmerge-operation.md)
   - [JavaScript algorithm API](javascript-algorithm-api.md)

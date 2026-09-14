@@ -111,14 +111,19 @@ Aidbox and MDMbox run as separate applications against the same PostgreSQL datab
 | `BOX_DB_USER`     | Database user                   | Yes      |
 | `BOX_DB_PASSWORD` | Database password               | Yes      |
 
-## MDMbox connection pool
+## MDMbox connection pools
 
-The database connection settings are shared, but connection pool sizing is application-specific. Configure the MDMbox pool independently for its workload using the variables below; these values do not change the Aidbox application's pool size.
+The database connection settings are shared, but connection pool sizing is application-specific. MDMbox has a main pool for API and admin traffic and a separate bulk pool for matching workers. These variables do not change the Aidbox application's pool size.
 
 | Variable                  | Description              | Default |
 | ------------------------- | ------------------------ | ------- |
-| `MDMBOX_DB_MAX_POOL_SIZE` | Maximum pool connections | 10      |
-| `MDMBOX_DB_MIN_IDLE`      | Minimum idle connections | 1       |
+| `MDMBOX_DB_MAX_POOL_SIZE` | Maximum main pool connections | 10 |
+| `MDMBOX_DB_MIN_IDLE` | Minimum idle main pool connections | 1 |
+| `MDMBOX_BULK_DB_MAX_POOL_SIZE` | Maximum bulk pool connections | 12 |
+| `MDMBOX_BULK_DB_MIN_IDLE` | Minimum idle bulk pool connections | 0 |
+| `MDMBOX_BULK_DB_IDLE_TIMEOUT_MS` | Time before unused bulk connections can be released, in milliseconds | 60000 |
+
+Both bulk matching jobs and [continuous matching processes](bulk-matching-process.md) use the bulk pool. A continuous process reserves one connection per range worker plus one for its coordinator, including while its projection is being built. A Start that exceeds the bulk pool capacity is refused with HTTP 409. Include both pools, other applications and all replicas when sizing PostgreSQL's connection limit.
 
 ## HTTP Server
 
