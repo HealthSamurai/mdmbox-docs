@@ -22,11 +22,28 @@ An active process uses the model version from which it was built. Saving changes
 
 To apply a saved change, pause the process and start it again. This rebuilds the projection and recomputes its pairs. Starting an unchanged paused process resumes its pending work and keeps existing pairs.
 
-After an application restart, active processes resume automatically using their pinned FHIR model versions. Keep model history available while a process depends on it. An interrupted build is restarted; a process left pausing is marked paused. A process already owned by another instance is left untouched. Automatic leader election is not provided.
+After an application restart, active processes resume automatically using their pinned FHIR model versions. Keep model history available while a process depends on it. An interrupted build is restarted; a process left pausing is marked paused, even if its saved worker settings no longer fit the bulk pool. Finishing that pause uses the main pool and still respects another instance's ownership lock. A process already owned by another instance is left untouched. Automatic leader election is not provided.
+
+### Deployment and upgrades
+
+Run one MDMbox instance with autoscaling disabled when using continuous matching. Stop the old instance completely before starting its replacement. Recovery runs once at startup: a new instance that encounters the old owner's lock does not retry after the old instance exits.
+
+Configure Helm deployments with `Recreate` so upgrades follow this order:
+
+```yaml
+replicaCount: 1
+autoscaling:
+  enabled: false
+updateStrategy:
+  type: Recreate
+  rollingUpdate: null
+```
+
+Update any existing strategy overrides, including values retained by `helm upgrade --reuse-values`. Upgrades briefly interrupt the MDMbox API and admin UI while the replacement starts. Database sync triggers continue collecting inserted records during the interruption, and the replacement resumes matching them. Rolling updates with overlapping MDMbox instances are not supported for this workflow.
 
 ## Results and failures
 
-The process card shows its status, build stage, trigger presence, unassigned records, interval counts, stored pair count and recent errors. **Download CSV** exports the full accumulated pair set, with resource IDs, match weight, feature weights and decision status. It uses the same columns as the [job CSV](bulk-match.md#step-4-download-results).
+The process card shows its status, build stage, trigger presence, unassigned records, interval counts, stored pair count and recent errors. **Download CSV** exports the full accumulated pair set, with resource IDs, match weight, feature weights and decision status. It uses the same columns as the [job CSV](bulk-match.md#step-4-download-results). Decisions are read from current linkage and task state for the resource type in the process's pinned model version. Saving a different resource type in the model does not change existing exports until the process rebuilds. If the pinned model history is unavailable, the export returns HTTP 500 OperationOutcome before sending CSV.
 
 A failed interval is retried after five seconds, up to three failed attempts. **Retry** requeues failed intervals with a fresh attempt budget. Pairs, interval completion and the pair count are committed together. An interrupted transaction does not leave partial results, and a worker from a previous process run cannot commit after another run takes ownership.
 
@@ -46,16 +63,16 @@ All process endpoints use the MDMbox host and the same [API authentication](auth
 
 | Method | Path | Result |
 | --- | --- | --- |
-| POST | `/api/bulk-match-v2/{model-id}/start` | 202 when starting or resuming; 200 if already active locally; 409 if another operation owns the model or the pool has insufficient capacity |
+| POST | `/api/bulk-match-v2/{model-id}/start` | 202 when starting or resuming; 200 if already active locally; 400 for invalid settings; 409 if another operation owns the model or the pool has insufficient capacity |
 | POST | `/api/bulk-match-v2/{model-id}/pause` | 202 when pausing; 409 if the process is not active or is owned elsewhere |
 | POST | `/api/bulk-match-v2/{model-id}/retry` | 200 with the number of requeued failed intervals |
 | GET | `/api/bulk-match-v2/{model-id}/status` | JSON process status, including pinned and current model versions, settings and counts |
-| GET | `/api/bulk-match-v2/{model-id}/pairs` | CSV of all stored pairs |
+| GET | `/api/bulk-match-v2/{model-id}/pairs` | CSV of all stored pairs; 500 OperationOutcome if the pinned model history is unavailable |
 | DELETE | `/api/bulk-match-v2/{model-id}` | 200 after Reset; 409 while the process is active or another operation owns it |
 
 A missing model on Start, or a missing process on the other operations, returns 404. Action responses use OperationOutcome; status returns JSON and pairs returns CSV.
 
-The Start request accepts these optional positive integer settings:
+The Start request accepts these optional integer settings, each between 1 and 2147483647:
 
 ```json
 {
@@ -65,7 +82,7 @@ The Start request accepts these optional positive integer settings:
 }
 ```
 
-These are also the defaults when settings are omitted on an explicit Start. Automatic resume retains the saved process settings. A refused Start leaves existing settings and results unchanged and creates no process row.
+These are also the defaults when settings are omitted on an explicit Start. Explicit nulls, zero, negative, fractional and out-of-range values are invalid. The API returns HTTP 400 OperationOutcome for invalid settings; the admin page shows which setting to correct. Both validate before changing the process. Automatic resume retains the saved process settings. A refused Start leaves existing settings and results unchanged and creates no process row.
 
 ## Connection capacity
 
