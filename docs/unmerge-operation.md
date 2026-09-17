@@ -39,6 +39,10 @@ Content-Type: application/fhir+json
 
 ### Algorithms
 
+Custom algorithms may accept additional named parameters, including nested `part`, embedded `resource`, and all `value[x]` fields. As in `$merge/v2`, the complete FHIR Parameters request is available as `input.parameters`, preserving repeated parameters, their order, and resource metadata. These values cannot override the server-supplied source, target, Task, or Provenance. The selected algorithm interprets and validates its additional parameters; built-in algorithms ignore them. For example, an algorithm can accept encounter and patient references as a repeated assignment parameter and validate each requested destination. See [custom parameters](javascript-algorithm-api.md#custom-parameters-merge-and-unmerge) for the shared contract.
+
+Custom unmerge plans may change resources outside the original merge audit. All writes retain version or absence preconditions and are included in the new unmerge audit. The algorithm must restore the source exactly once, cannot delete the target, and cannot mutate server-managed audit resources. Built-in `restore` and `strict` continue to leave external resources at the target.
+
 Operators can restrict built-ins with `MDMBOX_BUILT_IN_ALGORITHMS`. Unset enables
 all; empty disables all; `simple,strict` enables simple merge and strict unmerge.
 The default unmerge id remains `restore`, even when restore is disabled: such a

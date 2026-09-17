@@ -44,6 +44,7 @@ must not assume they are Patients. Treat versions as opaque strings, not numbers
 | --- | --- |
 | `sourceReference` | Source reference |
 | `targetReference` | Target reference |
+| `parameters` | Full caller-supplied FHIR Parameters resource, including standard and custom parameters |
 | `source` | Current source FHIR resource, including `meta.versionId` |
 | `target` | Current target FHIR resource, including `meta.versionId` |
 | `result` | Requested target content, or `null` if omitted |
@@ -61,6 +62,7 @@ not `input.result.meta.versionId`.
 | Field | Value |
 | --- | --- |
 | `taskReference` | Reference to the original merge Task |
+| `parameters` | Full caller-supplied FHIR Parameters resource, including standard and custom parameters |
 | `mergeTask` | Original merge Task FHIR resource, not its subsequently edited current revision |
 | `provenance` | Original merge Provenance, with validated versioned post-merge references supplied by the server |
 | `sourceReference` | Source reference saved by that merge |
@@ -74,9 +76,32 @@ target and deleted-resource targets are unversioned; not every target is a
 created resource. An unchanged merge target has its baseline in the Task's
 `target-version`, exposed by `preMergeTargetVersion`.
 
-The original target must still exist. Audit/history checks and LIFO validation
-run on the server before the script. Neither input object contains a `preview`
-flag: scripts compute the same kind of result for preview and execution.
+The original target must still exist. Audit/history checks and LIFO validation run on the server before the script.
+
+### Custom parameters (merge and unmerge)
+
+Both `$merge/v2` and `$unmerge/v2` pass the full caller-supplied FHIR Parameters resource as `input.parameters`. This includes standard operation parameters, additional named parameters, nested `part`, embedded `resource`, all `value[x]` fields, repeated parameters in their original order, and resource metadata. The selected algorithm interprets and validates its additional parameters; built-in algorithms ignore them.
+
+For example, a caller can append this item to the request's `parameter` array when selecting a custom algorithm that supports it:
+
+```json
+{
+  "name": "options",
+  "part": [
+    { "name": "keep-identifiers", "valueBoolean": true },
+    { "name": "reason", "valueString": "Reviewed duplicate" }
+  ]
+}
+```
+
+Inside either `merge(input, mdm)` or `unmerge(input, mdm)`, read it from the same location:
+
+```javascript
+const options = input.parameters.parameter.find(p => p.name === 'options');
+const keepIdentifiers = options?.part?.find(p => p.name === 'keep-identifiers')?.valueBoolean;
+```
+
+Custom parameters remain inside `input.parameters` and cannot replace server-supplied context fields such as `input.source`, `input.target`, or `input.provenance`. The request's `preview` parameter is included there; algorithms should compute the same plan for preview and execution. The server decides whether to execute it.
 
 ## Function availability
 
@@ -353,9 +378,7 @@ Builders do not bypass validation, including during preview:
   `urn:uuid:` fullUrl. It cannot create another resource of the pair's type.
   Conditional creation (`ifNoneExist`, including null/empty values, or the
   equivalent header) is forbidden.
-- Unmerge must PUT source exactly once, cannot delete target, and cannot use
-  POST. Other mutations are limited to the pair and resources recorded by the
-  original merge audit; restoration of an absent resource requires `ifNoneMatch: '*'`.
+- Unmerge must PUT source exactly once, cannot delete target, and cannot use POST. Custom algorithms may also mutate resources absent from the original merge audit, for example caller-selected new encounters. Algorithms validate their own assignment rules. Existing-resource mutations require the observed version; restoration of an absent resource requires `ifNoneMatch: '*'`. The unmerge audit records every mutation, including additional resources.
 - Task, Provenance, AuditEvent, and Device are server-managed and cannot be
   added, changed, or removed by algorithm plans. The server owns audit assembly
   and lifecycle changes, including marking the original Task unmerged.
