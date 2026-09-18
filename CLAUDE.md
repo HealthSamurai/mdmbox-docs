@@ -4,6 +4,14 @@ This is a documentation repository for MDMbox. It uses Health Samurai's `docs-to
 
 All documentation is written in **English**.
 
+## Public Content Boundary
+
+- Describe MDMbox's supported behavior, workflows, APIs, configuration, guarantees, limits, and recovery steps. Include technical details when readers need them to integrate, deploy, operate, or make a decision.
+- Libox is an internal implementation detail. Do not mention it or describe MDMbox as an embedded Aidbox/libox runtime in published pages, examples, diagrams, or downloadable assets. Do not replace the name with another internal runtime name while retaining the implementation explanation. A separate Aidbox service may be documented when it is part of the user's integration.
+- Keep internal namespaces, startup hooks, Zen loading, dependency wiring, and runtime workarounds in the implementation repository's developer documentation. Internal-only changes do not require a public documentation entry.
+- Preserve exact public API/configuration identifiers, runnable examples, and observable limitations. For example, write "MDMbox returns HTTP 412 with an OperationOutcome"; explanations of the internal code producing it belong in developer docs.
+- Before publishing, review prose, snippets, and diagrams against this boundary. Run `rg -n -i 'libox' docs assets SUMMARY.md` as a name check (no matches is expected); also review unnamed implementation details. These agent instructions are not published documentation.
+
 ## Structure
 
 ```
