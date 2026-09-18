@@ -37,6 +37,10 @@ For API Bearer authentication, MDMbox uses Aidbox's authentication pipeline and 
 | `MDMBOX_API_CLIENT_ID` | API `Client` id to bootstrap for Basic auth. Must be set together with `MDMBOX_API_CLIENT_SECRET`. | unset |
 | `MDMBOX_API_CLIENT_SECRET` | Secret for the bootstrapped API `Client`. Must be set together with `MDMBOX_API_CLIENT_ID`. | unset |
 
+## Audit
+
+MDM operation auditing is automatic and has no separate enable/disable setting. Aidbox's native audit settings do not control these events, and its repository URL does not export them. See [Audit](audit.md) for covered operations, persistence guarantees, and storage limitations.
+
 ## Match operation
 
 | Variable | Description | Default |

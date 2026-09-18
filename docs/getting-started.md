@@ -88,6 +88,8 @@ Once running, use Aidbox for the FHIR API and MDMbox for MDM operations and its 
 
 ## Next steps
 
+The onboarding page and its actions produce [audit events](audit.md). Page and initialization events are coalesced to limit duplicates. Importing sample patients and installing the starter model require a request event before execution; other steps record their result. Login/logout are also audited, without storing credentials or patient payloads in the interaction events.
+
 {% content-ref %}
 [Matching models](matching-models.md)
 {% endcontent-ref %}

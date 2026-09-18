@@ -4,7 +4,7 @@ description: Use the $unmerge operation to reverse a previous merge with an audi
 
 # Unmerge operation
 
-MDMbox provides two versions of `$unmerge`: server-computed `$unmerge/v2`, which reconstructs the reversal from the merge audit trail, and client-plan `$unmerge`, which executes a reverse transaction supplied by the caller. Both versions create an unmerge Task and Provenance, change the original merge Task to `businessStatus=unmerged`, and commit all changes atomically.
+MDMbox provides two versions of `$unmerge`: server-computed `$unmerge/v2`, which reconstructs the reversal from the merge audit trail, and client-plan `$unmerge`, which executes a reverse transaction supplied by the caller. Both versions create an unmerge Task, Provenance, and AuditEvent, change the original merge Task to `businessStatus=unmerged`, and commit all changes atomically.
 
 Use `$unmerge` when a merge was accepted by mistake and the affected resources must be restored or reassigned.
 
@@ -41,7 +41,7 @@ Content-Type: application/fhir+json
 
 Custom algorithms may accept additional named parameters, including nested `part`, embedded `resource`, and all `value[x]` fields. As in `$merge/v2`, the complete FHIR Parameters request is available as `input.parameters`, preserving repeated parameters, their order, and resource metadata. These values cannot override the server-supplied source, target, Task, or Provenance. The selected algorithm interprets and validates its additional parameters; built-in algorithms ignore them. For example, an algorithm can accept encounter and patient references as a repeated assignment parameter and validate each requested destination. See [custom parameters](javascript-algorithm-api.md#custom-parameters-merge-and-unmerge) for the shared contract.
 
-Custom unmerge plans may change resources outside the original merge audit. All writes retain version or absence preconditions and are included in the new unmerge audit. The algorithm must restore the source exactly once, cannot delete the target, and cannot mutate server-managed audit resources. Built-in `restore` and `strict` continue to leave external resources at the target.
+Custom v2 unmerge plans are limited to the source, target, and resources represented in the original merge Provenance. Resources outside that audit scope cannot be added to the reversal plan. All writes retain version or absence preconditions and are included in the new unmerge audit. The algorithm must restore the source exactly once, cannot delete the target, and cannot mutate server-managed audit resources. Built-in `restore` and `strict` leave external resources at the target.
 
 Operators can restrict built-ins with `MDMBOX_BUILT_IN_ALGORITHMS`. Unset enables
 all; empty disables all; `simple,strict` enables simple merge and strict unmerge.
@@ -103,11 +103,11 @@ Pair unmerge is last-in-first-out for merges into the same target resource. Befo
 
 For preview, the response is a `Parameters` resource containing `outcome` (`OperationOutcome`) and `plan` (the complete audited transaction Bundle). Preview performs no writes.
 
-For successful execution, the response contains `outcome` and the new unmerge `task`. Warnings do not change the HTTP 200 status. A strict drift conflict returns the `OperationOutcome` directly with HTTP 409 and makes no business changes. Operation-level AuditEvent emission and failure auditing are deferred to a separate change. A missing merge Task or deleted original target resource returns `404 Not Found`; unmerge never recreates a deleted target.
+For successful execution, the response contains `outcome` and the new unmerge `task`. Warnings do not change the HTTP 200 status. A strict drift conflict returns the `OperationOutcome` directly with HTTP 409 and makes no business changes. Successful AuditEvents commit with the reversal; failed non-preview attempts use a separate best-effort audit write. See [Audit](audit.md). A missing merge Task or deleted original target resource returns `404 Not Found`; unmerge never recreates a deleted target.
 
 Both algorithms execute against a version-protected database snapshot. Restore intentionally discards changes made before that snapshot, but does not overwrite a concurrent write made while it computes or executes its plan: such a conflict returns HTTP 409 and rolls back the restoration and its successful audit together.
 
-Internal storage failures return HTTP 500 with a generic OperationOutcome and no database row diagnostics or payloads. Ordinary transaction validation failures return 422 with FHIR validation details. Both leave business resources, new audit resources, and the original merge Task unchanged. This error mapping applies to v2; legacy v1 is unchanged.
+Internal storage failures return HTTP 500 with a generic OperationOutcome and no database row diagnostics or payloads. Ordinary transaction validation failures return 422 with FHIR validation details. Both roll back business changes, the new Task, Provenance, and success AuditEvent, and the original merge Task update. A separate failure AuditEvent may still be persisted. This error mapping applies to v2; legacy v1 is unchanged.
 
 Keep the original Task, Provenance, and required FHIR history versions. An edited audit revision cannot substitute for a missing original. Before deleting a resource described as merge-created, MDMbox also requires its recorded creation version from that merge transaction. Missing or inconsistent evidence returns `422 Unprocessable Entity` without partial restoration.
 
@@ -124,8 +124,8 @@ The original `$unmerge` operation reverses a previous `$merge` by executing a cl
 1. The client finds the original merge `Task`.
 2. The client reads the merge audit trail with `GET /Provenance?target=Task/<task-id>` and builds a reverse transaction Bundle.
 3. The client calls `$unmerge` with the merge Task reference and the reverse plan.
-4. MDMbox adds an unmerge `Task`, adds `Provenance`, updates the original merge Task to `businessStatus=unmerged`, and executes the Bundle as one transaction.
-5. If anything fails, the entire transaction rolls back, including audit records and the merge Task status update.
+4. MDMbox adds an unmerge `Task`, `Provenance`, and `AuditEvent`, updates the original merge Task to `businessStatus=unmerged`, and executes the Bundle as one transaction.
+5. If anything fails, the entire transaction rolls back, including its success audit records and the merge Task status update. A separate best-effort AuditEvent records the failed non-preview attempt.
 
 ## Request
 
@@ -329,6 +329,8 @@ Every executed unmerge creates or updates these resources in the same transactio
 - `target` - every reverse-plan target plus the unmerge Task
 - `entity[]` - versioned references to pre-unmerge revisions when available
 - `agent` - `Device/mdmbox`
+
+**AuditEvent** records the initiating user or client when available, outcome, service, correlation, and references to the original merge Task, new unmerge Task, Provenance, and domain resources. If this event cannot be written, the reversal rolls back. See [Audit](audit.md) for failure and preview behavior.
 
 After a successful unmerge, the original source can be merged again because the previous merge Task is no longer active.
 

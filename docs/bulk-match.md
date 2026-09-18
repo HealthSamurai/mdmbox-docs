@@ -38,6 +38,8 @@ The Admin UI at `/admin/bulk-match` is the recommended way to run bulk matching.
 
 ## API workflow
 
+Bulk commands and CSV/NDJSON downloads are [audited](audit.md#bulk-operation-codes) through both the API and Admin UI. Each command requires a durable request event before execution and records acceptance separately. Status API calls and downloads require an access event before returning data. An unavailable audit store blocks new commands and exports. Admin UI page/init, model selection, and query preview also record their results. Polling records failures only, with equivalent repeats suppressed for one minute.
+
 ### Step 1: Prepare the flat table
 
 ```http

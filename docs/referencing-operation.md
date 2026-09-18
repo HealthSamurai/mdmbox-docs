@@ -61,6 +61,10 @@ A FHIR Bundle containing all resources that reference the target:
 }
 ```
 
+## Audit
+
+Every successful `$referencing` records an AuditEvent naming the subject and returned resources before sending the response. If the event cannot be persisted, the operation returns HTTP 500 instead of the results. See [Audit](audit.md) for failure handling and the 1000-reference recording limit.
+
 ## See also
 
 {% content-ref %}

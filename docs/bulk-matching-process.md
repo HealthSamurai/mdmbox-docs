@@ -8,6 +8,8 @@ A matching process builds a projection of the records selected by a BulkMatching
 
 ## Start and pause
 
+Start, pause, retry and reset commands, status API calls, and CSV downloads are [audited](audit.md#bulk-operation-codes). Commands require a durable request event before execution, followed by a separate acceptance event. Downloads require an access event before streaming. Admin UI page/init and model selection also record their results. Polling records failures only, with equivalent repeats suppressed for one minute.
+
 Open **Bulk Match → Process (v2)** at `/admin/bulk-match-v2`, select a model, choose the worker count, batch size and cut timeout, then click **Start**.
 
 The first start builds the projection and its indexes. A database trigger adds each subsequently inserted source record to the projection, including inserts through the FHIR API, bulk import and SQL. Committed records are assigned to intervals; workers compare them against earlier assigned records and store pairs reaching the model's probable threshold. A full batch is assigned immediately. A smaller batch is assigned after the cut timeout, so a single new record can be matched without waiting for another full batch.

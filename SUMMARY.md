@@ -4,6 +4,7 @@
   - [Getting started](getting-started.md)
   - [Configuration reference](config-reference.md)
   - [Authentication](authentication.md)
+  - [Audit](audit.md)
   - [Matching models](matching-models.md)
   - [Find duplicates: $match](match-operation.md)
   - [Bulk matching](bulk-match.md)

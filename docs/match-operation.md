@@ -14,6 +14,10 @@ Unversioned routes such as `/api/fhir/Patient/$match` use the FHIR release selec
 
 For body-based `$match`, MDMbox validates the input `resource` before matching. If the resource declares `meta.profile`, the corresponding FHIR package must be installed and the resource must satisfy that profile. For example, a Patient with `meta.profile` set to the US Core Patient profile requires the US Core package to be installed first. Profile validation failures return `422 Unprocessable Entity` with an `OperationOutcome`.
 
+## Audit
+
+Every successful `$match` records an AuditEvent before returning data, including when there are no matches. The event identifies the returned candidates and, for an instance-level request, the subject. If the event cannot be persisted, the operation returns HTTP 500 instead of the results. See [Audit](audit.md) for actor identity, failure handling, and the 1000-reference recording limit.
+
 ## Match a resource
 
 Send a FHIR Parameters resource containing the record to match:

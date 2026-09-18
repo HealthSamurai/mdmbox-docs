@@ -12,6 +12,8 @@ MDMbox is a master data management service for healthcare organizations. It iden
 
 **Merging.** FHIR R5-aligned merge lifecycle with server-computed `$merge/v2` and `$unmerge/v2` operations, plus client-plan `$merge` and `$unmerge` endpoints for callers that need full control over the transaction Bundle. Both modes provide an atomic audit trail and write-free preview.
 
+**Audit.** Automatic FHIR AuditEvents record matching, referencing, merge/unmerge, link/unlink, not-a-match, bulk workflows and exports, algorithm and Git source administration, manual synchronization, onboarding, and login/logout. Commands require a durable request event before execution; results are recorded separately. Successful UI polling creates no events, and repeated polling failures are throttled. See [Audit](audit.md) for exact coverage, persistence guarantees, and queries.
+
 **Bulk matching.** Find all duplicate pairs across millions of records in parallel. Download results as CSV.
 
 **Admin UI.** Server-rendered interface for managing matching models and running bulk match jobs.

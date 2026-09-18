@@ -76,6 +76,8 @@ MDMBOX_ADMIN_PASSWORD=<password>
 
 External JWT authentication applies to API requests only; it does not create an Admin UI session.
 
+Login and logout attempts are [audited](audit.md). Successful sessions use the verified Aidbox user or client identity; failed credentials are not attributed to the submitted username. Passwords and session tokens are excluded. Repeated login page views are coalesced over five seconds, but login/logout attempts are recorded individually. Audit persistence for these results is best-effort, and an unavailable audit store does not prevent logout from clearing the cookie.
+
 ## Public endpoints
 
 The health checks, Swagger UI, and OpenAPI specification remain public when authentication is enabled:
@@ -87,6 +89,7 @@ The health checks, Swagger UI, and OpenAPI specification remain public when auth
 
 ## Related pages
 
+- [Audit](audit.md) — how verified users, JWT subjects, and clients are recorded as operation initiators
 - [Getting started](getting-started.md)
 - [Configuration reference](config-reference.md)
 - [API reference](api-reference.md)

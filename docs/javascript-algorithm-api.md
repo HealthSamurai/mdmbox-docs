@@ -378,11 +378,9 @@ Builders do not bypass validation, including during preview:
   `urn:uuid:` fullUrl. It cannot create another resource of the pair's type.
   Conditional creation (`ifNoneExist`, including null/empty values, or the
   equivalent header) is forbidden.
-- Unmerge must PUT source exactly once, cannot delete target, and cannot use POST. Custom algorithms may also mutate resources absent from the original merge audit, for example caller-selected new encounters. Algorithms validate their own assignment rules. Existing-resource mutations require the observed version; restoration of an absent resource requires `ifNoneMatch: '*'`. The unmerge audit records every mutation, including additional resources.
+- Unmerge must PUT source exactly once, cannot delete target, and cannot use POST. Both built-in and custom algorithms may mutate only the source, target, and resources represented in the original merge Provenance. Resources outside that audit scope cannot be added to the reversal plan. Existing-resource mutations require the observed version; restoration of an absent resource requires `ifNoneMatch: '*'`. The unmerge audit records every mutation.
 - Task, Provenance, AuditEvent, and Device are server-managed and cannot be
   added, changed, or removed by algorithm plans. The server owns audit assembly
   and lifecycle changes, including marking the original Task unmerged.
 
-Preview executes no writes. For execution, successful business changes and
-Task/Provenance changes commit or roll back together. See the operation pages
-for the built-in restore/strict policies, history retention, and response details.
+Preview executes no writes. For execution, successful business changes, Task, Provenance, and AuditEvent commit or roll back together. Failed non-preview attempts use a separate best-effort AuditEvent write; see [Audit](audit.md). See the operation pages for the built-in restore/strict policies, history retention, and response details.
