@@ -71,7 +71,7 @@ Concurrent changes by ordinary FHIR writers can invalidate the computed plan. In
 
 Custom v2 algorithms may create resources with an unconditional `POST` and a unique `urn:uuid:` fullUrl, except resources of the pair's type and server-managed types. Conditional creation with `request.ifNoneExist` (or an equivalent `if-none-exist` header) is forbidden: it can return an existing resource that unmerge would otherwise mistake for newly created data. Such an algorithm plan returns `500 Internal Server Error` with an `OperationOutcome` before preview or execution. This restriction does not change the legacy client-plan endpoints.
 
-In v2 plans, non-POST entries must omit `fullUrl`. Their resource identity must match the canonical request URL, including the result of a PATCH. Request fields are limited to `method`, `url`, `ifMatch` and `ifNoneMatch`; raw libox headers cannot override the validated preconditions.
+In v2 plans, non-POST entries must omit `fullUrl`. Their resource identity must match the canonical request URL, including the result of a PATCH. Request fields are limited to `method`, `url`, `ifMatch` and `ifNoneMatch`; custom HTTP headers cannot override the validated preconditions.
 
 The v2 algorithm-plan restrictions above do not apply to client plans for `$merge`, `$unmerge`, `$link`, or `$unlink`. Those operations retain their existing contracts; their own operation rules and FHIR transaction validation still apply.
 

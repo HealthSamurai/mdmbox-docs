@@ -370,7 +370,7 @@ Builders do not bypass validation, including during preview:
 
 - Use canonical relative URLs and matching resource identities. Existing-resource
   mutations require the version observed in the operation snapshot. Non-POST
-  entries must omit `fullUrl`; use FHIR request fields, not raw libox headers.
+  entries must omit `fullUrl`; use FHIR request fields, not custom HTTP headers.
 - Merge must delete the current source version exactly once, cannot otherwise
   mutate source or delete target, and may change only the pair and related
   resources discovered in the selected source-reference scope.

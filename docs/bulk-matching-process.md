@@ -57,7 +57,7 @@ Pause the process before using **Delete** on its card. This resets the process b
 
 Deleting a paused BulkMatchingModel also removes its process and projection in the same database transaction. If the resource deletion rolls back, the process and its results are restored with it. This applies to FHIR deletion and direct deletion of the model's database row, including deletion through a separate Aidbox application sharing the database.
 
-Deleting a model with an active process is refused. The process Reset API returns HTTP 409 on a conflict. Direct FHIR deletion uses libox's HTTP 412 OperationOutcome for a transaction conflict. Pause the process and retry the deletion.
+Deleting a model with an active process is refused. The process Reset API returns HTTP 409 on a conflict. Direct FHIR deletion returns HTTP 412 with an OperationOutcome for a transaction conflict. Pause the process and retry the deletion.
 
 ## API
 
