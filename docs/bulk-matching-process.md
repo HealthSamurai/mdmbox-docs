@@ -2,15 +2,19 @@
 description: Keep matching newly inserted records with a persistent bulk matching process.
 ---
 
-# Continuous bulk matching
+# Continuous matching
 
-A matching process builds a projection of the records selected by a BulkMatchingModel, finds duplicate pairs, and keeps matching new records until you pause it. Each model has one process and one accumulated set of pairs. The existing [bulk matching jobs](bulk-match.md) remain available alongside this workflow.
+A continuous matching process builds a projection of the records selected by a BulkMatchingModel, finds duplicate pairs, and keeps matching new records until you pause it. Each model has one process and one accumulated set of pairs. For jobs that finish after processing a prepared dataset, use [Batch matching](bulk-match.md).
 
 ## Start and pause
 
 Start, pause, retry and reset commands, status API calls, and CSV downloads are [audited](audit.md#bulk-operation-codes). Commands require a durable request event before execution, followed by a separate acceptance event. Downloads require an access event before streaming. Admin UI page/init and model selection also record their results. Polling records failures only, with equivalent repeats suppressed for one minute.
 
-Open **Bulk Match → Process (v2)** at `/admin/bulk-match-v2`, select a model, choose the worker count, batch size and cut timeout, then click **Start**.
+In the left sidebar, open **Bulk Match → Continuous matching** at `/admin/bulk-match-v2`. The **Models** list shows every bulk matching model with its process status, including **Not started** for models without a process. Select a model to view its process and results on the right. **Start** and **Pause** are in the selected model's toolbar. Expand the **Run settings** heading below it to view or edit the settings.
+
+**Run settings** contains the worker count, batch size and cut timeout. It opens automatically for an inactive process; settings are read-only while the process is active. Selecting an existing process loads its saved settings, while a model without a process uses the defaults. Status updates preserve values you are editing. The model list continues updating even when the selected model has not been started.
+
+Process, trigger and interval statuses use the same outlined badges as other Admin UI statuses. **Running**, **Installed** and **Completed** are green; **Paused** is yellow; **Failed** and **Missing** are red; **Not started**, **Pending** and **Idle** are gray.
 
 The first start builds the projection and its indexes. A database trigger adds each subsequently inserted source record to the projection, including inserts through the FHIR API, bulk import and SQL. Committed records are assigned to intervals; workers compare them against earlier assigned records and store pairs reaching the model's probable threshold. A full batch is assigned immediately. A smaller batch is assigned after the cut timeout, so a single new record can be matched without waiting for another full batch.
 
@@ -88,7 +92,7 @@ These are also the defaults when settings are omitted on an explicit Start. Expl
 
 ## Connection capacity
 
-Bulk matching uses a separate database pool controlled by `MDMBOX_BULK_DB_*`. Each process reserves `workersCount + 1` connections, including one for its coordinator. Start returns 409 when that reservation, active local process reservations and unfinished v1 job workers exceed `MDMBOX_BULK_DB_MAX_POOL_SIZE`. Pause another process, reduce the worker count or increase the bulk pool size before retrying. See [Configuration reference](config-reference.md#mdmbox-connection-pools).
+Bulk matching uses a separate database pool controlled by `MDMBOX_BULK_DB_*`. Each process reserves `workersCount + 1` connections, including one for its coordinator. Start returns 409 when that reservation, active local process reservations and unfinished batch job workers exceed `MDMBOX_BULK_DB_MAX_POOL_SIZE`. Pause another process, reduce the worker count or increase the bulk pool size before retrying. See [Configuration reference](config-reference.md#mdmbox-connection-pools).
 
 ## Current limitations
 

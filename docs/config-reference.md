@@ -91,17 +91,11 @@ another revision or a stale catalog. Runtime sources and their last published
 scripts are persisted in the shared database and do not require a startup fetch.
 Use consistent environment settings across instances sharing that database.
 
-Open **Algorithms → Configuration** in the Admin UI to inspect the effective
-built-in policy, repository URL, requested ref, and loaded commit. Credential
-and CA files are shown only as configured/not configured; HTTPS authentication
-usernames, tokens, and stored secret-file locations are hidden. Viewing the page
-does not fetch Git. Add or edit a runtime source, save its configuration, then
-use **Sync** to publish both operation catalogs atomically. A failed sync keeps
-the last good scripts. Change deployment environment variables and restart only
-to change built-in availability or the reserved environment source configuration.
-Database merge and unmerge scripts are managed on their own tabs and do not
-require a restart. See the [source-management workflow](merge-operation.md#managing-algorithms-in-the-admin-ui)
-for concurrency limits, credential-file requirements, and removal behavior.
+Open **Algorithms → Configuration** in the Admin UI to inspect the effective built-in policy and all Git sources in one list. When configured, the single reserved `environment` source appears under **Git sources** with an **Environment** badge; it has no separate section. Its information icon explains deployment management. You can have up to 20 sources in total, including this environment source. Each entry shows the repository URL, ref, published commit and last successful sync. Credential and CA files are shown only as configured/not configured; HTTPS authentication usernames, tokens, and stored secret-file locations are hidden. Viewing the page does not fetch Git.
+
+The **Built-in algorithms** table marks **Enabled** algorithms in green and **Disabled** algorithms in gray. The information icon beside its heading states whether `MDMBOX_BUILT_IN_ALGORITHMS` is unset or shows its configured value with `=`; an empty value appears as `""`. It also explains how to change the setting.
+
+Add or edit a runtime source, save its configuration, then use **Sync** to publish both operation catalogs atomically. A failed sync keeps the last good scripts. Change deployment environment variables and restart only to change built-in availability or the reserved environment source configuration. Database merge and unmerge scripts are managed in **Algorithms → Merge** and **Algorithms → Unmerge** and do not require a restart. See the [source-management workflow](merge-operation.md#managing-algorithms-in-the-admin-ui) for concurrency limits, credential-file requirements, and removal behavior.
 
 ## Shared database configuration
 

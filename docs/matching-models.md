@@ -227,6 +227,10 @@ Key differences from MatchingModel:
 
 Models can be managed through the Admin UI at `/admin`. The UI provides a JSON editor for creating and editing both MatchingModel and BulkMatchingModel resources.
 
+Select a model in the **Models** list to view or edit its JSON. BulkMatchingModel entries carry a **bulk** badge; the editor header also shows the resource type. A MatchingModel and a BulkMatchingModel can share the same `id` and remain separate entries: selection, editing and deletion apply to the selected resource type. **New Model** clears the selection and opens an empty editor; **Cancel** returns to the model-selection prompt.
+
+Red markers in the editor gutter indicate JSON syntax errors. They are refreshed after editing pauses and cleared when the JSON changes or another model is selected. Selected text is highlighted in blue, with a lighter shade when the editor loses focus.
+
 ## Tuning
 
 The example weights above are for demonstration. Production deployment requires calibrating weights based on your data. Key considerations:
@@ -247,7 +251,7 @@ Professional tuning services are available. Contact [Health Samurai](https://www
 {% endcontent-ref %}
 
 {% content-ref %}
-[Bulk matching](bulk-match.md)
+[Batch matching](bulk-match.md)
 {% endcontent-ref %}
 
 {% content-ref %}

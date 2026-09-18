@@ -15,7 +15,7 @@ MDMbox automatically records the operations listed below as FHIR R4 `AuditEvent`
 | `$match`, including R4/R6 and instance-level routes | `AuditEvent` identifying the path subject when present and resources returned to the caller |
 | `$referencing` | `AuditEvent` identifying the subject and resources returned to the caller |
 | `$mark-not-a-match` | Assertion `Task` and `AuditEvent` in one transaction; a repeated assertion reuses the Task and creates another event |
-| Bulk matching v1 and continuous bulk matching v2 commands, through API and Admin UI | Required request `AuditEvent` before execution, then a separate acceptance event |
+| Batch matching and Continuous matching commands, through API and Admin UI | Required request `AuditEvent` before execution, then a separate acceptance event |
 | Bulk status API and CSV/NDJSON downloads, including Admin UI downloads | Required access `AuditEvent` before returning status or opening the result stream |
 | Bulk Admin UI pages, initialization, model selection, and query preview | One completion or failure event; page and initialization events are coalesced |
 | Algorithm catalogs, detail, configuration, and Git source detail | One completion or failure event |
@@ -32,12 +32,12 @@ The same codes identify API and Admin UI actions:
 
 | Workflow | Codes |
 | --- | --- |
-| Bulk matching jobs (v1) | `bulk-match-prepare`, `bulk-match-start`, `bulk-match-stop`, `bulk-match-continue`, `bulk-match-archive`, `bulk-match-status`, `bulk-match-download`, `bulk-match-pairs` |
-| Continuous matching (v2) | `bulk-match-v2-start`, `bulk-match-v2-pause`, `bulk-match-v2-retry`, `bulk-match-v2-delete`, `bulk-match-v2-status`, `bulk-match-v2-pairs` |
-| Bulk UI (v1) | `bulk-match-view` (page/init), `bulk-match-select-model`, `bulk-match-preview-query`, `bulk-match-poll` (failures only) |
-| Bulk UI (v2) | `bulk-match-v2-view` (page/init), `bulk-match-v2-select-model`, `bulk-match-v2-poll` (failures only) |
+| Batch matching | `bulk-match-prepare`, `bulk-match-start`, `bulk-match-stop`, `bulk-match-continue`, `bulk-match-archive`, `bulk-match-status`, `bulk-match-download`, `bulk-match-pairs` |
+| Continuous matching | `bulk-match-v2-start`, `bulk-match-v2-pause`, `bulk-match-v2-retry`, `bulk-match-v2-delete`, `bulk-match-v2-status`, `bulk-match-v2-pairs` |
+| Batch matching UI | `bulk-match-view` (page/init), `bulk-match-select-model`, `bulk-match-preview-query`, `bulk-match-poll` (failures only) |
+| Continuous matching UI | `bulk-match-v2-view` (page/init), `bulk-match-v2-select-model`, `bulk-match-v2-poll` (failures only) |
 
-Force stop uses `bulk-match-stop`; force prepare and force stop carry a `force` entity on their request and acceptance events. Bulk events identify the model and job when known. The model uses `entity.what.identifier` with system `https://mdm.health-samurai.io/fhir/NamingSystem/fhir-reference` and value `BulkMatchingModel/<id>`. A v1 job uses system `https://mdm.health-samurai.io/fhir/NamingSystem/bulk-match-job` and its numeric ID as a string. Export events identify the resolved job, including downloads that select the latest finished job implicitly. Events do not enumerate the exported patient pairs.
+Force stop uses `bulk-match-stop`; force prepare and force stop carry a `force` entity on their request and acceptance events. Bulk events identify the model and job when known. The model uses `entity.what.identifier` with system `https://mdm.health-samurai.io/fhir/NamingSystem/fhir-reference` and value `BulkMatchingModel/<id>`. A batch job uses system `https://mdm.health-samurai.io/fhir/NamingSystem/bulk-match-job` and its numeric ID as a string. Export events identify the resolved job, including downloads that select the latest finished job implicitly. Events do not enumerate the exported patient pairs.
 
 ### Other Admin UI operation codes
 

@@ -2,12 +2,12 @@
 description: Run bulk matching to find all duplicate pairs across large datasets using parallel workers.
 ---
 
-# Bulk matching
+# Batch matching
 
-Bulk matching finds all duplicate pairs across an entire dataset. Unlike `$match` which compares one resource at a time, bulk matching compares every record against every other record in parallel.
+Batch matching finds duplicate pairs across a prepared dataset and finishes when the job has processed its batches. Unlike `$match`, which compares one resource at a time, it compares records across the dataset in parallel.
 
 {% hint style="warning" %}
-Bulk matching requires a BulkMatchingModel. See [Matching models](matching-models.md). For a persistent process that also matches newly inserted records, see [Continuous bulk matching](bulk-matching-process.md).
+Bulk matching requires a BulkMatchingModel. See [Matching models](matching-models.md). For a persistent process that also matches newly inserted records, see [Continuous matching](bulk-matching-process.md).
 {% endhint %}
 
 ## How it works
@@ -27,14 +27,13 @@ graph LR
 
 ## Admin UI
 
-The Admin UI at `/admin/bulk-match` is the recommended way to run bulk matching. It provides a visual interface for the entire pipeline:
+Open **Bulk Match → Batch matching** in the left sidebar or go to `/admin/bulk-match`. The **Models** list shows each bulk matching model with the status of its active job, or its latest job if none is active. Models without visible jobs show **Not started**. Select a model to see its flat table, settings and job history on the right. Flat table and job statuses use the same outlined badges as other Admin UI statuses.
 
-- Select a BulkMatchingModel from the dropdown
-- View flat table status and trigger preparation
-- Configure and start bulk match jobs
-- Monitor worker progress in real time
-- Download results as CSV
-- Stop, resume, or archive jobs
+Prepare the **Flat table**, then expand **Run settings** to choose the worker count and batch size for a new job. Choose **Start job** in the model's toolbar. Settings default to 4 workers and a batch size of 1000 when switching models. Automatic status updates preserve edits and the expanded settings section. While a job is active for the selected model, preparation and starting another job are disabled; another model's active job does not block these controls.
+
+The history shows up to 50 unarchived jobs for the selected model, prioritizing active jobs before recent finished jobs. Each job has its own stop, resume, CSV download and archive actions. Archiving removes a job from this history.
+
+Worker timelines fit the available width without internal scrollbars. Green intervals completed successfully; red intervals failed. Hover over an interval for a tooltip, or select it to keep its record range, worker, duration and error visible below the graph. Use Tab to focus a timeline, then Left/Right or Home/End to inspect its intervals. Selection survives status updates. Each timeline shows the first 200 finished intervals with timing data; a note indicates when additional finished intervals are omitted.
 
 ## API workflow
 

@@ -41,7 +41,7 @@ Each MDMbox release is built for an Aidbox version. Use a compatible MDMbox and 
 {% endcontent-ref %}
 
 {% content-ref %}
-[Bulk matching](bulk-match.md)
+[Batch matching](bulk-match.md)
 {% endcontent-ref %}
 
 {% content-ref %}

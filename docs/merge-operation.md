@@ -170,9 +170,11 @@ but not edited or deleted there. See [configuration reference](config-reference.
 
 Catalog and detail views, algorithm and Git source changes, and manual synchronization are [audited](audit.md#other-admin-ui-operation-codes). Changes require a request event before execution and record their result separately. Manual Sync also records background publication success or failure. Successful status polling creates no events; repeated polling failures are throttled. Events identify algorithms and sources without copying scripts, repository URLs, credentials, or secret file paths.
 
-Open **Algorithms**, then choose **Merge** or **Unmerge**. Each tab lists the
-effective algorithms for that operation, with built-ins first and storage
-labels for built-in and Git source.
+In the left sidebar, choose **Algorithms → Merge** or **Algorithms → Unmerge**. The adjacent panel lists the effective algorithms for that operation, with built-ins first and storage labels for built-in and Git source. Select an algorithm to open its editor on the right.
+
+Properties appear below the algorithm name as labeled values: **Storage**, **Access**, and **Updated** when available. Git algorithms also show **Source**, **Path**, and **Commit**. **Access** shows whether the script is editable or read-only; action buttons remain beside the name.
+
+For Git and built-in algorithms, the information icon beside **Storage** explains how to update or configure the source. Click the icon or focus it and press **Enter** or **Space** to open the explanation. Press **Escape** or click outside it to close.
 
 - **New Algorithm** creates a database script in the selected catalog.
 - **Duplicate** copies any selected script into a new, editable form in the
@@ -189,19 +191,23 @@ scripts remain merge algorithms after upgrading. An enabled built-in or a Git
 algorithm takes precedence over database source with the same id; the merge
 database id `simple` remains reserved even when its built-in is disabled.
 
-The **Configuration** tab manages Git sources while MDMbox is running:
+**Algorithms → Configuration** in the same sidebar manages Git sources while MDMbox is running:
 
 1. Choose **Add Git source**. Enter a unique source id, repository URL, and ref.
    For private HTTPS access, enter the username and absolute server-side paths
    to mounted token and optional CA files. Never paste a token into the form.
 2. Choose **Save source**. Saving configuration does not fetch or publish scripts.
-3. Choose **Sync** on the source card. The background job fetches and validates
-   the selected revision. The card shows progress, the published commit, and
+3. Choose **Sync** on the source entry. The background job fetches and validates
+   the selected revision. The entry shows progress, the published commit, and
    the last successful sync. Failure shows a sanitized error and keeps the
    complete last good catalog, including its commit metadata.
 4. After changing scripts in Git, choose **Sync** again. There is no automatic
    branch polling. A commit SHA stays pinned; a branch or tag resolves again
    on each sync.
+
+Git source statuses use outlined badges: **Ready** is green, **Syncing…** is blue, **Pending sync** is gray, and **Failed** is red. The same badge style is used for **Enabled** and **Disabled** built-in algorithms and for Bulk Match statuses.
+
+All sources appear in a single list with properties below each source name. The source configured through environment variables has an **Environment** badge and an information icon explaining how to manage it. It provides **Sync**; runtime sources also provide **Edit** and **Remove**. The information icon beside **Git sources** explains synchronization and source limits.
 
 **Edit** changes a runtime source's configuration. Published algorithms continue
 to use the previous configuration until a successful sync. Blank credential
