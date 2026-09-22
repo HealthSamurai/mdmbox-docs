@@ -33,6 +33,10 @@ Each MDMbox release is built for an Aidbox version. Use a compatible MDMbox and 
 {% endcontent-ref %}
 
 {% content-ref %}
+[Release notes](release-notes.md)
+{% endcontent-ref %}
+
+{% content-ref %}
 [Matching models](matching-models.md)
 {% endcontent-ref %}
 

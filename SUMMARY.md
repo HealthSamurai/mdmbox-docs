@@ -2,6 +2,7 @@
 
 - [MDMbox](README.md)
   - [Getting started](getting-started.md)
+  - [Release notes](release-notes.md)
   - [Configuration reference](config-reference.md)
   - [Authentication](authentication.md)
   - [Audit](audit.md)
