@@ -4,7 +4,16 @@ description: Deploy MDMbox together with Aidbox using Docker Compose or Helm.
 
 # Getting started
 
-MDMbox is distributed as versioned Docker images under `healthsamurai/mdmbox` and is deployed together with Aidbox. Select a [published release tag](https://hub.docker.com/r/healthsamurai/mdmbox/tags) and set `MDMBOX_VERSION` before using the Compose examples. Release tags include the compatible Aidbox version, for example `2604.2-aidbox2603.0`.
+MDMbox is distributed as versioned Docker images under `healthsamurai/mdmbox` and is deployed together with Aidbox. Select a [published release tag](https://hub.docker.com/r/healthsamurai/mdmbox/tags) and set `MDMBOX_VERSION` before using the Compose examples. New exact release tags use `YYMM.N`, where `YYMM` is the release year and month and `N` is the minor number, starting at `0`. An exact tag such as `2608.3` always identifies the same image. The monthly tag `2608` follows the highest published minor for August 2026; publishing an older minor does not move it backwards. Choose an exact tag or image digest for a fixed deployment, or the monthly tag to pick up newer minors when you pull the image again and recreate the container. Running containers do not update automatically. The MDMbox tag does not encode the Aidbox version. Older published tags such as `2604.2-aidbox2603.0` remain usable; the examples below retain that older tag until you choose a published replacement.
+
+New releases are checked against the latest minor of every Aidbox monthly release from the current LTS through the newest release, including the LTS itself. The tested Aidbox versions at publication are recorded in the image label `io.healthsamurai.mdmbox.aidbox-versions`. Pin one of those versions for your Aidbox deployment. Release images support Linux amd64 and arm64.
+
+After pulling a new release, inspect its tested versions:
+
+```bash
+docker pull healthsamurai/mdmbox:$MDMBOX_VERSION
+docker image inspect --format '{{ index .Config.Labels "io.healthsamurai.mdmbox.aidbox-versions" }}' healthsamurai/mdmbox:$MDMBOX_VERSION
+```
 
 The deployment requires Aidbox and a PostgreSQL 14+ database. Aidbox and MDMbox run as separate services against the same database. All configuration is done through environment variables.
 
@@ -12,13 +21,14 @@ The `docker-compose.yml` below is a minimal **example for local trial runs** —
 
 ```bash
 export MDMBOX_VERSION=2604.2-aidbox2603.0
+export AIDBOX_VERSION=2603.0
 ```
 
 ## Docker Compose
 
 The example starts PostgreSQL, Aidbox, and MDMbox. Aidbox and MDMbox share the same FHIR data and must receive the same `BOX_*` database and relevant `BOX_FHIR_*` settings.
 
-{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=adfa501b29a8c1a6" %}
+{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=6b761cd00891c272" %}
 docker-compose.yml
 {% endfile %}
 
