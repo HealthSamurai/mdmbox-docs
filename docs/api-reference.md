@@ -4,10 +4,9 @@ description: Complete list of MDMbox REST API endpoints.
 
 # API reference
 
-The full OpenAPI specification is available at `/api/openapi.json`. The interactive Swagger UI is at `/api/docs`.
+The full OpenAPI specification is available at `/api/openapi.json`. The interactive Swagger UI is at `/api/docs`. The specification reports the image release version (`dev` for local builds).
 
-The in-process `mdm` helpers supplied to server-side scripts are documented
-separately in the [JavaScript algorithm API](javascript-algorithm-api.md).
+The `mdm` helpers supplied to server-side scripts are documented separately in the [JavaScript algorithm API](javascript-algorithm-api.md).
 
 ## Infrastructure
 
@@ -17,6 +16,8 @@ separately in the [JavaScript algorithm API](javascript-algorithm-api.md).
 | `GET`  | `/readyz`           | Readiness check       |
 | `GET`  | `/api/docs`         | Swagger UI            |
 | `GET`  | `/api/openapi.json` | OpenAPI specification |
+
+`/readyz` returns HTTP 200 when ready, otherwise 503. Its JSON body contains `status` and the individual `checks.db` and `checks.fhir` results.
 
 ## Matching models
 
@@ -53,10 +54,10 @@ See [Find duplicates: $match](match-operation.md).
 
 | Method | Path                 | Description                                  |
 | ------ | -------------------- | -------------------------------------------- |
-| `POST` | `/api/fhir/$merge/v2`   | Compute and execute or preview a merge plan  |
-| `POST` | `/api/fhir/$unmerge/v2` | Reconstruct and reverse a merge from history |
-| `POST` | `/api/fhir/$merge`   | Execute or preview a merge                   |
-| `POST` | `/api/fhir/$unmerge` | Reverse a previous merge from its merge Task |
+| `POST` | `/api/fhir/$merge/v2`   | Server-managed merge  |
+| `POST` | `/api/fhir/$unmerge/v2` | Server-managed unmerge |
+| `POST` | `/api/fhir/$merge`   | Client-plan merge                           |
+| `POST` | `/api/fhir/$unmerge` | Client-plan unmerge |
 
 See [Merge operation](merge-operation.md) and [Unmerge operation](unmerge-operation.md).
 
@@ -83,9 +84,9 @@ See [Link operation](link-operation.md) and [Unlink operation](unlink-operation.
 
 See [Referencing operation](referencing-operation.md).
 
-## Bulk matching
+## Matching
 
-### Batch matching
+### Bulk matching
 
 All bulk match endpoints are scoped to a BulkMatchingModel by ID.
 
@@ -97,20 +98,21 @@ All bulk match endpoints are scoped to a BulkMatchingModel by ID.
 | `POST` | `/api/bulk-match/:model-id/stop` | Stop job (`?force=true` for immediate cancellation) |
 | `POST` | `/api/bulk-match/:model-id/continue` | Resume a stopped job |
 | `POST` | `/api/bulk-match/:model-id/archive` | Archive a completed or stopped job |
-| `GET` | `/api/bulk-match/:model-id/download/:job-id` | Download results as CSV |
+| `GET` | `/api/bulk-match/:model-id/result` | Export the latest completed or stopped job |
+| `GET` | `/api/bulk-match/:model-id/result/:job-id` | Export a specific job of this model |
 
-See [Batch matching](bulk-match.md).
+Both result routes accept `Accept: text/csv` or `Accept: application/x-ndjson` (default), and an optional `decisionStatus` filter. See [Bulk matching](bulk-match.md).
 
 ### Continuous matching
 
-Continuous matching processes use `/api/bulk-match-v2/:model-id`: `POST /start`, `POST /pause`, `POST /retry`, `GET /status`, `GET /pairs`, and `DELETE` on the model prefix to reset its process. See [Continuous matching](bulk-matching-process.md) for request settings, version handling and conflict responses. The established API URLs remain unchanged by the mode names used in the Admin UI.
+Continuous matching processes use `/api/continuous-match/:model-id`: `POST /start`, `POST /pause`, `POST /retry`, `GET /status`, `GET /result`, and `DELETE` on the model prefix to reset its process. See [Continuous matching](continuous-matching.md) for request settings, version handling and conflict responses. Commands return structured JSON; errors use OperationOutcome. Results use the same CSV/NDJSON negotiation and decision filter as Bulk matching.
 
 ## Admin UI
 
 The admin interface is available at `/admin`. It provides:
 
 - `/admin` — model management (create, edit, delete MatchingModel and BulkMatchingModel)
-- `/admin/bulk-match` — Batch matching (prepare, start, monitor, download, stop)
-- `/admin/bulk-match-v2` — Continuous matching (start, pause, retry, download, reset)
+- `/admin/bulk-match` — Bulk matching (prepare, start, monitor, download, stop)
+- `/admin/continuous-match` — Continuous matching (start, pause, retry, download, reset)
 
 The Admin UI uses server-sent events for real-time updates. No separate frontend deployment is required.

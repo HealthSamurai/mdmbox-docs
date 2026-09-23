@@ -9,7 +9,7 @@ A matching model defines how MDMbox compares records to find duplicates. It spec
 MDMbox supports two types of models:
 
 - **MatchingModel** — for online `$match` queries against individual resources
-- **BulkMatchingModel** — for batch processing across the entire dataset
+- **BulkMatchingModel** — shared by Bulk matching jobs and Continuous matching processes
 
 Both are stored as FHIR resources. `MatchingModel` has dedicated MDMbox REST endpoints. `BulkMatchingModel` is managed through the Admin UI or the adjacent Aidbox FHIR API.
 
@@ -173,7 +173,7 @@ Content-Type: application/json
 
 ## BulkMatchingModel
 
-Used by the bulk match pipeline. Instead of querying FHIR JSONB at comparison time, it pre-extracts data into typed PostgreSQL columns for faster batch processing.
+Used by both [Bulk matching](bulk-match.md) and [Continuous matching](continuous-matching.md). It defines extracted columns, blocking rules, comparison features and thresholds for matching across a dataset. Bulk matching runs a finite job over prepared data; Continuous matching keeps processing newly inserted records. Both use the same `BulkMatchingModel` resource type.
 
 Create and update these resources through Aidbox's FHIR API, for example `PUT https://<aidbox-host>/fhir/BulkMatchingModel/<id>`, or use the MDMbox Admin UI.
 
@@ -251,7 +251,7 @@ Professional tuning services are available. Contact [Health Samurai](https://www
 {% endcontent-ref %}
 
 {% content-ref %}
-[Batch matching](bulk-match.md)
+[Bulk matching](bulk-match.md)
 {% endcontent-ref %}
 
 {% content-ref %}

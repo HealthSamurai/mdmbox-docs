@@ -10,4 +10,4 @@ description: New features, improvements, and changes in MDMbox releases.
 
     **Features**
 
-    * **[Continuous matching](bulk-matching-process.md)** — find duplicate pairs in existing data and keep matching newly inserted records. Pause and resume processing from the Admin UI, and export accumulated results as CSV.
+    * **[Continuous matching](continuous-matching.md)** — find duplicate pairs in existing data and keep matching newly inserted records. Pause and resume processing from the Admin UI, and export accumulated results as CSV or NDJSON.

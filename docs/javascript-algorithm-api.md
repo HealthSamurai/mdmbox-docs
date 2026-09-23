@@ -1,10 +1,6 @@
 # JavaScript algorithm API
 
-This page documents the `input` and `mdm` objects available to administrator-written
-algorithms for [merge v2](merge-operation.md#server-computed-merge-v2) and
-[unmerge v2](unmerge-operation.md#server-computed-unmerge-v2). This is an
-in-process JavaScript API, not an HTTP client or part of the OpenAPI specification.
-Legacy client-plan operations do not execute these scripts.
+This page documents the `input` and `mdm` objects available to administrator-written algorithms for [server-managed merge](merge-operation.md#server-managed-merge) and [server-managed unmerge](unmerge-operation.md#server-managed-unmerge). This JavaScript API runs on the server. Client-plan operations do not execute these scripts.
 
 The same API is used for built-in, Git, and database algorithms. See
 [algorithm management](merge-operation.md#managing-algorithms-in-the-admin-ui)
@@ -49,7 +45,7 @@ must not assume they are Patients. Treat versions as opaque strings, not numbers
 | `target` | Current target FHIR resource, including `meta.versionId` |
 | `result` | Requested target content, or `null` if omitted |
 | `relatedResourceTypes` | Array of the requested related resource types; `[]` when omitted |
-| `matchVerdict` | Currently `null` for v2 HTTP requests; the request parser does not populate this field |
+| `matchVerdict` | Currently `null` for server-managed HTTP requests; the request parser does not populate this field |
 
 The server checks that the pair exists before running the algorithm. The resource
 reader represents an absent resource as `null`; custom scripts should not invent
@@ -189,7 +185,7 @@ mdm.mutatingRequest('PUT', 'Patient/target', '123');
 
 Pass the current snapshot version for PUT, PATCH, or DELETE. Passing `null` as
 the third argument omits `ifMatch`; this helper does not validate the request.
-Such an unprotected mutation is rejected by the v2 plan boundary. For restoring
+Such an unprotected mutation is rejected by the server-managed plan boundary. For restoring
 an absent resource, use unmerge's `putRequestWithPrecondition` instead.
 
 ### transactionBundle(entries)

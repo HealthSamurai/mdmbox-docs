@@ -15,7 +15,7 @@ MDMbox automatically records the operations listed below as FHIR R4 `AuditEvent`
 | `$match`, including R4/R6 and instance-level routes | `AuditEvent` identifying the path subject when present and resources returned to the caller |
 | `$referencing` | `AuditEvent` identifying the subject and resources returned to the caller |
 | `$mark-not-a-match` | Assertion `Task` and `AuditEvent` in one transaction; a repeated assertion reuses the Task and creates another event |
-| Batch matching and Continuous matching commands, through API and Admin UI | Required request `AuditEvent` before execution, then a separate acceptance event |
+| Bulk matching and Continuous matching commands, through API and Admin UI | Required request `AuditEvent` before execution, then a separate acceptance event |
 | Bulk status API and CSV/NDJSON downloads, including Admin UI downloads | Required access `AuditEvent` before returning status or opening the result stream |
 | Bulk Admin UI pages, initialization, model selection, and query preview | One completion or failure event; page and initialization events are coalesced |
 | Algorithm catalogs, detail, configuration, and Git source detail | One completion or failure event |
@@ -32,10 +32,10 @@ The same codes identify API and Admin UI actions:
 
 | Workflow | Codes |
 | --- | --- |
-| Batch matching | `bulk-match-prepare`, `bulk-match-start`, `bulk-match-stop`, `bulk-match-continue`, `bulk-match-archive`, `bulk-match-status`, `bulk-match-download`, `bulk-match-pairs` |
-| Continuous matching | `bulk-match-v2-start`, `bulk-match-v2-pause`, `bulk-match-v2-retry`, `bulk-match-v2-delete`, `bulk-match-v2-status`, `bulk-match-v2-pairs` |
-| Batch matching UI | `bulk-match-view` (page/init), `bulk-match-select-model`, `bulk-match-preview-query`, `bulk-match-poll` (failures only) |
-| Continuous matching UI | `bulk-match-v2-view` (page/init), `bulk-match-v2-select-model`, `bulk-match-v2-poll` (failures only) |
+| Bulk matching | `bulk-match-prepare`, `bulk-match-start`, `bulk-match-stop`, `bulk-match-continue`, `bulk-match-archive`, `bulk-match-status`, `bulk-match-result` |
+| Continuous matching | `continuous-match-start`, `continuous-match-pause`, `continuous-match-retry`, `continuous-match-delete`, `continuous-match-status`, `continuous-match-result` |
+| Bulk matching UI | `bulk-match-view` (page/init), `bulk-match-select-model`, `bulk-match-preview-query`, `bulk-match-poll` (failures only) |
+| Continuous matching UI | `continuous-match-view` (page/init), `continuous-match-select-model`, `continuous-match-poll` (failures only) |
 
 Force stop uses `bulk-match-stop`; force prepare and force stop carry a `force` entity on their request and acceptance events. Bulk events identify the model and job when known. The model uses `entity.what.identifier` with system `https://mdm.health-samurai.io/fhir/NamingSystem/fhir-reference` and value `BulkMatchingModel/<id>`. A batch job uses system `https://mdm.health-samurai.io/fhir/NamingSystem/bulk-match-job` and its numeric ID as a string. Export events identify the resolved job, including downloads that select the latest finished job implicitly. Events do not enumerate the exported patient pairs.
 
@@ -86,7 +86,7 @@ For merge, unmerge, link, and unlink, the three records have different purposes:
 | `Provenance` | Affected resources and versioned references to pre-change revisions when available |
 | `AuditEvent` | Initiator, outcome, service, correlation, and links to the operation Task, Provenance, and domain resources |
 
-`Provenance.agent` currently identifies `Device/mdmbox`; the initiating user or client is recorded in the linked AuditEvent. AuditEvent domain references are unversioned. Merge v2 additionally records actual post-change versions in Provenance and the executed algorithm's identity in Task, including the script SHA-256 and Git revision when applicable. See [Merge operation](merge-operation.md) and [Unmerge operation](unmerge-operation.md) for version and retention requirements.
+`Provenance.agent` currently identifies `Device/mdmbox`; the initiating user or client is recorded in the linked AuditEvent. AuditEvent domain references are unversioned. Server-managed merge additionally records actual post-change versions in Provenance and the executed algorithm's identity in Task, including the script SHA-256 and Git revision when applicable. See [Merge operation](merge-operation.md) and [Unmerge operation](unmerge-operation.md) for version and retention requirements.
 
 ## Persistence guarantees
 
@@ -113,7 +113,7 @@ Use the Aidbox FHIR endpoint, not MDMbox's `/api/fhir` operation endpoints:
 ```http
 GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox
 GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&subtype=merge&entity=Patient/123
-GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&subtype=bulk-match-v2-start
+GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&subtype=continuous-match-start
 GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&entity:identifier=https://mdm.health-samurai.io/fhir/NamingSystem/bulk-match-job|123
 GET https://<aidbox-host>/fhir/Provenance?target=Task/<task-id>
 ```

@@ -1,4 +1,5 @@
 redirects:
+  bulk-matching-process: continuous-matching.md
   run-mdm-locally: getting-started.md
   configure-mdm-module: matching-models.md
   find-duplicates-match: match-operation.md

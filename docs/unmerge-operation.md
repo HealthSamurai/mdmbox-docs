@@ -4,11 +4,11 @@ description: Use the $unmerge operation to reverse a previous merge with an audi
 
 # Unmerge operation
 
-MDMbox provides two versions of `$unmerge`: server-computed `$unmerge/v2`, which reconstructs the reversal from the merge audit trail, and client-plan `$unmerge`, which executes a reverse transaction supplied by the caller. Both versions create an unmerge Task, Provenance, and AuditEvent, change the original merge Task to `businessStatus=unmerged`, and commit all changes atomically.
+MDMbox provides two modes of `$unmerge`: server-managed `$unmerge/v2`, which reconstructs the reversal from the merge audit trail, and client-plan `$unmerge`, which executes a reverse transaction supplied by the caller. Both modes create an unmerge Task, Provenance, and AuditEvent, change the original merge Task to `businessStatus=unmerged`, and commit all changes atomically.
 
 Use `$unmerge` when a merge was accepted by mistake and the affected resources must be restored or reassigned.
 
-## Server-computed unmerge v2
+## Server-managed unmerge
 
 `$unmerge/v2` needs only the original merge Task, an optional algorithm, and preview mode. MDMbox reads the Task's Provenance, fetches the pre-merge versions referenced by `Provenance.entity`, and uses the post-merge versions in `Provenance.target` to detect later changes. It computes the reverse transaction in sandboxed JavaScript and executes it in the same database transaction. For an unchanged target resource, the Task's saved target version is also the post-merge baseline.
 
@@ -41,7 +41,7 @@ Content-Type: application/fhir+json
 
 Custom algorithms may accept additional named parameters, including nested `part`, embedded `resource`, and all `value[x]` fields. As in `$merge/v2`, the complete FHIR Parameters request is available as `input.parameters`, preserving repeated parameters, their order, and resource metadata. These values cannot override the server-supplied source, target, Task, or Provenance. The selected algorithm interprets and validates its additional parameters; built-in algorithms ignore them. For example, an algorithm can accept encounter and patient references as a repeated assignment parameter and validate each requested destination. See [custom parameters](javascript-algorithm-api.md#custom-parameters-merge-and-unmerge) for the shared contract.
 
-Custom v2 unmerge plans are limited to the source, target, and resources represented in the original merge Provenance. Resources outside that audit scope cannot be added to the reversal plan. All writes retain version or absence preconditions and are included in the new unmerge audit. The algorithm must restore the source exactly once, cannot delete the target, and cannot mutate server-managed audit resources. Built-in `restore` and `strict` leave external resources at the target.
+Custom server-managed unmerge plans are limited to the source, target, and resources represented in the original merge Provenance. Resources outside that audit scope cannot be added to the reversal plan. All writes retain version or absence preconditions and are included in the new unmerge audit. The algorithm must restore the source exactly once, cannot delete the target, and cannot mutate server-managed audit resources. Built-in `restore` and `strict` leave external resources at the target.
 
 Operators can restrict built-ins with `MDMBOX_BUILT_IN_ALGORITHMS`. Unset enables
 all; empty disables all; `simple,strict` enables simple merge and strict unmerge.
@@ -76,13 +76,13 @@ Both algorithms leave discovered target-referencing resources outside the merge 
 
 For references inside arrays, `strict` uses a conservative rule: each containing array, including ancestor arrays of nested references, must match the expected state immediately after `simple` relinked the references. Reordering, adding or removing elements, or editing any field inside one of these arrays returns `409 Conflict` in both preview and execution. This applies even when the original index still references the target; the algorithm does not guess which element moved. Changes outside these arrays, such as an Observation note outside its relinked `performer` array, remain allowed and are preserved.
 
-The strict algorithm is a reference implementation for `simple`-style related-resource relinking, not a universal inverse of arbitrary custom merge mutations. Custom algorithms must account for this compatibility boundary. Merge v2 also rejects conditional creation (`ifNoneExist`) so an existing resource cannot be mistaken for one created by the merge.
+The strict algorithm is a reference implementation for `simple`-style related-resource relinking, not a universal inverse of arbitrary custom merge mutations. Custom algorithms must account for this compatibility boundary. Server-managed merge also rejects conditional creation (`ifNoneExist`) so an existing resource cannot be mistaken for one created by the merge.
 
 For a scalar Reference outside those arrays, strict changes only its `reference` value. Allowed later fields such as `display` and `extension` are preserved. Source/target and merge-created resource drift is checked by version, including writes from transactions that started before merge but committed afterward.
 
-Both algorithms run in the same sandbox used by merge v2. They can read only the merge Task, Provenance, versioned resource history, current resource state, and reference paths exposed through the MDMbox algorithm API.
+Both algorithms run in the same sandbox used by server-managed merge. They can read only the merge Task, Provenance, versioned resource history, current resource state, and reference paths exposed through the MDMbox algorithm API.
 
-Like merge v2, JavaScript unmerge algorithms return `{plan, outcome?}`. Without specific messages they return only `{plan: bundle}`; MDMbox supplies the informational OperationOutcome for the HTTP response. If provided, `outcome` must contain at least one issue, not `null` or an empty `issue` array. An `error` or `fatal` issue blocks execution with HTTP 409 even when a plan is present. `plan: null` is allowed only with such a blocking issue; the `plan` key is required. Invalid results return HTTP 500. See the [merge result contract](merge-operation.md#server-computed-merge-v2) for details and FHIR requirements.
+Like server-managed merge, JavaScript unmerge algorithms return `{plan, outcome?}`. Without specific messages they return only `{plan: bundle}`; MDMbox supplies the informational OperationOutcome for the HTTP response. If provided, `outcome` must contain at least one issue, not `null` or an empty `issue` array. An `error` or `fatal` issue blocks execution with HTTP 409 even when a plan is present. `plan: null` is allowed only with such a blocking issue; the `plan` key is required. Invalid results return HTTP 500. See the [merge result contract](merge-operation.md#server-managed-merge) for details and FHIR requirements.
 
 Custom unmerge algorithms use `mdm.fhirGet('Patient/123')` for the current resource and `mdm.fhirGet('Patient/123/_history/20')` for an exact historical version. Both return a FHIR resource directly, or `null` when absent. Use `resource.meta.versionId`, not a separate metadata wrapper. This replaces `readCurrentResource`, `readHistoricalResource`, and `readOperationResource`; the saved post-merge references are supplied in `input.provenance.target`. The resource creation timestamp remains in `meta.extension`, identified by `input.createdAtExtensionUrl`.
 
@@ -107,15 +107,15 @@ For successful execution, the response contains `outcome` and the new unmerge `t
 
 Both algorithms execute against a version-protected database snapshot. Restore intentionally discards changes made before that snapshot, but does not overwrite a concurrent write made while it computes or executes its plan: such a conflict returns HTTP 409 and rolls back the restoration and its successful audit together.
 
-Internal storage failures return HTTP 500 with a generic OperationOutcome and no database row diagnostics or payloads. Ordinary transaction validation failures return 422 with FHIR validation details. Both roll back business changes, the new Task, Provenance, and success AuditEvent, and the original merge Task update. A separate failure AuditEvent may still be persisted. This error mapping applies to v2; legacy v1 is unchanged.
+Internal storage failures return HTTP 500 with a generic OperationOutcome and no database row diagnostics or payloads. Ordinary transaction validation failures return 422 with FHIR validation details. Both roll back business changes, the new Task, Provenance, and success AuditEvent, and the original merge Task update. A separate failure AuditEvent may still be persisted. This error mapping applies to server-managed unmerge.
 
 Keep the original Task, Provenance, and required FHIR history versions. An edited audit revision cannot substitute for a missing original. Before deleting a resource described as merge-created, MDMbox also requires its recorded creation version from that merge transaction. Missing or inconsistent evidence returns `422 Unprocessable Entity` without partial restoration.
 
 Retention must include the pinned post-merge versions as well as the pre-merge snapshots. If an explicitly recorded version is missing, neither algorithm substitutes another version. Older audits with unversioned mutation targets remain supported through server-side history lookup, provided the necessary original versions still exist; no audit migration is required.
 
-The original merge Task records the source and target history versions plus every `related-resource-type` scope selected by merge v2. This lets unmerge v2 restore a target that the merge algorithm did not modify and report target-referencing resources outside the merge changes even when no resource of that type existed at merge time.
+The original merge Task records the source and target history versions plus every `related-resource-type` scope selected by server-managed merge. This lets server-managed unmerge restore a target that the merge algorithm did not modify and report target-referencing resources outside the merge changes even when no resource of that type existed at merge time.
 
-## Client-plan unmerge v1
+## Client-plan unmerge
 
 The original `$unmerge` operation reverses a previous `$merge` by executing a client-provided FHIR transaction Bundle. The client decides exactly how to restore resources; MDMbox validates the referenced merge Task, adds audit resources, flips the original merge Task to `unmerged`, and executes everything atomically.
 

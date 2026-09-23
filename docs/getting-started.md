@@ -8,9 +8,11 @@ MDMbox is distributed as versioned Docker images under `healthsamurai/mdmbox` an
 
 New releases are checked against the latest minor of every Aidbox monthly release from the current LTS through the newest release, including the LTS itself. The tested Aidbox versions at publication are recorded in the image label `io.healthsamurai.mdmbox.aidbox-versions`. Pin one of those versions for your Aidbox deployment. Release images support Linux amd64 and arm64.
 
-After pulling a new release, inspect its tested versions:
+For example, select the `2608` release series and inspect its tested Aidbox versions before deployment:
 
 ```bash
+export MDMBOX_VERSION=2608
+export AIDBOX_VERSION=2608.4
 docker pull healthsamurai/mdmbox:$MDMBOX_VERSION
 docker image inspect --format '{{ index .Config.Labels "io.healthsamurai.mdmbox.aidbox-versions" }}' healthsamurai/mdmbox:$MDMBOX_VERSION
 ```
@@ -18,11 +20,6 @@ docker image inspect --format '{{ index .Config.Labels "io.healthsamurai.mdmbox.
 The deployment requires Aidbox and a PostgreSQL 14+ database. Aidbox and MDMbox run as separate services against the same database. All configuration is done through environment variables.
 
 The `docker-compose.yml` below is a minimal **example for local trial runs** — clone, tweak, `docker compose up`. For Kubernetes, see [Kubernetes (Helm)](#kubernetes-helm).
-
-```bash
-export MDMBOX_VERSION=2604.2-aidbox2603.0
-export AIDBOX_VERSION=2603.0
-```
 
 ## Docker Compose
 
@@ -48,11 +45,11 @@ The shared database connection variables and relevant `BOX_FHIR_*` variables mus
 
 For Kubernetes, MDMbox is published as a Helm chart: [HealthSamurai/helm-charts/mdmbox](https://github.com/HealthSamurai/helm-charts/tree/main/mdmbox). The chart adds MDMbox to an existing Aidbox deployment; it does not provision Aidbox or PostgreSQL. Point it at the same database configuration used by Aidbox.
 
-Pin the same release tag in `values.yaml`:
+Set the same image tag in `values.yaml`:
 
 ```yaml
 image:
-  tag: 2604.2-aidbox2603.0
+  tag: "2608"
 ```
 
 ```bash

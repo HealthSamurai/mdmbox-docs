@@ -121,7 +121,7 @@ The database connection settings are shared, but connection pool sizing is appli
 | `MDMBOX_BULK_DB_MIN_IDLE` | Minimum idle bulk pool connections | 0 |
 | `MDMBOX_BULK_DB_IDLE_TIMEOUT_MS` | Time before unused bulk connections can be released, in milliseconds | 60000 |
 
-Both bulk matching jobs and [continuous matching processes](bulk-matching-process.md) use the bulk pool. A continuous process reserves one connection per range worker plus one for its coordinator, including while its projection is being built. A Start that exceeds the bulk pool capacity is refused with HTTP 409. Finishing an interrupted pause at startup uses the main pool without reserving bulk connections. Include both pools, other applications and all replicas when sizing PostgreSQL's connection limit. Continuous matching requires a single MDMbox replica with the [documented upgrade strategy](bulk-matching-process.md#deployment-and-upgrades).
+Both bulk matching jobs and [continuous matching processes](continuous-matching.md) use the bulk pool. A continuous process reserves one connection per range worker plus one for its coordinator, including while its projection is being built. A Start that exceeds the bulk pool capacity is refused with HTTP 409. Finishing an interrupted pause at startup uses the main pool without reserving bulk connections. Include both pools, other applications and all replicas when sizing PostgreSQL's connection limit. Continuous matching requires a single MDMbox replica with the [documented upgrade strategy](continuous-matching.md#deployment-and-upgrades).
 
 ## HTTP Server
 

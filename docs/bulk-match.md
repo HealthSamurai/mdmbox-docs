@@ -2,12 +2,12 @@
 description: Run bulk matching to find all duplicate pairs across large datasets using parallel workers.
 ---
 
-# Batch matching
+# Bulk matching
 
-Batch matching finds duplicate pairs across a prepared dataset and finishes when the job has processed its batches. Unlike `$match`, which compares one resource at a time, it compares records across the dataset in parallel.
+Bulk matching finds duplicate pairs across a prepared dataset and finishes when the job has processed its batches. Unlike `$match`, which compares one resource at a time, it compares records across the dataset in parallel.
 
 {% hint style="warning" %}
-Bulk matching requires a BulkMatchingModel. See [Matching models](matching-models.md). For a persistent process that also matches newly inserted records, see [Continuous matching](bulk-matching-process.md).
+Bulk matching requires a BulkMatchingModel. See [Matching models](matching-models.md). For a persistent process that also matches newly inserted records, see [Continuous matching](continuous-matching.md).
 {% endhint %}
 
 ## How it works
@@ -23,11 +23,11 @@ graph LR
 
 **Match.** Parallel workers compare records in batches. Each worker claims a batch, runs the comparison query, and writes matching pairs to the results table. Workers use `FOR UPDATE SKIP LOCKED` for lock-free distribution.
 
-**Download.** Results are streamed as CSV using PostgreSQL's COPY protocol for efficient transfer.
+**Download.** Results stream as CSV or NDJSON; the Admin UI downloads CSV.
 
 ## Admin UI
 
-Open **Bulk Match → Batch matching** in the left sidebar or go to `/admin/bulk-match`. The **Models** list shows each bulk matching model with the status of its active job, or its latest job if none is active. Models without visible jobs show **Not started**. Select a model to see its flat table, settings and job history on the right. Flat table and job statuses use the same outlined badges as other Admin UI statuses.
+Open **Matching → Bulk matching** in the left sidebar or go to `/admin/bulk-match`. The **Models** list shows each bulk matching model with the status of its active job, or its latest job if none is active. Models without visible jobs show **Not started**. Select a model to see its flat table, settings and job history on the right. Flat table and job statuses use the same outlined badges as other Admin UI statuses.
 
 Prepare the **Flat table**, then expand **Run settings** to choose the worker count and batch size for a new job. Choose **Start job** in the model's toolbar. Settings default to 4 workers and a batch size of 1000 when switching models. Automatic status updates preserve edits and the expanded settings section. While a job is active for the selected model, preparation and starting another job are disabled; another model's active job does not block these controls.
 
@@ -108,7 +108,7 @@ Response (HTTP 202):
 }
 ```
 
-The job ID in `details.text` is needed for the download endpoint.
+Use the returned job ID to export that job, or omit the ID to export the latest completed or stopped job.
 
 ### Step 3: Monitor progress
 
@@ -116,20 +116,32 @@ Poll the status endpoint or use the Admin UI which auto-refreshes every 2 second
 
 ### Step 4: Download results
 
-Once the job completes:
+Export the latest completed or stopped job:
 
 ```http
-GET https://<mdmbox-host>/api/bulk-match/patient-bulk/download/{job-id}
+GET https://<mdmbox-host>/api/bulk-match/patient-bulk/result
+Accept: text/csv
 ```
 
-Returns a CSV file with columns:
+To select a specific job, use `/api/bulk-match/patient-bulk/result/{job-id}`. The job must belong to the model in the URL. Both routes return HTTP 404 if there is no matching job.
 
-| Column          | Description                                        |
-| --------------- | -------------------------------------------------- |
-| `resource_id_1` | First resource ID                                  |
-| `resource_id_2` | Second resource ID                                 |
-| `match_weight`  | Total match score                                  |
-| `{feature}_w`   | Individual feature weight (one column per feature) |
+Choose `Accept: application/x-ndjson` for one JSON object per line. NDJSON is also the default when `Accept` is omitted. Other unsupported formats return HTTP 406 OperationOutcome. For example:
+
+```json
+{"resourceId1":"patient-1","resourceId2":"patient-2","matchWeight":18.0,"matchDetails":{"dob":10.0,"family":8.0},"decisionStatus":"pending"}
+```
+
+Both formats stream strongest matches first. CSV has these columns:
+
+| Column | Description |
+| --- | --- |
+| `resource_id_1` | First resource ID |
+| `resource_id_2` | Second resource ID |
+| `match_weight` | Total match score, rounded to four decimal places |
+| `{feature}` | One weight column per feature, named after that feature |
+| `decision_status` | `linked`, `merged`, `not-a-match`, or empty for an undecided pair |
+
+Decisions reflect current linkage and task state at export time. NDJSON uses `pending` for undecided pairs. Filter either format with `?decisionStatus=pending`, `linked`, `merged`, or `not-a-match`; an unknown value returns HTTP 400 OperationOutcome.
 
 ## Managing jobs
 
