@@ -33,6 +33,8 @@ Variables extract values from FHIR resources using SQL expressions. They are ref
 
 The `#` prefix is replaced with the table alias at query time (`l.` for the left record, `r.` for the right).
 
+`public.immutable_unaccent_upper(text)` removes accents and converts text to uppercase. It preserves whitespace; wrap it in `btrim(...)` when surrounding spaces should be ignored. The function is `IMMUTABLE`, `STRICT`, and `PARALLEL SAFE`, so missing input remains SQL `NULL` and the helper is eligible for parallel queries. If you compose parallel-safe functions into a custom SQL helper, explicitly declare that helper `PARALLEL SAFE` too.
+
 ### Blocks
 
 Blocks define how candidate pairs are selected before comparison. Each block is a condition that narrows the search space. Blocks are combined with OR — a pair only needs to match one block.
