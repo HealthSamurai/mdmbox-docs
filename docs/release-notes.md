@@ -6,8 +6,6 @@ description: New features, improvements, and changes in MDMbox releases.
 
 ## August 2026 _`2608`_
 
-*   MDMbox
+**Features**
 
-    **Features**
-
-    * **[Continuous matching](continuous-matching.md)** — find duplicate pairs in existing data and keep matching newly inserted records. Pause and resume processing from the Admin UI, and export accumulated results as CSV or NDJSON.
+* **[Continuous matching](continuous-matching.md)** — find duplicate pairs in existing data and keep matching newly inserted records. Pause and resume processing from the Admin UI, and export accumulated results as CSV or NDJSON.
