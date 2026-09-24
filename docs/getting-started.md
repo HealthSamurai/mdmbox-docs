@@ -4,73 +4,107 @@ description: Deploy MDMbox together with Aidbox using Docker Compose or Helm.
 
 # Getting started
 
-MDMbox is distributed as versioned Docker images under `healthsamurai/mdmbox` and is deployed together with Aidbox. Select a [published release tag](https://hub.docker.com/r/healthsamurai/mdmbox/tags) and set `MDMBOX_VERSION` before using the Compose examples. New exact release tags use `YYMM.N`, where `YYMM` is the release year and month and `N` is the minor number, starting at `0`. For example, use `2608.3` for a fixed release or `2608` for the latest minor of that month. To update, pull the image and recreate the container. The MDMbox tag does not encode the Aidbox version.
+This walkthrough starts MDMbox, Aidbox, and PostgreSQL on your computer. You need Docker Compose and an [Aidbox account](https://aidbox.app/ui/portal) to activate development licenses.
 
-New releases are checked against the latest minor of every Aidbox monthly release from the current LTS through the newest release, including the LTS itself. The tested Aidbox versions at publication are recorded in the image label `io.healthsamurai.mdmbox.aidbox-versions`. Pin one of those versions for your Aidbox deployment. Release images support Linux amd64 and arm64.
+Aidbox stores and serves FHIR resources. MDMbox connects to the same PostgreSQL database and provides matching and record-management operations. For an existing Kubernetes deployment, see [Kubernetes (Helm)](#kubernetes-helm).
 
-For example, select the `2608` release series and inspect its tested Aidbox versions before deployment:
+## Docker Compose
+
+### 1. Download the configuration
+
+Save this file as `docker-compose.yml` in an empty directory:
+
+{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=3295c8d795c538ed" %}
+docker-compose.yml
+{% endfile %}
+
+The example is for local use and includes development credentials. Aidbox and MDMbox receive the same database and FHIR settings.
+
+### 2. Start the services
+
+Run these commands from the directory containing `docker-compose.yml`:
 
 ```bash
 export MDMBOX_VERSION=2608
 export AIDBOX_VERSION=2608.4
-docker pull healthsamurai/mdmbox:$MDMBOX_VERSION
-docker image inspect --format '{{ index .Config.Labels "io.healthsamurai.mdmbox.aidbox-versions" }}' healthsamurai/mdmbox:$MDMBOX_VERSION
+docker compose up -d
 ```
 
-The deployment requires Aidbox and a PostgreSQL 14+ database. Aidbox and MDMbox run as separate services against the same database. All configuration is done through environment variables.
+Initial startup downloads images and FHIR packages and can take several minutes. Follow progress with `docker compose logs -f`.
 
-The `docker-compose.yml` below is a minimal **example for local trial runs** — clone, tweak, `docker compose up`. For Kubernetes, see [Kubernetes (Helm)](#kubernetes-helm).
+### 3. Activate and sign in
 
-## Docker Compose
+1. Open `http://localhost:8888` and follow the Aidbox activation flow.
+2. Open `http://localhost:3000` and activate MDMbox with your Aidbox account.
+3. If the MDMbox login form appears, use `postgres` as both the username and password for this local example.
 
-The example starts PostgreSQL, Aidbox, and MDMbox. Aidbox and MDMbox share the same FHIR data and must receive the same `BOX_*` database and relevant `BOX_FHIR_*` settings.
+For deployments with an existing license, set `MDMBOX_LICENSE` in the MDMbox environment. See [Configuration reference](config-reference.md#license).
 
-{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=6b761cd00891c272" %}
-docker-compose.yml
-{% endfile %}
+### 4. Try matching
 
-Start the services:
+Open `http://localhost:3000/welcome`. Follow the steps to import sample patients, install the starter matching model, and run a match. You can skip importing samples if your database already has patients.
+
+Use `/admin` to inspect models, or `/api/docs` to explore the API. For API calls in this local example, use the configured client credentials:
 
 ```bash
-docker compose up
+curl --user root:secret http://localhost:3000/api/models
 ```
 
-Aidbox is available at `http://localhost:8888`. MDMbox is available at `http://localhost:3000`; open `http://localhost:3000/api/docs` for its Swagger UI.
+The starter model is a `MatchingModel` for `$match`. To try Bulk or Continuous matching, first create the [BulkMatchingModel example](matching-models.md#bulkmatchingmodel).
 
-{% hint style="warning" %}
-The shared database connection variables and relevant `BOX_FHIR_*` variables must match your Aidbox configuration. MDMbox and Aidbox use the same PostgreSQL database and FHIR data.
-{% endhint %}
+### Stop or update
+
+`docker compose down` stops the services and keeps the database volume. To update the selected monthly release, run `docker compose pull` followed by `docker compose up -d`, with the version variables still set.
+
+## Versions and compatibility
+
+Use `healthsamurai/mdmbox:2608` for the latest minor in the August 2026 series, or `healthsamurai/mdmbox:2608.0` for that exact release. [Published images](https://hub.docker.com/r/healthsamurai/mdmbox/tags) support Linux amd64 and arm64. The MDMbox tag does not determine the Aidbox version.
+
+Each release is tested against the latest available minor of every Aidbox monthly series from the latest LTS through the newest series, including LTS. The image records the tested versions at publication. Before changing Aidbox, inspect that list and choose one of its versions:
+
+```bash
+docker pull healthsamurai/mdmbox:2608
+docker image inspect --format '{{ index .Config.Labels "io.healthsamurai.mdmbox.aidbox-versions" }}' healthsamurai/mdmbox:2608
+```
+
+For an existing deployment, use PostgreSQL 14 or later and pass the same `BOX_DB_*` and relevant `BOX_FHIR_*` settings to Aidbox and MDMbox.
 
 ## Kubernetes (Helm)
 
 For Kubernetes, MDMbox is published as a Helm chart: [HealthSamurai/helm-charts/mdmbox](https://github.com/HealthSamurai/helm-charts/tree/main/mdmbox). The chart adds MDMbox to an existing Aidbox deployment; it does not provision Aidbox or PostgreSQL. Point it at the same database configuration used by Aidbox.
 
-Set the same image tag in `values.yaml`:
+Create `values.yaml` using the names of your existing Aidbox ConfigMap and Secret:
 
 ```yaml
 image:
   tag: "2608"
+  pullPolicy: Always
+
+aidboxConfigMap: aidbox-config
+aidboxSecret: aidbox-secret
+extraEnvFromSecrets:
+  - mdmbox-secret # Contains MDMBOX_LICENSE
+
+replicaCount: 1
+autoscaling:
+  enabled: false
+updateStrategy:
+  type: Recreate
+  rollingUpdate: null
 ```
+
+Create `mdmbox-secret` with `MDMBOX_LICENSE` and install MDMbox in the **same namespace** as these ConfigMaps and Secrets. The example uses namespace `aidbox`; replace it with yours. The single replica and `Recreate` strategy support [Continuous matching recovery](continuous-matching.md#deployment-and-upgrades).
 
 ```bash
 helm repo add healthsamurai https://healthsamurai.github.io/helm-charts
+helm repo update
 
 helm upgrade --install mdmbox healthsamurai/mdmbox \
-  --namespace mdmbox --create-namespace \
+  --namespace aidbox \
   --values values.yaml
 ```
 
-Reuse the `ConfigMap` and `Secret` from the Aidbox deployment by passing them through `aidboxConfigMap` and `aidboxSecret`:
-
-```yaml
-aidboxConfigMap: aidbox-config # BOX_DB_HOST, BOX_DB_PORT, BOX_DB_DATABASE...
-aidboxSecret: aidbox-secret # BOX_DB_USER, BOX_DB_PASSWORD...
-
-config:
-  MDMBOX_LICENSE: <license JWT>
-```
-
-Database connection values are shared with Aidbox. Put MDMbox-only settings, including its license and connection pool sizing, under `config:` or in a separate MDMbox `Secret` as appropriate.
+Put non-secret MDMbox settings, such as connection pool sizes, under `config:`. Use `extraEnvFromSecrets` for the MDMbox license and credentials.
 
 The full list of values is in the [chart README](https://github.com/HealthSamurai/helm-charts/blob/main/mdmbox/README.md).
 
@@ -88,14 +122,16 @@ Once running, use Aidbox for the FHIR API and MDMbox for MDM operations and its 
 | --- | --- | --- |
 | Aidbox | `http://localhost:8888/fhir` | FHIR API |
 | MDMbox | `http://localhost:3000/healthz` | Liveness check |
-| MDMbox | `http://localhost:3000/readyz` | Readiness check (verifies database connectivity) |
+| MDMbox | `http://localhost:3000/readyz` | Readiness check (database and FHIR service) |
 | MDMbox | `http://localhost:3000/api/docs` | Swagger UI |
 | MDMbox | `http://localhost:3000/api/openapi.json` | OpenAPI specification |
 | MDMbox | `http://localhost:3000/admin` | Admin UI |
 
 ## Next steps
 
-The onboarding page and its actions produce [audit events](audit.md). Page and initialization events are coalesced to limit duplicates. Importing sample patients and installing the starter model require a request event before execution; other steps record their result. Login/logout are also audited, without storing credentials or patient payloads in the interaction events.
+- Compare one record with [$match](match-operation.md).
+- Find pairs across your dataset with [Bulk matching](bulk-match.md) or [Continuous matching](continuous-matching.md).
+- Explore [runnable integrations](https://github.com/HealthSamurai/mdmbox-playground/tree/main/examples), including review, linking, and automatic merging.
 
 {% content-ref %}
 [Matching models](matching-models.md)

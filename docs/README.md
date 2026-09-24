@@ -4,21 +4,21 @@ description: MDMbox adds probabilistic record matching, deduplication, and mergi
 
 # MDMbox
 
-MDMbox is a master data management service for healthcare organizations. It identifies duplicate records across FHIR resources using probabilistic matching and provides tools to merge and manage them.
+MDMbox finds duplicate FHIR records and helps you resolve them. A matching model defines how to compare fields such as names, dates of birth, and addresses. MDMbox scores candidate pairs; your application or a reviewer decides what to do with them.
 
 ## Core capabilities
 
-**Probabilistic matching.** Configurable Fellegi-Sunter models compare records across multiple dimensions (name, date of birth, address, phone) and produce a match score. Handles typos, incomplete data, and transpositions.
+| You want to… | Use |
+| --- | --- |
+| Find duplicates of one record | [$match](match-operation.md) |
+| Find duplicate pairs in an existing dataset | [Bulk matching](bulk-match.md) |
+| Match existing data and keep processing new records | [Continuous matching](continuous-matching.md) |
+| Combine duplicates into one surviving record | [Merge](merge-operation.md) and [unmerge](unmerge-operation.md) |
+| Group records while keeping the originals | [Link](link-operation.md) and [unlink](unlink-operation.md) |
+| Record that two records are different entities | [$mark-not-a-match](mark-not-a-match.md) |
+| Inspect who performed an operation and what changed | [Audit](audit.md) |
 
-**Merging.** FHIR R5-aligned merge lifecycle with server-managed `$merge/v2` and `$unmerge/v2` operations, plus client-plan `$merge` and `$unmerge` endpoints for callers that need full control over the transaction Bundle. Both modes provide an atomic audit trail and write-free preview.
-
-**Audit.** Automatic FHIR AuditEvents record matching, referencing, merge/unmerge, link/unlink, not-a-match, bulk workflows and exports, algorithm and Git source administration, manual synchronization, onboarding, and login/logout. Commands require a durable request event before execution; results are recorded separately. Successful UI polling creates no events, and repeated polling failures are throttled. See [Audit](audit.md) for exact coverage, persistence guarantees, and queries.
-
-**Bulk and Continuous matching.** Find duplicate pairs across a prepared dataset, or keep matching newly inserted records. Export results as CSV or NDJSON.
-
-**Admin UI.** Manage matching models, run bulk matching jobs, and control continuous matching processes.
-
-**FHIR R4 to R6.** Matching, merging, and referencing operations work with any FHIR resource type — Patient, Practitioner, Organization, or any other. Configure a matching model for the resource type you need.
+The Admin UI manages models, matching jobs, continuous processes, and merge/unmerge algorithms. Bulk and Continuous matching export pairs as CSV or NDJSON; they do not merge records automatically. For an application that reviews pairs and resolves them, see the [Data Steward UI example](https://github.com/HealthSamurai/mdmbox-playground/tree/main/examples/data-steward-ui).
 
 ## Deployment architecture
 
@@ -26,7 +26,7 @@ MDMbox is deployed together with Aidbox. They run as separate services and conne
 
 Aidbox provides the FHIR API and storage platform. MDMbox provides matching, linking, merging, bulk matching, and its Admin UI.
 
-Each MDMbox release is tested against multiple Aidbox versions. Choose a tested Aidbox version from the MDMbox image's compatibility label and pass the same database connection and relevant `BOX_FHIR_*` settings to both services.
+Start with the [Docker Compose walkthrough](getting-started.md), which includes compatible versions and shared configuration. Matching models can target Patient, Practitioner, Organization, or another supported FHIR resource type.
 
 {% content-ref %}
 [Getting started](getting-started.md)

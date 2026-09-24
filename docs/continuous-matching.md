@@ -4,31 +4,34 @@ description: Keep matching newly inserted records with a persistent continuous m
 
 # Continuous matching
 
-A continuous matching process builds a projection of the records selected by a BulkMatchingModel, finds duplicate pairs, and keeps matching new records until you pause it. Each model has one process and one accumulated set of pairs. For jobs that finish after processing a prepared dataset, use [Bulk matching](bulk-match.md).
+A continuous matching process finds duplicate pairs in existing data and keeps processing new records. It uses a [BulkMatchingModel](matching-models.md#bulkmatchingmodel) to prepare the comparison data, score pairs, and save those reaching the model's `probable` threshold. Each model has one process and one accumulated result set. Matching does not automatically merge records.
+
+{% hint style="warning" %}
+Continuous matching captures **inserts only**. Updates and deletions do not refresh the prepared data or remove old pairs. To reflect those changes, pause, reset, and start the process again. Run one MDMbox instance; see [Deployment and upgrades](#deployment-and-upgrades).
+{% endhint %}
+
+For a job that finishes after processing a prepared dataset, use [Bulk matching](bulk-match.md).
 
 ## Start and pause
 
-Start, pause, retry and reset commands, status API calls, and result downloads are [audited](audit.md#bulk-operation-codes). Commands require a durable request event before execution, followed by a separate acceptance event. Downloads require an access event before streaming. Admin UI page/init and model selection also record their results. Polling records failures only, with equivalent repeats suppressed for one minute.
+1. Open **Matching → Continuous matching** at `/admin/continuous-match`.
+2. Select a model. Optionally adjust workers, batch size, and batch wait time under **Run settings**.
+3. Choose **Start**. MDMbox prepares the data, matches existing records, then keeps matching new inserts.
+4. Choose **Download CSV** to review accumulated pairs, or **Pause** to suspend processing.
 
-In the left sidebar, open **Matching → Continuous matching** at `/admin/continuous-match`. The **Models** list shows every bulk matching model with its process status, including **Not started** for models without a process. Select a model to view its process and results on the right. **Start** and **Pause** are in the selected model's toolbar. A paused process shows **Resume**; when the model has changed, it shows **Rebuild** with a confirmation that results will be recomputed. Expand the **Run settings** heading below it to view or edit the settings.
+A full batch is processed as soon as it is available. Smaller batches wait for the configured batch wait time, so a single new record can be processed too.
 
-**Run settings** contains the worker count, batch size and batch wait time. It opens automatically for an inactive process; settings are read-only while the process is active. Selecting an existing process loads its saved settings, while a model without a process uses the defaults. Status updates preserve values you are editing. The model list continues updating even when the selected model has not been started.
+Pause keeps completed results. New inserts continue to be captured and wait for **Resume**. Interrupted batches are recomputed after resuming; they do not consume a retry attempt. Pausing during the initial build cancels that build and returns the process to idle.
 
-Process, trigger and interval statuses use the same outlined badges as other Admin UI statuses. **Running**, **Installed** and **Completed** are green; **Paused** is yellow; **Failed** and **Missing** are red; **Not started**, **Pending** and **Idle** are gray.
-
-The first start builds the projection and its indexes. A database trigger adds each subsequently inserted source record to the projection, including inserts through the FHIR API, bulk import and SQL. Committed records are assigned to intervals; workers compare them against earlier assigned records and store pairs reaching the model's probable threshold. A full batch is assigned immediately. A smaller batch is assigned after the batch wait time, so a single new record can be matched without waiting for another full batch.
-
-**Pause** suspends a running process, keeping its projection and committed pairs. It cancels matching statements and interval assignment, including queries waiting for database locks. Assignment ends between intervals without draining the remaining backlog. Cancelling an assignment rolls back both the projection's interval numbers and the new interval entry; those records wait for the next Resume. Interrupted matching intervals return to pending without using a retry attempt. Work inside an interrupted transaction is discarded and recomputed after Resume.
-
-The sync trigger remains installed, so records inserted while the process is paused also wait for the next Resume. Pausing during projection construction cancels the build, removes its objects and returns the process to idle. To remove a running process's saved data and projection, pause it and then use [Reset](#reset-and-delete).
+Run settings are editable only while the process is inactive. Use [Reset](#reset-and-delete) to discard progress and results.
 
 ## Model versions and restarts
 
-An active process uses the model version from which it was built. Saving changes to the model does not change its projection or scoring rules. The page shows **Model in use** and **Latest model**, with a warning when they differ.
+An active process keeps the model version it started with. Saving the model does not change a running process's data or scoring rules. The UI shows **Model in use** and **Latest model** when they differ.
 
-To apply a saved change, pause the process and choose **Rebuild**. This rebuilds the projection and recomputes its pairs. Starting an unchanged paused process resumes its pending work and keeps existing pairs.
+To apply a saved change, pause the process and choose **Rebuild**. This rebuilds the prepared data (the projection) and recomputes its pairs. Starting an unchanged paused process resumes its pending work and keeps existing pairs.
 
-After an application restart, active processes resume automatically using their pinned FHIR model versions. Keep model history available while a process depends on it. An interrupted build is restarted; a process left pausing is marked paused, even if its saved worker settings no longer fit the bulk pool. Finishing that pause uses the main pool and still respects another instance's ownership lock. A process already owned by another instance is left untouched. Automatic leader election is not provided.
+After an application restart, active processes resume automatically; interrupted builds restart and processes left pausing finish pausing. Keep the process's saved model version in FHIR history. A process owned by another instance is left untouched.
 
 ### Deployment and upgrades
 
@@ -49,19 +52,19 @@ Update any existing strategy overrides, including values retained by `helm upgra
 
 ## Results and failures
 
-The process card shows its status, records waiting for a batch, pending/running/completed/failed batch counts, stored pairs and errors. Expand **Diagnostics** for the sync trigger, projection sequence, live workers and recent intervals with record ranges, worker IDs and timing. **Download CSV** exports the full accumulated pair set, with resource IDs, match weight, feature weights and decision status. It uses the same columns as the [job CSV](bulk-match.md#step-4-download-results). Decisions are read from current linkage and task state for the resource type in the process's pinned model version. Saving a different resource type in the model does not change existing exports until the process rebuilds. If the pinned model history is unavailable, the export returns HTTP 500 OperationOutcome before sending CSV.
+The process card shows waiting records, batch counts, stored pairs, and errors. Expand **Diagnostics** for capture status, workers, and recent batches. **Download CSV** exports all accumulated pairs using the same [columns as Bulk matching](bulk-match.md#step-3-download-results).
 
-A failed interval is retried after five seconds, up to three failed attempts. **Retry** requeues failed intervals with a fresh attempt budget. Pairs, interval completion and the pair count are committed together. An interrupted transaction does not leave partial results, and a worker from a previous process run cannot commit after another run takes ownership.
+Decision status is evaluated at download time. Results still use the process's saved model version, even if you have since edited the model. Missing model history causes an HTTP 500 OperationOutcome before the export starts.
 
-If a source record cannot be projected, the trigger records the error and allows the source write to succeed. The record remains absent from the projection until a full rebuild. Review these errors when checking result completeness.
+A failed batch is retried after five seconds, up to three failed attempts. **Retry** gives failed batches a fresh attempt budget. Interrupted batches do not leave partial results.
+
+If a new record cannot be prepared for matching, its original write still succeeds, but the record is missing from matching results. Review capture errors, fix the cause, then pause, reset, and start again to include those records.
 
 ## Reset and delete
 
-Pause the process before using **Reset matching** on its card. The confirmation explains that results and progress will be deleted while the model and source records are kept. This resets the process by removing its projection, trigger, intervals, pairs and errors; the BulkMatchingModel remains available for another Start. Reset is transactional and excludes a concurrent Start.
+Pause the process and choose **Reset matching**. Reset deletes results, progress, errors, and prepared data, and stops capturing inserts. It keeps the model and source records. **Start** then builds everything again.
 
-Deleting a paused BulkMatchingModel also removes its process and projection in the same database transaction. If the resource deletion rolls back, the process and its results are restored with it. This applies to FHIR deletion and direct deletion of the model's database row, including deletion through a separate Aidbox application sharing the database.
-
-Deleting a model with an active process is refused. The process Reset API returns HTTP 409 on a conflict. Direct FHIR deletion returns HTTP 412 with an OperationOutcome for a transaction conflict. Pause the process and retry the deletion.
+Deleting a paused BulkMatchingModel also deletes its process and results. Pause before deleting: resetting an active process returns HTTP 409, and deleting its model through FHIR returns HTTP 412.
 
 ## API
 
@@ -72,17 +75,47 @@ All process endpoints use the MDMbox host and the same [API authentication](auth
 | POST | `/api/continuous-match/{model-id}/start` | 202 when starting or resuming; 200 if already active locally; 400 for invalid settings; 409 if another operation owns the model or the pool has insufficient capacity |
 | POST | `/api/continuous-match/{model-id}/pause` | 202 when pausing; 409 if the process is not active or is owned elsewhere |
 | POST | `/api/continuous-match/{model-id}/retry` | 200 with the number of requeued failed intervals |
-| GET | `/api/continuous-match/{model-id}/status` | JSON process status, including pinned and current model versions, settings and counts |
+| GET | `/api/continuous-match/{model-id}/status` | FHIR Parameters with process state, model versions, settings and counts |
 | GET | `/api/continuous-match/{model-id}/result` | Accumulated pairs as NDJSON (default) or CSV; optional `decisionStatus` filter |
 | DELETE | `/api/continuous-match/{model-id}` | 200 after Reset; 409 while the process is active or another operation owns it |
 
-A missing model on Start, or a missing process on the other operations, returns 404. Commands and status return JSON. Errors use OperationOutcome. For example, the first Start returns HTTP 202:
+A missing model on Start, or a missing process on the other operations, returns 404. Commands and status return FHIR `Parameters` as JSON; errors use `OperationOutcome`. Read parameters by `name`, independently of their order. For example, the first Start returns HTTP 202:
 
 ```json
-{"modelId": "patient-bulk", "status": "building", "rebuild": true}
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    { "name": "mode", "valueCode": "continuous" },
+    { "name": "model", "valueReference": { "reference": "BulkMatchingModel/patient-bulk" } },
+    { "name": "status", "valueCode": "building" },
+    { "name": "rebuild", "valueBoolean": true }
+  ]
+}
 ```
 
-A resumed process returns `status: "running"` and `rebuild: false`. Repeating Start for an already active local process returns HTTP 200 without changing its settings. Pause returns `modelId`, `status` (`pausing` or `cancelling` during a build), and `cancelled` (the number of cancelled database sessions); Retry returns `modelId` and `requeued`; Reset returns `modelId` and `status: "deleted"`.
+A resumed process returns `status: running` and `rebuild: false`. Repeating Start for an already active local process returns HTTP 200 without changing its settings. Pause returns `status: pausing` and `cancelled` (cancelled database sessions, `valueDecimal`); Retry returns `requeued` (`valueDecimal`); Reset returns `status: deleted`. Every response includes `mode` and `model`.
+
+Poll progress with:
+
+```http
+GET https://<mdmbox-host>/api/continuous-match/patient-bulk/status
+```
+
+Status uses the same [parameter names and progress shape as Bulk matching](bulk-match.md#step-2-monitor-progress). Here `mode` is `continuous`, and there is no job ID: the model identifies the process. Possible states are `idle`, `building`, `running`, `pausing`, `paused`, and `failed`. A continuous process stays `running` while waiting for new records; it does not reach `completed`.
+
+`progress` contains batch counts (`pending`, `running`, `completed`, `failed`, `total`). `pairs` is the accumulated pair count, available while running too. `errors` counts capture errors, failed batches, and a process-level failure if present; `captureErrors` isolates records that could not be prepared. Check these counts even while the process is running.
+
+Additional status parameters:
+
+| Parameter | FHIR value | Meaning |
+| --- | --- | --- |
+| `stage`, `error` | `valueCode`, `valueString` | Current build step or process-level failure; omitted when absent |
+| `runningHere`, `triggerInstalled` | `valueBoolean` | Whether this instance owns the process and whether insert capture is installed |
+| `statusChangedAt` | `valueDateTime` | Last lifecycle change |
+| `projection` | `part` | `exists` (`valueBoolean`), `unassigned` and optional `oldestUnassignedMs` (`valueDecimal`) |
+| `settings` | `part` | Saved `workersCount`, `batchSize`, `cutTimeoutMs`, `cutPollMs`, `claimPollMs`, `maxAttempts`, each with `valueInteger` |
+
+`modelVersion`, `currentModelVersion`, and `modelChanged` show whether a saved model change needs a rebuild. Counters use whole-number `valueDecimal` values, as in Bulk matching.
 
 Export results using `Accept`:
 
@@ -91,9 +124,14 @@ GET https://<mdmbox-host>/api/continuous-match/patient-bulk/result?decisionStatu
 Accept: application/x-ndjson
 ```
 
-Use `Accept: text/csv` to download CSV. Without `Accept`, the default is NDJSON. Both formats support `decisionStatus=pending|linked|merged|not-a-match`; omit it for all pairs. An unsupported format returns HTTP 406 OperationOutcome, an invalid filter returns 400. Each NDJSON line has `resourceId1`, `resourceId2`, `matchWeight`, `matchDetails`, and `decisionStatus`, as in [Bulk matching results](bulk-match.md#step-4-download-results).
+Use `Accept: text/csv` to download CSV. Without `Accept`, the default is NDJSON. Both formats support `decisionStatus=pending|linked|merged|not-a-match`; omit it for all pairs. An unsupported format returns HTTP 406 OperationOutcome, an invalid filter returns 400. Each NDJSON line has `resourceId1`, `resourceId2`, `matchWeight`, `matchDetails`, and `decisionStatus`, as in [Bulk matching results](bulk-match.md#step-3-download-results).
 
-The Start request accepts these optional integer settings, each between 1 and 2147483647:
+Start accepts a settings object. For example:
+
+```http
+POST https://<mdmbox-host>/api/continuous-match/patient-bulk/start
+Content-Type: application/json
+```
 
 ```json
 {
@@ -103,15 +141,23 @@ The Start request accepts these optional integer settings, each between 1 and 21
 }
 ```
 
-These are also the defaults when settings are omitted on an explicit Start. Explicit nulls, zero, negative, fractional and out-of-range values are invalid. The API returns HTTP 400 OperationOutcome for invalid settings; the admin page shows which setting to correct. Both validate before changing the process. Automatic resume retains the saved process settings. A refused Start leaves existing settings and results unchanged and creates no process row.
+| Setting | Meaning | Default |
+| --- | --- | --- |
+| `workersCount` | Parallel matching workers | 4 |
+| `batchSize` | Records per batch | 1000 |
+| `cutTimeoutMs` | Wait before assigning a partially filled batch, in milliseconds | 2000 |
+
+Each setting must be an integer from 1 to 2147483647. Invalid values return HTTP 400 without changing the process. Omitted settings use the defaults on an explicit Start; automatic recovery after a restart uses saved settings. Start on an already active local process keeps its settings.
 
 ## Connection capacity
 
-Bulk matching uses a separate database pool controlled by `MDMBOX_BULK_DB_*`. Each process reserves `workersCount + 1` connections, including one for its coordinator. Start returns 409 when that reservation, active local process reservations and unfinished batch job workers exceed `MDMBOX_BULK_DB_MAX_POOL_SIZE`. Pause another process, reduce the worker count or increase the bulk pool size before retrying. See [Configuration reference](config-reference.md#mdmbox-connection-pools).
+Bulk matching uses a separate database pool controlled by `MDMBOX_BULK_DB_*`. Each process reserves `workersCount + 1` connections, including one for its coordinator. Start returns 409 when that reservation and active bulk job or continuous process reservations exceed `MDMBOX_BULK_DB_MAX_POOL_SIZE`. Pause another process, reduce the worker count or increase the bulk pool size before retrying. See [Configuration reference](config-reference.md#mdmbox-connection-pools).
 
 ## Current limitations
 
-- Only inserts are synchronized. Updating or deleting a source record does not update the projection or retract its pairs. Recreating a deleted resource with the same ID retains the old projection row until a rebuild.
+- Recreating a deleted resource with the same ID retains its old prepared values until a rebuild.
 - Results are an accumulated set, optionally filtered by decision status, rather than a stream of changes.
 - Pause keeps the sync trigger active. Use Reset or delete the paused model to remove it.
 - A missing sync trigger is reported in the status and UI, but does not automatically fail the process. Pause, reset and start the process to rebuild it.
+
+Commands, status requests, and exports are [audited](audit.md#bulk-operation-codes). If the required audit event cannot be saved, the command or export does not start.

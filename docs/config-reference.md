@@ -27,7 +27,7 @@ Authentication is enabled by default. When enabled, MDMbox protects both API end
 - The Admin UI uses browser session authentication and redirects unauthenticated users to `/login`.
 - Health checks, Swagger UI, and the OpenAPI specification remain public.
 
-For API Bearer authentication, MDMbox uses Aidbox's authentication pipeline and the `TokenIntrospector` resources configured in Aidbox. MDMbox does not evaluate `AccessPolicy`; every successfully authenticated credential has the same access to protected MDMbox endpoints. See [Authentication](authentication.md) for configuration and request examples.
+Bearer authentication supports Aidbox access tokens and the `TokenIntrospector` resources configured in Aidbox. MDMbox does not evaluate `AccessPolicy`; every successfully authenticated credential has the same access to protected MDMbox endpoints. See [Authentication](authentication.md) for configuration and request examples.
 
 | Variable | Description | Default |
 | --- | --- | --- |
@@ -51,30 +51,15 @@ MDM operation auditing is automatic and has no separate enable/disable setting. 
 
 ## Merge and unmerge algorithms
 
-`MDMBOX_BUILT_IN_ALGORITHMS` controls built-in algorithms only. Unset means all
-are enabled (`simple`, `restore`, `strict`). An empty or whitespace-only value
-disables all built-ins. Otherwise provide a comma-separated, case-sensitive
-allowlist, for example `simple,strict`. Whitespace and duplicates are ignored;
-unknown ids prevent startup. Restart after changing the environment.
+Built-ins are enabled by default. Set `MDMBOX_BUILT_IN_ALGORITHMS` to a comma-separated allowlist such as `simple,strict`, or an empty value to disable all built-ins. IDs are case-sensitive; unknown IDs prevent startup. Restart after changing the setting.
 
-Git and database algorithms are not restricted by this list. Operation defaults
-remain `simple` for merge and `restore` for unmerge: if that id is unavailable,
-the request returns HTTP 400, not another algorithm. A custom Git or database
-algorithm with the same id may still serve it. The merge database id `simple`
-remains reserved.
+This list does not restrict Git or database scripts. The default algorithm IDs remain `simple` for merge and `restore` for unmerge. An unavailable default returns HTTP 400 unless a custom script supplies that ID.
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `MDMBOX_BUILT_IN_ALGORITHMS` | Allowed built-in ids, separated by commas. Empty disables all. Example: `simple,strict`. | unset (all built-ins enabled) |
+| `MDMBOX_BUILT_IN_ALGORITHMS` | Enabled built-ins: `simple`, `restore`, `strict` | unset (all enabled) |
 
-Git storage is optional and read-only. Configure a small, administrator-controlled
-repository containing `merge/<id>.js` and/or `unmerge/<id>.js`. Add runtime sources
-and manually synchronize revisions through **Algorithms → Configuration**;
-no restart is needed. The variables below configure a separate, reserved
-`environment` source that is refreshed at startup and can also be synchronized
-from the UI. See
-[Git algorithm storage](merge-operation.md#git-algorithm-storage) for layout,
-private access, limits, and precedence.
+Manage scripts and Git sources through **Algorithms** in the Admin UI. Runtime sources can be added and synchronized without restarting. The variables below configure a separate, reserved `environment` source:
 
 | Variable | Description | Default |
 | --- | --- | --- |
@@ -84,18 +69,9 @@ private access, limits, and precedence.
 | `MDMBOX_ALGORITHM_GIT_TOKEN_FILE` | Absolute path to a mounted read-only secret containing the HTTPS token or password. | unset |
 | `MDMBOX_ALGORITHM_GIT_CA_FILE` | Absolute path to an optional PEM CA bundle for a private HTTPS Git server. Certificate verification remains enabled. | system CA trust |
 
-Setting any Git environment option requires a valid repository URL. For the
-environment source, invalid configuration, authentication failure, a missing
-revision, or invalid scripts prevent startup; MDMbox does not silently substitute
-another revision or a stale catalog. Runtime sources and their last published
-scripts are persisted in the shared database and do not require a startup fetch.
-Use consistent environment settings across instances sharing that database.
+Setting a Git environment option requires a valid URL. This source refreshes at startup; invalid configuration, unavailable revisions, authentication errors, or invalid scripts prevent startup. Runtime sources retain their last published scripts without fetching on startup.
 
-Open **Algorithms → Configuration** in the Admin UI to inspect the effective built-in policy and all Git sources in one list. When configured, the single reserved `environment` source appears under **Git sources** with an **Environment** badge; it has no separate section. Its information icon explains deployment management. You can have up to 20 sources in total, including this environment source. Each entry shows the repository URL, ref, published commit and last successful sync. Credential and CA files are shown only as configured/not configured; HTTPS authentication usernames, tokens, and stored secret-file locations are hidden. Viewing the page does not fetch Git.
-
-The **Built-in algorithms** table marks **Enabled** algorithms in green and **Disabled** algorithms in gray. The information icon beside its heading states whether `MDMBOX_BUILT_IN_ALGORITHMS` is unset or shows its configured value with `=`; an empty value appears as `""`. It also explains how to change the setting.
-
-Add or edit a runtime source, save its configuration, then use **Sync** to publish both operation catalogs atomically. A failed sync keeps the last good scripts. Change deployment environment variables and restart only to change built-in availability or the reserved environment source configuration. Database merge and unmerge scripts are managed in **Algorithms → Merge** and **Algorithms → Unmerge** and do not require a restart. See the [source-management workflow](merge-operation.md#managing-algorithms-in-the-admin-ui) for concurrency limits, credential-file requirements, and removal behavior.
+See [Algorithm management](algorithms.md) for setup, private access, precedence, and synchronization.
 
 ## Shared database configuration
 
@@ -121,13 +97,14 @@ The database connection settings are shared, but connection pool sizing is appli
 | `MDMBOX_BULK_DB_MIN_IDLE` | Minimum idle bulk pool connections | 0 |
 | `MDMBOX_BULK_DB_IDLE_TIMEOUT_MS` | Time before unused bulk connections can be released, in milliseconds | 60000 |
 
-Both bulk matching jobs and [continuous matching processes](continuous-matching.md) use the bulk pool. A continuous process reserves one connection per range worker plus one for its coordinator, including while its projection is being built. A Start that exceeds the bulk pool capacity is refused with HTTP 409. Finishing an interrupted pause at startup uses the main pool without reserving bulk connections. Include both pools, other applications and all replicas when sizing PostgreSQL's connection limit. Continuous matching requires a single MDMbox replica with the [documented upgrade strategy](continuous-matching.md#deployment-and-upgrades).
+Both bulk matching jobs and [continuous matching processes](continuous-matching.md) use the bulk pool. Each job or process reserves one connection per worker plus one for its coordinator, including during preparation. A Start that exceeds the bulk pool capacity is refused with HTTP 409. Include both pools, other applications and all replicas when sizing PostgreSQL's connection limit. Continuous matching requires a single MDMbox replica with the [documented upgrade strategy](continuous-matching.md#deployment-and-upgrades).
 
 ## HTTP Server
 
 | Variable           | Description | Default |
 | ------------------ | ----------- | ------- |
-| `MDMBOX_HTTP_PORT` | HTTP port   | 3000    |
+| `MDMBOX_HTTP_PORT` | HTTP port | 3000 |
+| `MDMBOX_HTTP_HOST` | Bind address | `0.0.0.0` in the Docker image; `127.0.0.1` otherwise |
 
 ## Related Pages
 

@@ -185,7 +185,7 @@ Every executed unlink creates or updates these resources in the same transaction
 
 **AuditEvent** records the initiating user or client when available, outcome, service, correlation, and references to the original link Task, new unlink Task, Provenance, and domain resources. If this event cannot be written, the reversal rolls back. See [Audit](audit.md) for failure and preview behavior.
 
-After a successful unlink, the same records can be linked again because the previous link Task is no longer active.
+After the reverse plan removes their existing cluster membership, the records can be linked again. The original link Task remains in the audit history with `businessStatus=unlinked`.
 
 ## Validation
 

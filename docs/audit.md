@@ -6,6 +6,24 @@ description: Inspect MDM operation events, resource history, and audit persisten
 
 MDMbox automatically records the operations listed below as FHIR R4 `AuditEvent` resources in the shared Aidbox database. This operation audit is always active; it has no separate enable/disable setting. Read and search the records through the Aidbox FHIR API. MDMbox does not currently provide an Audit page in its Admin UI.
 
+## Querying the audit
+
+Use the Aidbox FHIR endpoint, not MDMbox's `/api/fhir` operation endpoints:
+
+```http
+GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox
+GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&subtype=merge&entity=Patient/123
+GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&subtype=continuous-match-start
+GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&entity:identifier=https://mdm.health-samurai.io/fhir/NamingSystem/bulk-match-job|123
+GET https://<aidbox-host>/fhir/Provenance?target=Task/<task-id>
+```
+
+For failed attempts, request references are stored as identifiers because the referenced resource may not exist. To find failures involving a record, use `entity:identifier`:
+
+```http
+GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&entity:identifier=https://mdm.health-samurai.io/fhir/NamingSystem/fhir-reference|Patient/123
+```
+
 ## Covered operations
 
 | Operation | Successful audit records |
@@ -32,12 +50,12 @@ The same codes identify API and Admin UI actions:
 
 | Workflow | Codes |
 | --- | --- |
-| Bulk matching | `bulk-match-prepare`, `bulk-match-start`, `bulk-match-stop`, `bulk-match-continue`, `bulk-match-archive`, `bulk-match-status`, `bulk-match-result` |
+| Bulk matching | `bulk-match-start`, `bulk-match-stop`, `bulk-match-continue`, `bulk-match-archive`, `bulk-match-status`, `bulk-match-result` |
 | Continuous matching | `continuous-match-start`, `continuous-match-pause`, `continuous-match-retry`, `continuous-match-delete`, `continuous-match-status`, `continuous-match-result` |
 | Bulk matching UI | `bulk-match-view` (page/init), `bulk-match-select-model`, `bulk-match-preview-query`, `bulk-match-poll` (failures only) |
 | Continuous matching UI | `continuous-match-view` (page/init), `continuous-match-select-model`, `continuous-match-poll` (failures only) |
 
-Force stop uses `bulk-match-stop`; force prepare and force stop carry a `force` entity on their request and acceptance events. Bulk events identify the model and job when known. The model uses `entity.what.identifier` with system `https://mdm.health-samurai.io/fhir/NamingSystem/fhir-reference` and value `BulkMatchingModel/<id>`. A batch job uses system `https://mdm.health-samurai.io/fhir/NamingSystem/bulk-match-job` and its numeric ID as a string. Export events identify the resolved job, including downloads that select the latest finished job implicitly. Events do not enumerate the exported patient pairs.
+Force stop uses `bulk-match-stop` and carries a `force` entity on its request and acceptance events. Preparation is part of Start and uses `bulk-match-start`. Bulk events identify the model and job when known. The model uses `entity.what.identifier` with system `https://mdm.health-samurai.io/fhir/NamingSystem/fhir-reference` and value `BulkMatchingModel/<id>`. A batch job uses system `https://mdm.health-samurai.io/fhir/NamingSystem/bulk-match-job` and its numeric ID as a string. Export events identify the resolved job, including downloads that select the latest finished job implicitly. Events do not enumerate the exported patient pairs.
 
 ### Other Admin UI operation codes
 
@@ -94,7 +112,7 @@ Successful merge, unmerge, link, and unlink events commit in the same transactio
 
 `$match` and `$referencing` must persist their event before returning data. If the audit write fails, the operation returns HTTP 500 with an OperationOutcome instead of disclosing the result.
 
-Bulk commands start threads and may cancel running SQL, so they cannot share a transaction with their AuditEvent. Before executing a command, MDMbox requires a durable event with `outcomeDesc="Bulk command requested"` and no `outcome`. If that write fails, the command does not run. After synchronous acceptance, MDMbox writes another event with `outcome=0` and `outcomeDesc="Bulk command accepted"`. Acceptance means that the control action was accepted, not that background preparation or matching finished. The two events share the request correlation identifier. If the acceptance write fails after the action, the successful response is preserved and the missing event is logged and counted. A request event without a result is therefore inconclusive: inspect process/job state before retrying.
+Bulk commands run asynchronously, so their audit records describe request and acceptance separately. Before executing a command, MDMbox requires a durable event with `outcomeDesc="Bulk command requested"` and no `outcome`. If that write fails, the command does not run. After synchronous acceptance, MDMbox writes another event with `outcome=0` and `outcomeDesc="Bulk command accepted"`. Acceptance means that the control action was accepted, not that background preparation or matching finished. The two events share the request correlation identifier. If the acceptance write fails after the action, the successful response is preserved and the missing event is logged and counted. A request event without a result is therefore inconclusive: inspect process/job state before retrying.
 
 Bulk status and export endpoints require an event with `outcomeDesc="Bulk data access authorized"` before disclosure. If persistence fails, the API returns HTTP 500 and no result stream opens; Admin UI commands report the error without executing. An export event records authorized access to a result set when the stream opens. Later streaming errors are written to the application log.
 
@@ -106,28 +124,10 @@ Failure events are written separately so that they can survive a business transa
 
 For `$merge`, `$unmerge`, `$link`, and `$unlink`, `preview=true` does not persist an operation event, even if preview validation or computation fails. Authentication rejections or authentication-service failures are audited regardless of preview. Malformed JSON is also audited because the server cannot interpret a preview parameter from it. Sending a preview parameter to `$match`, `$referencing`, or `$mark-not-a-match` does not disable their audit.
 
-## Querying the audit
-
-Use the Aidbox FHIR endpoint, not MDMbox's `/api/fhir` operation endpoints:
-
-```http
-GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox
-GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&subtype=merge&entity=Patient/123
-GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&subtype=continuous-match-start
-GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&entity:identifier=https://mdm.health-samurai.io/fhir/NamingSystem/bulk-match-job|123
-GET https://<aidbox-host>/fhir/Provenance?target=Task/<task-id>
-```
-
-For failed attempts, request references are stored as identifiers because the referenced resource may not exist. To find failures involving a record, use `entity:identifier`:
-
-```http
-GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&entity:identifier=https://mdm.health-samurai.io/fhir/NamingSystem/fhir-reference|Patient/123
-```
-
 ## Access, retention, and export
 
 MDM operation plans cannot create, modify, or delete server-managed Task, Provenance, AuditEvent, or Device resources. This protection does not replace access controls on the Aidbox API. Restrict direct modification of audit resources and `Device/mdmbox`; the observer reference identifies the producer by convention and is not a cryptographic proof of origin.
 
 MDMbox does not currently enforce an audit retention policy or provide tamper-evident storage. Retain the Task, Provenance, and FHIR history versions required for unmerge, and protect audit backups according to your deployment policy.
 
-Aidbox's `BOX_SECURITY_AUDIT_LOG_ENABLED` setting controls its native audit, not these MDM operation events. Configuring `BOX_SECURITY_AUDIT_LOG_REPOSITORY_URL` does not export MDMbox-created AuditEvents: the native sender consumes a separate queue, and creating an AuditEvent through FHIR does not enqueue it. A dedicated MDM event exporter is not implemented. Events remain available locally through FHIR search.
+Aidbox's `BOX_SECURITY_AUDIT_LOG_ENABLED` setting controls its native audit, not these MDM operation events. Configuring `BOX_SECURITY_AUDIT_LOG_REPOSITORY_URL` does not export MDMbox-created AuditEvents: MDMbox does not currently provide a dedicated audit exporter. Read the events through FHIR search for your own export workflow.

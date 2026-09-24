@@ -88,7 +88,7 @@ Thresholds classify match results into grades:
 
 - Score >= `certain` — match grade `certain` (high confidence)
 - Score >= `probable` — match grade `probable` (review recommended)
-- Score < `probable` — match grade `possible` (only returned if threshold is overridden below `probable`)
+- Score < `probable` — match grade `possible` (returned when using a lower threshold or R6 `onlySingleMatch`)
 
 ## MatchingModel
 
@@ -114,7 +114,7 @@ Content-Type: application/json
     { "name": "dob", "expression": "(#.resource->>'birthDate')" },
     {
       "name": "given",
-      "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'given')"
+      "expression": "immutable_unaccent_upper(#.resource->'name'->0->'given'->>0)"
     },
     {
       "name": "family",
@@ -175,7 +175,12 @@ Content-Type: application/json
 
 Used by both [Bulk matching](bulk-match.md) and [Continuous matching](continuous-matching.md). It defines extracted columns, blocking rules, comparison features and thresholds for matching across a dataset. Bulk matching runs a finite job over prepared data; Continuous matching keeps processing newly inserted records. Both use the same `BulkMatchingModel` resource type.
 
-Create and update these resources through Aidbox's FHIR API, for example `PUT https://<aidbox-host>/fhir/BulkMatchingModel/<id>`, or use the MDMbox Admin UI.
+Create and update these resources through Aidbox's FHIR API, or use the MDMbox Admin UI:
+
+```http
+PUT https://<aidbox-host>/fhir/BulkMatchingModel/patient-bulk
+Content-Type: application/fhir+json
+```
 
 Key differences from MatchingModel:
 
@@ -192,7 +197,7 @@ Key differences from MatchingModel:
   "resource": "Patient",
   "tableName": "mdm.patient_flat",
   "thresholds": {
-    "certain": 25,
+    "certain": 23,
     "probable": 16
   },
   "column": [
@@ -218,6 +223,13 @@ Key differences from MatchingModel:
         { "expression": "l.dob = r.dob", "weight": 10.59 },
         { "else": -10.32 }
       ]
+    },
+    {
+      "name": "family",
+      "case": [
+        { "expression": "l.family = r.family", "weight": 13.34 },
+        { "else": -12.37 }
+      ]
     }
   ]
 }
@@ -227,9 +239,7 @@ Key differences from MatchingModel:
 
 Models can be managed through the Admin UI at `/admin`. The UI provides a JSON editor for creating and editing both MatchingModel and BulkMatchingModel resources.
 
-Select a model in the **Models** list to view or edit its JSON. BulkMatchingModel entries carry a **bulk** badge; the editor header also shows the resource type. A MatchingModel and a BulkMatchingModel can share the same `id` and remain separate entries: selection, editing and deletion apply to the selected resource type. **New Model** clears the selection and opens an empty editor; **Cancel** returns to the model-selection prompt.
-
-Red markers in the editor gutter indicate JSON syntax errors. They are refreshed after editing pauses and cleared when the JSON changes or another model is selected. Selected text is highlighted in blue, with a lighter shade when the editor loses focus.
+Select a model in the **Models** list to edit it, or choose **New Model** and paste a model definition. A **bulk** badge identifies BulkMatchingModel resources. Check the resource type before saving or deleting: the two model types can have the same ID. Red markers in the editor indicate JSON syntax errors.
 
 ## Tuning
 

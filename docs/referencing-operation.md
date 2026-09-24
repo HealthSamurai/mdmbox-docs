@@ -1,10 +1,10 @@
 ---
-description: Use the $referencing operation to find all FHIR resources that reference a given resource.
+description: Find resources of selected types that reference a given FHIR resource.
 ---
 
 # Referencing operation
 
-The `$referencing` operation finds all FHIR resources in the database that reference a given resource. This is useful when preparing a merge plan — you need to know which related resources (Encounters, Observations, etc.) need their references updated.
+The `$referencing` operation finds resources that reference a given record. Specify which resource types to search, such as Encounter and Observation. Use the results when building a [merge plan](merge-operation.md#client-plan-merge).
 
 ## Request
 
@@ -29,19 +29,19 @@ Content-Type: application/json
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `type` | valueString | No | Resource types to search (repeatable). If omitted, searches all types. |
-| `count` | valueInteger | No | Maximum results per type (default: 100) |
+| `type` | valueString | Yes, to get results | Resource types to search. Repeat once per type. Omitting all types returns an empty Bundle. |
+| `count` | valueInteger | No | Maximum results across all requested types (default: 20) |
 | `offset` | valueInteger | No | Pagination offset (default: 0) |
 
 ## Response
 
-A FHIR Bundle containing all resources that reference the target:
+A FHIR searchset Bundle contains the requested page, ordered by resource type and ID. Increase `offset` by `count` to read the next page. Resource bodies below are abbreviated:
 
 ```json
 {
   "resourceType": "Bundle",
   "type": "searchset",
-  "total": 3,
+  "total": 2,
   "entry": [
     {
       "resource": {

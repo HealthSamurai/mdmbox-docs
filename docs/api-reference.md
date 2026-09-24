@@ -4,7 +4,9 @@ description: Complete list of MDMbox REST API endpoints.
 
 # API reference
 
-The full OpenAPI specification is available at `/api/openapi.json`. The interactive Swagger UI is at `/api/docs`. The specification reports the image release version (`dev` for local builds).
+All paths below use the MDMbox host. Use [API authentication](authentication.md) for protected endpoints. General FHIR resource CRUD and search use the separate Aidbox host at `/fhir`.
+
+Open `/api/docs` for Swagger UI or `/api/openapi.json` for the full specification and request schemas. The specification reports the running image version.
 
 The `mdm` helpers supplied to server-side scripts are documented separately in the [JavaScript algorithm API](javascript-algorithm-api.md).
 
@@ -76,6 +78,8 @@ See [Link operation](link-operation.md) and [Unlink operation](unlink-operation.
 | --- | --- | --- |
 | `POST` | `/api/fhir/$mark-not-a-match` | Record that two resources are not the same real-world entity |
 
+See [Mark not a match](mark-not-a-match.md) for the request, response, and effect on matching and merging.
+
 ### $referencing
 
 | Method | Path | Description |
@@ -92,27 +96,38 @@ All bulk match endpoints are scoped to a BulkMatchingModel by ID.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/bulk-match/:model-id/prepare` | Prepare flat table (`?force=true` to recreate) |
-| `GET` | `/api/bulk-match/:model-id/status` | Get flat table preparation status |
-| `POST` | `/api/bulk-match/:model-id/start` | Start bulk match job (body: `{batchSize, workersCount}`) |
+| `GET` | `/api/bulk-match/:model-id/status` | Get preparation state and active or latest non-archived job progress |
+| `GET` | `/api/bulk-match/:model-id/status/:job-id` | Get a specific job's progress, including archived jobs |
+| `POST` | `/api/bulk-match/:model-id/start` | Prepare data if needed and start a job (body: `{batchSize, workersCount, refreshSourceData}`) |
 | `POST` | `/api/bulk-match/:model-id/stop` | Stop job (`?force=true` for immediate cancellation) |
 | `POST` | `/api/bulk-match/:model-id/continue` | Resume a stopped job |
 | `POST` | `/api/bulk-match/:model-id/archive` | Archive a completed or stopped job |
 | `GET` | `/api/bulk-match/:model-id/result` | Export the latest completed or stopped job |
 | `GET` | `/api/bulk-match/:model-id/result/:job-id` | Export a specific job of this model |
 
-Both result routes accept `Accept: text/csv` or `Accept: application/x-ndjson` (default), and an optional `decisionStatus` filter. See [Bulk matching](bulk-match.md).
+Commands and status return FHIR `Parameters`; errors use `OperationOutcome`. Both result routes accept `Accept: text/csv` or `Accept: application/x-ndjson` (default), and an optional `decisionStatus` filter. See [Bulk matching](bulk-match.md).
 
 ### Continuous matching
 
-Continuous matching processes use `/api/continuous-match/:model-id`: `POST /start`, `POST /pause`, `POST /retry`, `GET /status`, `GET /result`, and `DELETE` on the model prefix to reset its process. See [Continuous matching](continuous-matching.md) for request settings, version handling and conflict responses. Commands return structured JSON; errors use OperationOutcome. Results use the same CSV/NDJSON negotiation and decision filter as Bulk matching.
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/continuous-match/:model-id/start` | Start, resume, or rebuild after a model change |
+| `POST` | `/api/continuous-match/:model-id/pause` | Pause while keeping progress and results |
+| `POST` | `/api/continuous-match/:model-id/retry` | Requeue failed batches |
+| `GET` | `/api/continuous-match/:model-id/status` | Get process status and counts |
+| `GET` | `/api/continuous-match/:model-id/result` | Export accumulated pairs |
+| `DELETE` | `/api/continuous-match/:model-id` | Reset a paused process, keeping the model and source records |
+
+Commands and status return FHIR `Parameters`, using the same progress fields as Bulk matching; errors use `OperationOutcome`. Results support the same CSV/NDJSON formats and decision filters as Bulk matching. See [Continuous matching](continuous-matching.md) for settings and operating limits.
 
 ## Admin UI
 
 The admin interface is available at `/admin`. It provides:
 
 - `/admin` — model management (create, edit, delete MatchingModel and BulkMatchingModel)
-- `/admin/bulk-match` — Bulk matching (prepare, start, monitor, download, stop)
+- `/admin/bulk-match` — Bulk matching (start, monitor, download, stop)
 - `/admin/continuous-match` — Continuous matching (start, pause, retry, download, reset)
+
+The **Algorithms** section manages merge and unmerge scripts and their Git sources. See [Algorithm management](algorithms.md).
 
 The Admin UI uses server-sent events for real-time updates. No separate frontend deployment is required.

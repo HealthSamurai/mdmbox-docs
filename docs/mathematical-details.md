@@ -42,17 +42,19 @@ The ratio m/u is the **Bayes factor**. In MDMbox, the `weight` field in feature 
 
 ## Match score
 
-The match score is the product of all Bayes factors multiplied by the prior. In log space (as used by MDMbox), this becomes the sum of log2 Bayes factors:
+MDMbox adds the weights selected by the model's feature cases:
 
 `match_weight = weight_1 + weight_2 + ... + weight_n`
 
-To convert to a probability estimate:
+It converts the raw weight to the FHIR `search.score` in the range 0–1:
 
-`probability = x / (1 + x)` where `x = 2^match_weight` (or equivalently, `probability = 1 / (1 + 2^(-match_weight))`).
+`search.score = 1 / (1 + 2^(-match_weight))`
+
+This conversion does not apply a separate prior probability. In Bayesian terms it assumes prior odds of 1; a calibrated posterior would also include the log2 prior odds. Treat `search.score` as a ranking score, not a measured probability that two records are the same person. MDMbox uses the raw weight for threshold filtering and match grades.
 
 ## Independence assumption
 
-Comparison functions are assumed to be mutually independent. In practice, the algorithm is robust to moderate violations of this assumption.
+Adding log Bayes factors assumes the comparisons are independent given whether the records match. Correlated features can count the same evidence more than once; calibrate weights and thresholds against representative data.
 
 ## Parameter estimation
 

@@ -156,49 +156,7 @@ Accept: application/json
 
 ## Preview mode
 
-Set `preview` to `true` to validate the link plan and inspect the assembled transaction:
-
-```json
-{
-  "resourceType": "Parameters",
-  "parameter": [
-    { "name": "preview", "valueBoolean": true },
-    {
-      "name": "plan",
-      "resource": {
-        "resourceType": "Bundle",
-        "type": "transaction",
-        "entry": ["... Linkage POST or PATCH entries ..."]
-      }
-    }
-  ]
-}
-```
-
-Preview response:
-
-```json
-{
-  "resourceType": "Parameters",
-  "parameter": [
-    {
-      "name": "outcome",
-      "resource": {
-        "resourceType": "OperationOutcome",
-        "issue": [{ "severity": "information", "code": "informational" }]
-      }
-    },
-    {
-      "name": "bundle",
-      "resource": {
-        "resourceType": "Bundle",
-        "type": "transaction",
-        "entry": ["... assembled entries including audit resources ..."]
-      }
-    }
-  ]
-}
-```
+In the request above, change `preview` to `true` and keep the complete plan. The response is FHIR `Parameters` containing `outcome` and `bundle`, the assembled transaction including audit resources.
 
 Preview does not persist the Linkage, Task, Provenance, or operation AuditEvent. See [Audit](audit.md) for authentication failures and malformed requests.
 

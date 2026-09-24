@@ -14,10 +14,6 @@ Unversioned routes such as `/api/fhir/Patient/$match` use the FHIR release selec
 
 For body-based `$match`, MDMbox validates the input `resource` before matching. If the resource declares `meta.profile`, the corresponding FHIR package must be installed and the resource must satisfy that profile. For example, a Patient with `meta.profile` set to the US Core Patient profile requires the US Core package to be installed first. Profile validation failures return `422 Unprocessable Entity` with an `OperationOutcome`.
 
-## Audit
-
-Every successful `$match` records an AuditEvent before returning data, including when there are no matches. The event identifies the returned candidates and, for an instance-level request, the subject. If the event cannot be persisted, the operation returns HTTP 500 instead of the results. See [Audit](audit.md) for actor identity, failure handling, and the 1000-reference recording limit.
-
 ## Match a resource
 
 Send a FHIR Parameters resource containing the record to match:
@@ -63,6 +59,8 @@ Content-Type: application/json
 
 MDMbox retrieves `Patient/123` by ID and uses it as the source resource. The source resource itself is excluded from the response by ID, so `Patient/123` will not be returned as its own match.
 
+Pairs recorded with [$mark-not-a-match](mark-not-a-match.md) are excluded when the input identifies an existing resource. A new resource without an ID has no recorded pair decisions to apply.
+
 ## Parameters
 
 ### Common request body parameters
@@ -71,7 +69,7 @@ MDMbox retrieves `Patient/123` by ID and uses it as the source resource. The sou
 | --- | --- | --- | --- |
 | `modelId` | valueString | Yes | ID of the MatchingModel to use |
 | `resource` | resource | Only for `/api/fhir/:resource/$match` | The FHIR resource to find matches for. Omit this parameter when matching an existing resource by ID. |
-| `threshold` | valueDecimal | No | Override the model's `probable` threshold in normal potential-match mode. Cannot be combined with `onlyCertainMatches`. |
+| `threshold` | valueDecimal | No | Override the model's `probable` threshold. Cannot be combined with `onlyCertainMatches=true` or `onlySingleMatch=true`. |
 | `count` | valueInteger | No | Maximum number of returned entries (default: 10). `Bundle.total` still reports the full number of matches above the effective threshold. |
 
 The default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and is `10` unless configured otherwise.
@@ -98,18 +96,18 @@ After the package is installed, a profiled input resource that violates the prof
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `onlyCertainMatches` | valueBoolean | Sets the effective threshold to the model's `certain` threshold. Cannot be combined with `threshold` or `onlySingleMatch`. `count` still applies. |
-| `onlySingleMatch` | valueBoolean | Returns one best candidate. Cannot be combined with `threshold`, `count`, or `onlyCertainMatches`. |
+| `onlyCertainMatches` | valueBoolean | When `true`, uses the model's `certain` threshold. Cannot be combined with `threshold` or `onlySingleMatch=true`. `count` still applies. |
+| `onlySingleMatch` | valueBoolean | When `true`, returns one best candidate. Cannot be combined with `threshold`, `count`, or `onlyCertainMatches=true`. |
 
 In normal R6 mode, MDMbox uses `threshold` when supplied, otherwise the model's `probable` threshold. There is no 100-entry TEFCA cap for R6.
 
-In R6 `onlySingleMatch=true` mode, MDMbox asks the server-side matching algorithm to designate one best candidate. If several candidates are eligible, MDMbox returns the highest-scored one; if scores are tied, MDMbox uses resource ID as a stable tie-breaker. If no candidate is eligible, the response is an empty searchset.
+In R6 `onlySingleMatch=true` mode, MDMbox selects the highest-scored candidate with a raw weight of at least 0. This mode does not use the model's `probable` or `certain` threshold, so the result can have grade `possible`. Ties are resolved by resource ID. If no candidate is eligible, the response is an empty searchset.
 
 ### R4 flag behavior
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `onlyCertainMatches` | valueBoolean | Sets the effective threshold to the model's `certain` threshold. Cannot be combined with `threshold`. `count` still applies. |
+| `onlyCertainMatches` | valueBoolean | When `true`, uses the model's `certain` threshold. Cannot be combined with `threshold`. `count` still applies. |
 
 R4 routes do not implement `onlySingleMatch`; use an R6 route when that behavior is required.
 
@@ -129,18 +127,19 @@ The response is a FHIR Bundle of type `searchset`. Each entry includes:
 {
   "resourceType": "Bundle",
   "type": "searchset",
-  "total": 3,
+  "total": 1,
   "entry": [
     {
       "resource": {
         "resourceType": "Patient",
         "id": "456",
         "name": [{ "given": ["Freya"], "family": "Shah" }],
-        "birthDate": "1990-01-15"
+        "birthDate": "1990-01-15",
+        "gender": "female"
       },
       "search": {
         "mode": "match",
-        "score": 0.9998,
+        "score": 0.9999999826441174,
         "extension": [
           {
             "url": "http://hl7.org/fhir/StructureDefinition/match-grade",
@@ -148,14 +147,14 @@ The response is a FHIR Bundle of type `searchset`. Each entry includes:
           },
           {
             "url": "https://mdm.health-samurai.io/fhir/StructureDefinition/match-weight",
-            "valueDecimal": 12.4
+            "valueDecimal": 25.78
           },
           {
             "url": "https://mdm.health-samurai.io/fhir/StructureDefinition/match-details",
             "extension": [
-              { "url": "given", "valueDecimal": 4.5 },
-              { "url": "family", "valueDecimal": 5.1 },
-              { "url": "birthDate", "valueDecimal": 2.8 }
+              { "url": "dob", "valueDecimal": 10.59 },
+              { "url": "name", "valueDecimal": 13.34 },
+              { "url": "sex", "valueDecimal": 1.85 }
             ]
           }
         ]
@@ -176,3 +175,7 @@ Match weights are log2 Bayes factor sums. MDMbox exposes the raw weight in the `
 `probability = 1 / (1 + 2^(-weight))`
 
 See [Mathematical details](mathematical-details.md) for the full derivation.
+
+## Audit
+
+Successful requests record an AuditEvent before returning results, including empty results. If the event cannot be saved, the operation returns HTTP 500. See [Audit](audit.md) for recorded fields and limits.
