@@ -54,6 +54,8 @@ Update any existing strategy overrides, including values retained by `helm upgra
 
 The process card shows waiting records, batch counts, stored pairs, and errors. Expand **Diagnostics** for capture status, workers, and recent batches. **Download CSV** exports all accumulated pairs using the same [columns as Bulk matching](bulk-match.md#step-3-download-results).
 
+The recent intervals table's **took** column shows elapsed wall-clock time from the worker claiming an interval to recording its outcome, including matching query execution. It excludes the final transaction commit. A retry replaces the timestamps with those of the latest attempt; time spent waiting in the pending queue is excluded.
+
 Decision status is evaluated at download time. Results still use the process's saved model version, even if you have since edited the model. Missing model history causes an HTTP 500 OperationOutcome before the export starts.
 
 A failed batch is retried after five seconds, up to three failed attempts. **Retry** gives failed batches a fresh attempt budget. Interrupted batches do not leave partial results.
