@@ -29,13 +29,13 @@ graph LR
 
 Open **Matching → Bulk matching** at `/admin/bulk-match` and select a model. Its prepared data, run settings, and job history appear on the right.
 
-Choose **Start job**. MDMbox prepares data when needed and starts matching automatically. **Run settings** defaults to 4 workers and batches of 1000 records. Select **Refresh source data** to include records inserted, updated, or deleted since the previous preparation. A model can have one active job at a time.
+Choose **Start job** to match using prepared data. MDMbox prepares data automatically when no compatible snapshot is available. To include records inserted, updated, or deleted since the previous preparation, use the adjacent **Refresh and start** button: it rebuilds prepared data from the current source records, then starts a new job. Both buttons use **Run settings**, which defaults to 4 workers and batches of 1000 records. A model can have one active job at a time; both start buttons are disabled while it is active.
 
-**Prepared data** shows whether Start will rebuild the snapshot or only update indexes. **Prepared with model version** identifies the version used to build the snapshot; each job records the version used for its matching rules.
+**Prepared data** shows whether Start will rebuild the snapshot or only update indexes. Jobs display **Preparing data** while preparing the snapshot or updating indexes, then **In progress** when matching begins. **Prepared with model version** identifies the version used to build the snapshot; each job records the version used for its matching rules.
 
 The history shows up to 50 unarchived jobs for the selected model, prioritizing active jobs before recent finished jobs. Each job has its own stop, resume, CSV download and archive actions. Archiving removes a job from this history.
 
-Worker timelines show completed and failed batches. Select a batch to inspect its record range, duration, and any error. Each timeline displays up to 200 finished batches.
+Worker timelines show completed batches in green and failed batches in red, with up to 200 batches per page. They open on the latest page; use the previous and next buttons to browse the full history. Automatic updates preserve a page selected manually. **Latest** returns to the latest page and follows newly finished batches. The time axis measures elapsed time from the beginning of matching across all pages, with ticks at round intervals that adapt to the visible time span. Select a bar to inspect its record range, duration, and any error; the **i** button beside **Batch activity** explains the chart. Job counters also show zero pairs and batches when the prepared snapshot is empty.
 
 ## API workflow
 

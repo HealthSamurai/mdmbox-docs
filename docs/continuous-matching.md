@@ -37,7 +37,7 @@ Progress compares processed records with the records currently captured for matc
 
 **Recent batch activity** shows one timeline lane per worker, with matching batches in blue, completed batches in green, and failed batches in red. It includes every currently matching batch and the latest 50 completed or failed batches, along with batches crossing the left edge of that time window. Select a bar to see its batch size, duration and failed-attempt count; batches cut after the wait time also show **timeout batch**. The **i** button explains the chart. Running durations grow as the page refreshes; finished durations stay fixed. Retried batches show their latest attempt rather than a separate bar for each attempt.
 
-**Diagnostics** includes model versions, capture status, recorded errors and a table of recent batch details. **Timeout** means a batch was cut after the wait time. **Initial / size** means it came from initial preparation or reaching the batch size; the last batch from initial preparation can be smaller than the configured size.
+**Diagnostics** includes model versions, capture status, recorded errors and the full batch history, newest first. The table shows 10 batches per page and keeps its height on shorter or empty pages. Click the **Status** column header with the filter icon to choose **All statuses**, **Pending**, **Matching**, **Completed** or **Failed**. Changing the filter opens its first page; automatic updates preserve the current page and filter. Selecting another model resets both. The table loads only while Diagnostics is expanded; its filter does not affect the activity chart. **Timeout** means a batch was cut after the wait time. **Initial / size** means it came from initial preparation or reaching the batch size; the last batch from initial preparation can be smaller than the configured size.
 
 ## Model versions and restarts
 
@@ -66,7 +66,7 @@ Update any existing strategy overrides, including values retained by `helm upgra
 
 ## Results and failures
 
-The process card shows waiting records, batch counts, stored pairs, and errors. Expand **Diagnostics** for capture status, workers, and recent batches. **Download CSV** exports all accumulated pairs using the same [columns as Bulk matching](bulk-match.md#step-3-download-results).
+The process card shows waiting records, batch counts, stored pairs, and errors. Expand **Diagnostics** for capture status, workers, and batch history. **Download CSV** exports all accumulated pairs using the same [columns as Bulk matching](bulk-match.md#step-3-download-results).
 
 The recent intervals table's **took** column shows elapsed wall-clock time from the worker claiming an interval to recording its outcome, including matching query execution. It excludes the final transaction commit. A retry replaces the timestamps with those of the latest attempt; time spent waiting in the pending queue is excluded.
 
