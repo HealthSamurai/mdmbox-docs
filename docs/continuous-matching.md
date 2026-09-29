@@ -171,7 +171,7 @@ Accept: application/json
 | `_count` | Maximum entries per JSON page, an integer from 0 to 1000. Use 0 to return only `total` with an empty `entries` array. | 100 |
 | `_page` | Zero-based page number, a nonnegative integer. Page 0 is the first page. | 0 |
 
-Each parameter can be omitted independently. Invalid pagination returns HTTP 400 OperationOutcome. The page number and calculated offset (`_count * _page`) must not exceed 9223372036854775807. CSV and NDJSON return all matching pairs; pagination limits apply only to JSON.
+Each parameter can be omitted independently. Invalid pagination, including values too large to calculate the requested page, returns HTTP 400 OperationOutcome. CSV and NDJSON return all matching pairs; pagination limits apply only to JSON.
 
 JSON pages sort by descending `matchWeight`, then ascending `resourceId1` and `resourceId2` to keep equally weighted pairs in a stable order. Results and decisions remain live: inserts or decision changes between requests can shift page boundaries and change `total`. Pagination does not preserve a snapshot across requests; use CSV or NDJSON for a complete export in one request.
 
