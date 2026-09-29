@@ -29,6 +29,8 @@ graph LR
 
 Open **Matching → Bulk matching** at `/admin/bulk-match` and select a model. Its prepared data, run settings, and job history appear on the right.
 
+Status and job history update automatically. Jobs continue running when you leave the page. If a model fails to load, choose **Retry loading**.
+
 Choose **Start job** to match using prepared data. MDMbox prepares data automatically when no compatible snapshot is available. To include records inserted, updated, or deleted since the previous preparation, use the adjacent **Refresh and start** button: it rebuilds prepared data from the current source records, then starts a new job. Both buttons use **Run settings**, which defaults to 4 workers and batches of 1000 records. A model can have one active job at a time; both start buttons are disabled while it is active.
 
 **Prepared data** shows whether Start will rebuild the snapshot or only update indexes. Jobs display **Preparing data** while preparing the snapshot or updating indexes, then **In progress** when matching begins. **Prepared with model version** identifies the version used to build the snapshot; each job records the version used for its matching rules.

@@ -21,15 +21,15 @@ For a job that finishes after processing a prepared dataset, use [Bulk matching]
 
 A full batch is processed as soon as it is available. Smaller batches wait for the configured batch wait time, so a single new record can be processed too.
 
-When no batches are queued, one worker polls for work and the others wait. Claiming a batch immediately wakes the next worker, allowing matching to scale up to the configured worker count as the queue grows. Once the queue is clear, polling returns to one worker.
-
 Pause keeps completed results. New inserts continue to be captured and wait for **Resume**. Interrupted batches are recomputed after resuming; they do not consume a retry attempt. Pausing during the initial build cancels that build and returns the process to idle.
 
 Run settings are editable only while the process is inactive. Use [Reset](#reset-and-delete) to discard progress and results.
 
 ## Monitor activity
 
-The selected process's status and activity refresh every two seconds. The model list loads when you open the page; reload the page to see newly created or deleted models. Selecting a model refreshes its status and run settings.
+Process status and activity update automatically. Matching continues when you leave the page.
+
+Reload the page to see newly created or deleted models. If a model fails to load, choose **Retry loading**.
 
 The overview distinguishes **Preparing data**, **Catching up**, **Collecting a batch**, and **Waiting for new records**. A caught-up process remains running; idle workers are expected while it waits for inserts. Paused processes, failed batches and unavailable workers have separate states.
 
@@ -37,7 +37,7 @@ Progress compares processed records with the records currently captured for matc
 
 **Recent batch activity** shows one timeline lane per worker, with matching batches in blue, completed batches in green, and failed batches in red. It includes every currently matching batch and the latest 50 completed or failed batches, along with batches crossing the left edge of that time window. Select a bar to see its batch size, duration and failed-attempt count; batches cut after the wait time also show **timeout batch**. The **i** button explains the chart. Running durations grow as the page refreshes; finished durations stay fixed. Retried batches show their latest attempt rather than a separate bar for each attempt.
 
-**Diagnostics** includes model versions, capture status, recorded errors and the full batch history, newest first. The table shows 10 batches per page and keeps its height on shorter or empty pages. Click the **Status** column header with the filter icon to choose **All statuses**, **Pending**, **Matching**, **Completed** or **Failed**. Changing the filter opens its first page; automatic updates preserve the current page and filter. Selecting another model resets both. The table loads only while Diagnostics is expanded; its filter does not affect the activity chart. **Timeout** means a batch was cut after the wait time. **Initial / size** means it came from initial preparation or reaching the batch size; the last batch from initial preparation can be smaller than the configured size.
+**Diagnostics** includes model versions, capture status, recorded errors and the full batch history, newest first. The table shows 10 batches per page. Click the **Status** column header with the filter icon to choose **All statuses**, **Pending**, **Matching**, **Completed** or **Failed**. Changing the filter opens its first page; automatic updates preserve the current page and filter. Selecting another model resets both. The status filter does not affect the activity chart. **Timeout** means a batch was cut after the wait time. **Initial / size** means it came from initial preparation or reaching the batch size; the last batch from initial preparation can be smaller than the configured size.
 
 ## Model versions and restarts
 

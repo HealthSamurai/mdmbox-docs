@@ -31,6 +31,8 @@ Use `function merge(input, mdm)` or `function unmerge(input, mdm)` and return `{
 
 Database scripts are editable and can be deleted. Built-in and Git scripts are read-only; duplicate them to create an editable database copy. The editor shows the storage type and, for Git, the source, path, and published commit.
 
+If an algorithm fails to load, select it again to retry.
+
 Only trusted administrators should manage scripts and Git sources. Algorithm code can read and propose changes to the resources allowed by its operation.
 
 ## Git algorithm storage
