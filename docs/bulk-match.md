@@ -152,7 +152,7 @@ Accept: text/csv
 
 To select a specific job, use `/api/bulk-match/patient-bulk/result/{job-id}`. The job must belong to the model in the URL. Both routes return HTTP 404 if there is no matching job.
 
-Choose `Accept: application/x-ndjson` for one JSON object per line. NDJSON is also the default when `Accept` is omitted. Other unsupported formats return HTTP 406 OperationOutcome. For example:
+Choose `Accept: application/x-ndjson` for one JSON object per line. NDJSON is also the default when `Accept` is omitted. Bulk results support CSV and NDJSON; `Accept: application/json` and other unsupported formats return HTTP 406 OperationOutcome. Paginated JSON is available for [Continuous matching results](continuous-matching.md#api). For example, one NDJSON line is:
 
 ```json
 {"resourceId1":"patient-1","resourceId2":"patient-2","matchWeight":18.0,"matchDetails":{"dob":10.0,"family":8.0},"decisionStatus":"pending"}

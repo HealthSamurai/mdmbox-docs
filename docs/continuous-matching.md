@@ -92,7 +92,7 @@ All process endpoints use the MDMbox host and the same [API authentication](auth
 | POST | `/api/continuous-match/{model-id}/pause` | 202 when pausing; 409 if the process is not active or is owned elsewhere |
 | POST | `/api/continuous-match/{model-id}/retry` | 200 with the number of requeued failed intervals |
 | GET | `/api/continuous-match/{model-id}/status` | FHIR Parameters with process state, model versions, settings and counts |
-| GET | `/api/continuous-match/{model-id}/result` | Accumulated pairs as NDJSON (default) or CSV; optional `decisionStatus` filter |
+| GET | `/api/continuous-match/{model-id}/result` | Accumulated pairs as NDJSON (default), CSV, or paginated JSON; optional `decisionStatus` filter |
 | DELETE | `/api/continuous-match/{model-id}` | 200 after Reset; 409 while the process is active or another operation owns it |
 
 A missing model on Start, or a missing process on the other operations, returns 404. Commands and status return FHIR `Parameters` as JSON; errors use `OperationOutcome`. Read parameters by `name`, independently of their order. For example, the first Start returns HTTP 202:
@@ -140,7 +140,40 @@ GET https://<mdmbox-host>/api/continuous-match/patient-bulk/result?decisionStatu
 Accept: application/x-ndjson
 ```
 
-Use `Accept: text/csv` to download CSV. Without `Accept`, the default is NDJSON. Both formats support `decisionStatus=pending|linked|merged|not-a-match`; omit it for all pairs. An unsupported format returns HTTP 406 OperationOutcome, an invalid filter returns 400. Each NDJSON line has `resourceId1`, `resourceId2`, `matchWeight`, `matchDetails`, and `decisionStatus`, as in [Bulk matching results](bulk-match.md#step-3-download-results).
+Use `Accept: text/csv` to download CSV. Without `Accept`, the default is NDJSON. All three formats support `decisionStatus=pending|linked|merged|not-a-match`; omit it for all pairs. An unsupported format returns HTTP 406 OperationOutcome, an invalid filter returns 400. Each NDJSON line has `resourceId1`, `resourceId2`, `matchWeight`, `matchDetails`, and `decisionStatus`, as in [Bulk matching results](bulk-match.md#step-3-download-results).
+
+To browse results a page at a time, request `application/json`:
+
+```http
+GET https://<mdmbox-host>/api/continuous-match/patient-bulk/result?decisionStatus=pending&_count=100&_page=0
+Accept: application/json
+```
+
+```json
+{
+  "entries": [
+    {
+      "resourceId1": "patient-1",
+      "resourceId2": "patient-2",
+      "matchWeight": 18.0,
+      "matchDetails": { "dob": 10.0, "family": 8.0 },
+      "decisionStatus": "pending"
+    }
+  ],
+  "total": 1
+}
+```
+
+`entries` uses the same pair fields and decision values as NDJSON. `total` is the number of pairs matching the model and decision filter before pagination, including when the requested page is empty. No matches returns `{"entries":[],"total":0}`.
+
+| Parameter | Meaning | Default |
+| --- | --- | --- |
+| `_count` | Maximum entries per JSON page, an integer from 0 to 1000. Use 0 to return only `total` with an empty `entries` array. | 100 |
+| `_page` | Zero-based page number, a nonnegative integer. Page 0 is the first page. | 0 |
+
+Each parameter can be omitted independently. Invalid pagination returns HTTP 400 OperationOutcome. The page number and calculated offset (`_count * _page`) must not exceed 9223372036854775807. CSV and NDJSON return all matching pairs; pagination limits apply only to JSON.
+
+JSON pages sort by descending `matchWeight`, then ascending `resourceId1` and `resourceId2` to keep equally weighted pairs in a stable order. Results and decisions remain live: inserts or decision changes between requests can shift page boundaries and change `total`. Pagination does not preserve a snapshot across requests; use CSV or NDJSON for a complete export in one request.
 
 Start accepts a settings object. For example:
 
