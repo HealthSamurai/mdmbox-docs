@@ -87,11 +87,7 @@ Aidbox and MDMbox run as separate applications against the same PostgreSQL datab
 
 ### PostgreSQL extensions
 
-MDMbox matching requires the standard PostgreSQL extensions `unaccent`, `fuzzystrmatch`, and `pg_trgm`. They can be provisioned by your database administrator before startup.
-
-The normalization helpers `public.immutable_unaccent`, `public.immutable_unaccent_upper`, and `public.immutable_remove_spaces_unaccent_upper` automatically use the schema of the installed `unaccent` extension. The extension can remain in its existing schema; MDMbox does not move or recreate it. The database role needs `USAGE` on that schema and `EXECUTE` on its `unaccent(text)` function. If the matching migrations install a missing `unaccent` extension, they explicitly install it in `public`.
-
-On upgrade, MDMbox updates the existing normalization functions in place, preserving their names, ownership, permissions, and dependent objects. No database reset or manual extension relocation is required.
+MDMbox requires the PostgreSQL extensions `unaccent`, `fuzzystrmatch`, and `pg_trgm` and installs missing extensions at startup. If your database account does not have permission to install extensions, ask your database administrator to install them before starting MDMbox.
 
 ## MDMbox connection pools
 
