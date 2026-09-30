@@ -93,7 +93,7 @@ updateStrategy:
   rollingUpdate: null
 ```
 
-Create `mdmbox-secret` with `MDMBOX_LICENSE` and install MDMbox in the **same namespace** as these ConfigMaps and Secrets. The example uses namespace `aidbox`; replace it with yours. The single replica and `Recreate` strategy support [Continuous matching recovery](continuous-matching.md#deployment-and-upgrades).
+Create `mdmbox-secret` with `MDMBOX_LICENSE` and install MDMbox in the **same namespace** as these ConfigMaps and Secrets. The example uses namespace `aidbox`; replace it with yours. See [Continuous matching deployment and upgrades](continuous-matching.md#deployment-and-upgrades) for matching behavior during updates.
 
 ```bash
 helm repo add healthsamurai https://healthsamurai.github.io/helm-charts

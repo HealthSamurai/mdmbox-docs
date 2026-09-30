@@ -31,7 +31,7 @@ Process status and activity update automatically. Matching continues when you le
 
 Reload the page to see newly created or deleted models. If a model fails to load, choose **Retry loading**.
 
-The overview distinguishes **Preparing data**, **Catching up**, **Collecting a batch**, and **Waiting for new records**. A caught-up process remains running; idle workers are expected while it waits for inserts. Paused processes, failed batches and unavailable workers have separate states.
+The overview distinguishes **Preparing data**, **Catching up**, **Collecting a batch**, and **Waiting for new records**. A caught-up process remains running; idle workers are expected while it waits for inserts. Paused processes, failed batches and unavailable insert capture have separate states. During an upgrade, either instance can display the same shared progress.
 
 Progress compares processed records with the records currently captured for matching. The total grows with new inserts, so 100% means the current queue is clear, not that the process has stopped. Counts use the actual number of records in each batch, including smaller batches. The queue separates records **Waiting for a batch**, **Queued**, **Matching**, and **Failed**. **Workers matching** shows busy workers out of the configured count; **Pairs found** is the accumulated result count.
 
@@ -45,24 +45,25 @@ An active process keeps the model version it started with. Saving the model does
 
 To apply a saved change, pause the process and choose **Rebuild**. This rebuilds the prepared data (the projection) and recomputes its pairs. Starting an unchanged paused process resumes its pending work and keeps existing pairs.
 
-After an application restart, active processes resume automatically; interrupted builds restart and processes left pausing finish pausing. Keep the process's saved model version in FHIR history. A process owned by another instance is left untouched.
+After an application restart, active processes resume automatically; interrupted builds restart and processes left pausing finish pausing. Keep the process's saved model version in FHIR history. A process owned by another instance is left untouched until that instance releases it; the replacement then resumes it automatically. Processes explicitly paused or failed are not automatically restarted.
 
 ### Deployment and upgrades
 
-Run one MDMbox instance with autoscaling disabled when using continuous matching. Stop the old instance completely before starting its replacement. Recovery runs once at startup: a new instance that encounters the old owner's lock does not retry after the old instance exits.
+Each model has one matching owner at a time. During a rolling update, the old instance continues matching while its replacement becomes ready to serve API and admin UI requests. After the old instance stops, another instance automatically resumes matching with its saved model version and accumulated results.
 
-Configure Helm deployments with `Recreate` so upgrades follow this order:
+Use the following Helm configuration for rolling updates:
 
 ```yaml
-replicaCount: 1
-autoscaling:
-  enabled: false
 updateStrategy:
-  type: Recreate
-  rollingUpdate: null
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
 ```
 
-Update any existing strategy overrides, including values retained by `helm upgrade --reuse-values`. Upgrades briefly interrupt the MDMbox API and admin UI while the replacement starts. Database sync triggers continue collecting inserted records during the interruption, and the replacement resumes matching them. Rolling updates with overlapping MDMbox instances are not supported for this workflow.
+Matching briefly pauses during handover; database sync triggers continue collecting inserted records. Start, Pause, status and results can be requested through either instance. Pause is asynchronous: wait for `paused` (or `idle` when cancelling preparation) before resetting or rebuilding. A request accepted by the replacement is also delivered to the old owner.
+
+Allow enough termination grace time for matching workers to stop and for other application components to shut down. An abrupt shutdown is recovered after the database releases the old connection; interrupted batches are recomputed. The PostgreSQL connection budget must accommodate all instances, including additional pods during an update. When scaling down, the remaining instances need enough bulk pool capacity to resume the processes whose owners stop. See [connection pool sizing](config-reference.md#mdmbox-connection-pools).
 
 ## Results and failures
 
@@ -88,8 +89,8 @@ All process endpoints use the MDMbox host and the same [API authentication](auth
 
 | Method | Path | Result |
 | --- | --- | --- |
-| POST | `/api/continuous-match/{model-id}/start` | 202 when starting or resuming; 200 if already active locally; 400 for invalid settings; 409 if another operation owns the model or the pool has insufficient capacity |
-| POST | `/api/continuous-match/{model-id}/pause` | 202 when pausing; 409 if the process is not active or is owned elsewhere |
+| POST | `/api/continuous-match/{model-id}/start` | 202 when starting or resuming; 200 if already active on either instance; 400 for invalid settings; 409 if another operation owns the model, the instance is shutting down, or the pool has insufficient capacity |
+| POST | `/api/continuous-match/{model-id}/pause` | 202 when Pause is accepted for either instance; 409 if the process is not active |
 | POST | `/api/continuous-match/{model-id}/retry` | 200 with the number of requeued failed intervals |
 | GET | `/api/continuous-match/{model-id}/status` | FHIR Parameters with process state, model versions, settings and counts |
 | GET | `/api/continuous-match/{model-id}/result` | Accumulated pairs as NDJSON (default), CSV, or paginated JSON; optional `decisionStatus` filter |
@@ -109,7 +110,7 @@ A missing model on Start, or a missing process on the other operations, returns 
 }
 ```
 
-A resumed process returns `status: running` and `rebuild: false`. Repeating Start for an already active local process returns HTTP 200 without changing its settings. Pause returns `status: pausing` and `cancelled` (cancelled database sessions, `valueDecimal`); Retry returns `requeued` (`valueDecimal`); Reset returns `status: deleted`. Every response includes `mode` and `model`.
+A resumed process returns `status: running` and `rebuild: false`. Repeating Start for an already active process returns HTTP 200 without changing its settings, including through the replacement instance. A Start received while Pause is pending does not reverse that Pause. Pause returns `status: pausing` (`cancelling` during preparation) and `cancelled` (sessions cancelled immediately by the receiving instance, `valueDecimal`); this count can be zero when the owner handles the request asynchronously. Retry returns `requeued` (`valueDecimal`); Reset returns `status: deleted`. Every response includes `mode` and `model`.
 
 Poll progress with:
 
@@ -196,7 +197,7 @@ Content-Type: application/json
 | `batchSize` | Records per batch | 1000 |
 | `cutTimeoutMs` | Wait before assigning a partially filled batch, in milliseconds | 2000 |
 
-Each setting must be an integer from 1 to 2147483647. Invalid values return HTTP 400 without changing the process. Omitted settings use the defaults on an explicit Start; automatic recovery after a restart uses saved settings. Start on an already active local process keeps its settings.
+Each setting must be an integer from 1 to 2147483647. Invalid values return HTTP 400 without changing the process. Omitted settings use the defaults on an explicit Start; automatic recovery uses saved settings. Start on an already active process keeps its settings regardless of which instance receives the request.
 
 ## Connection capacity
 
