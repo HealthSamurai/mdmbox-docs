@@ -12,6 +12,7 @@ Release notes are grouped by monthly version. Each version lists compatible Aidb
 
 **Improvements**
 
+* **[Server-managed merge](merge-operation.md#reference-search-indexes)** — Reference discovery can use type-specific GIN expression indexes on related-resource tables, including nested references. Create the matching indexes in the resource database to accelerate large-table searches; the documentation includes an Encounter-to-Patient index example.
 * **[Bulk matching](bulk-match.md)** — Start prepares data when needed, then runs matching. Changes to scoring rules reuse prepared data; index changes update only indexes. Use **Refresh source data** to include changed source records.
 * Bulk and Continuous matching commands and status responses now use FHIR `Parameters`, with shared names for state and progress. Bulk status includes job progress, and `/status/{job-id}` lets you follow a specific job.
 

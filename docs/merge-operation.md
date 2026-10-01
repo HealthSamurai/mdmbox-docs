@@ -60,6 +60,30 @@ When moving related references, `simple` changes only the `Reference.reference` 
 
 Only the listed related resource types are searched. If you omit them, related references are not moved. Include every type your workflow needs; [$referencing](referencing-operation.md) can help you inspect them. Related resources may have the pair's type, such as Organizations referring to another Organization through `partOf`.
 
+### Reference search indexes
+
+For large related-resource tables, add GIN expression indexes in the PostgreSQL resource database used by MDMbox. Each index covers references to one source resource type within one related-resource table, including references nested in extensions. These indexes accelerate reference discovery for server-managed merge and unmerge.
+
+For example, when merging two Patients with `related-resource-type=Encounter`, create the following index. It is an index on the `encounter` table containing the IDs of Patient references inside Encounters:
+
+```sql
+CREATE INDEX CONCURRENTLY IF NOT EXISTS encounter_patient_reference_ids_gin_idx
+ON encounter USING gin (
+  jsonb_path_query_array(
+    resource,
+    '$.** ? (@.resourceType == "Patient").id'::jsonpath
+  ) jsonb_path_ops
+);
+
+ANALYZE encounter;
+```
+
+Run `CREATE INDEX CONCURRENTLY` outside a transaction. MDMbox does not create these indexes automatically. Without a matching index, reference discovery can scan the entire related-resource table even when the source has no related records, and large scans can exceed the operation's time limit.
+
+Create an index for each source-type and related-table combination used by your workflow. For Patient references in Observation, use the same expression on `observation` with a different index name. For Organization references in Encounter, keep the `encounter` table and change `"Patient"` to `"Organization"` in the JSONPath expression. The expression must match the source resource type; an index containing all reference IDs or a full-resource GIN index does not match this type-specific expression.
+
+The index narrows the candidate set. MDMbox still checks the exact source reference and discovers all its paths before building the plan. Processing many genuinely related resources can remain expensive even with an index.
+
 ### Preview and response
 
 The example above uses `preview=true`. It returns HTTP 200 with FHIR `Parameters` containing `outcome` (OperationOutcome) and `plan` (the proposed transaction Bundle). No business or audit resources are written.
