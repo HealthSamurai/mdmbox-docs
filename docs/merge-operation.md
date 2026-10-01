@@ -54,6 +54,8 @@ Content-Type: application/fhir+json
 
 The default `simple` algorithm replaces target content with `result` when supplied, moves source references within the selected `related-resource-type` values to the target, and deletes the source.
 
+When moving related references, `simple` changes only the `Reference.reference` string. It preserves sibling fields such as `type`, `display`, `identifier`, and extensions. References nested inside those extensions are also moved when they point to the source; references to other records remain unchanged.
+
 `result` is the complete desired target content, not a partial update. Omit it to keep the target unchanged. Its `meta.versionId` is not a precondition; MDMbox protects writes using the current version read when computing the merge.
 
 Only the listed related resource types are searched. If you omit them, related references are not moved. Include every type your workflow needs; [$referencing](referencing-operation.md) can help you inspect them. Related resources may have the pair's type, such as Organizations referring to another Organization through `partOf`.

@@ -101,3 +101,9 @@ Two Git sources cannot publish the same operation and algorithm ID. A conflictin
 Each executed operation records the selected algorithm and script SHA-256 in its Task. Git algorithms also record the source ID, exact commit, and path. Repository URLs and credentials are not copied to Tasks.
 
 Catalog views, script and source changes, and manual sync are [audited](audit.md#other-admin-ui-operation-codes).
+
+## Troubleshooting algorithm failures
+
+If an algorithm throws an exception or returns an invalid plan, the operation returns HTTP 500 with the generic message `Merge algorithm failed` or `Unmerge algorithm failed`. This also applies when a PATCH cannot be evaluated during preview. The application logs contain an `ERROR` entry with the algorithm ID, exception message, stack trace, and original cause. Runtime phase and timeout or execution-limit information are included when available.
+
+When reporting a failure, include the MDMbox version, algorithm ID, whether the request used preview, and a log excerpt around the request timestamp with its timezone. Request bodies and clinical resources are not added to the algorithm log context. Exception messages are retained in server logs, so keep sensitive values out of custom script errors and remove identifying information before sharing logs.

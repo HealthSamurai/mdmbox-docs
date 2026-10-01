@@ -131,6 +131,12 @@ The default behavior depends on the operation:
 - **Unmerge:** always replaces only the `.reference` string, preserving current
   sibling fields. Its JS function accepts two arguments, not a third override.
 
+The built-in `simple` merge algorithm passes `true` for `preserveMetadata`. It keeps sibling fields and extensions while moving source references, including references nested inside another Reference's extensions:
+
+```javascript
+mdm.referencePatchEntries(input.targetReference, patchTargets, true);
+```
+
 Do not append `.reference` to the input paths yourself. For strict unmerge, use paths selected by `referenceFhirPathsToRestoreSource`, not every reference currently pointing to target.
 
 ### mutatingRequest(method, reference, versionId)
@@ -193,13 +199,15 @@ Compares the current `meta.versionId` with the matching versioned `provenance.ta
 
 Returns a boolean; `null` current state returns `false`, so the caller must handle deletion separately. It performs no database read, does not compare timestamps, and does not establish whether a resource was created by merge.
 
-### referenceFhirPathsToRestoreSource(preMergeResource, currentResource, sourceReference, targetReference)
+### referenceFhirPathsToRestoreSource(preMergeResource, currentResource, sourceReference, targetReference, postMergeResource?)
 
 Returns FHIRPath paths to the original source Reference slots that still point to target and can be reverse-relinked. Returns `[]` if there were no source references, or `null` if any slot is ambiguous; it never returns a partial list.
 
-This models simple's whole-Reference replacement. Every containing array, including ancestor arrays, must equal the expected post-merge array. Reordering, adding/removing an element, or changing any field inside such an array gives `null`; object key order does not matter. For example, swapping the two elements after `[a → source, b → target]` becomes `[a → target, b → target]` must be refused. Changes outside those arrays, including scalar Reference metadata, are allowed.
+Every containing array, including ancestor arrays, must equal the corresponding array in `postMergeResource` when that optional baseline is supplied. The built-in `strict` algorithm reads this baseline from the versioned `provenance.target` reference, so its comparison supports both metadata-preserving merges and earlier whole-Reference replacements. Without a baseline, the helper reconstructs the legacy whole-Reference replacement behavior from `preMergeResource`.
 
-The helper does not check target drift, source recreation, or related-resource deletion/recreation, build PATCH entries, or return an OperationOutcome. Those checks belong to the algorithm. It is not a universal inverse for custom merges; changing simple's metadata replacement policy may also change the expected arrays.
+The returned paths include source References nested inside another Reference's extensions. Reordering, adding/removing an element, or changing any field inside a source-containing array gives `null`; object key order does not matter. For example, swapping the two elements after `[a → source, b → target]` becomes `[a → target, b → target]` must be refused. Changes outside those arrays, including scalar Reference metadata, are allowed.
+
+The helper does not check target drift, source recreation, or related-resource deletion/recreation, build PATCH entries, or return an OperationOutcome. Those checks belong to the algorithm. It is not a universal inverse for custom merges; the original source Reference slots must still identify the references to reverse.
 
 ### putRequestWithPrecondition(reference, currentResource)
 
