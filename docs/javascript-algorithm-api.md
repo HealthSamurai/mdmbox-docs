@@ -272,14 +272,12 @@ Builders do not bypass validation, including during preview:
 - Use canonical relative URLs and matching resource identities. Existing-resource
   mutations require the version observed in the operation snapshot. Non-POST
   entries must omit `fullUrl`; use FHIR request fields, not custom HTTP headers.
-- Merge must delete the current source version exactly once, cannot otherwise
-  mutate source or delete target, and may change only the pair and related
-  resources discovered in the selected source-reference scope.
+- Merge must delete the current source version exactly once and cannot otherwise mutate source or delete target. Custom algorithms may also mutate existing resources outside the source-reference scope selected by `related-resource-type`, for example resources explicitly selected through custom parameters. Algorithms validate their own assignment rules. Every mutation is included in the merge audit. Built-in `simple` reassigns only source references in the requested resource types.
 - Merge may create other resources with unconditional POST and a unique stable
   `urn:uuid:` fullUrl. It cannot create another resource of the pair's type.
   Conditional creation (`ifNoneExist`, including null/empty values, or the
   equivalent header) is forbidden.
-- Unmerge must PUT source exactly once, cannot delete target, and cannot use POST. Both built-in and custom algorithms may mutate only the source, target, and resources represented in the original merge Provenance. Resources outside that audit scope cannot be added to the reversal plan. Existing-resource mutations require the observed version; restoration of an absent resource requires `ifNoneMatch: '*'`. The unmerge audit records every mutation.
+- Unmerge must PUT source exactly once, cannot delete target, and cannot use POST. Custom algorithms may also mutate resources absent from the original merge audit, for example caller-selected resources created after merge. Algorithms validate their own assignment rules. Existing-resource mutations require the observed version; restoration of an absent resource requires `ifNoneMatch: '*'`. The unmerge audit records every mutation, including additional resources. Built-in `restore` and `strict` leave resources outside the original merge changes untouched.
 - Task, Provenance, AuditEvent, and Device are server-managed and cannot be
   added, changed, or removed by algorithm plans. The server owns audit assembly
   and lifecycle changes, including marking the original Task unmerged.

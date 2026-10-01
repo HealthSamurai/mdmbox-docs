@@ -96,7 +96,7 @@ GET https://<aidbox-host>/fhir/Provenance?target=Task/<task-id>
 
 ### Custom algorithms
 
-A custom algorithm builds a transaction plan using `merge(input, mdm)`. It may accept additional request parameters. MDMbox validates its allowed resources, methods, and version preconditions before preview or execution. See the [JavaScript algorithm API](javascript-algorithm-api.md) for the complete contract and [Algorithm management](algorithms.md) to create or configure scripts.
+A custom algorithm builds a transaction plan using `merge(input, mdm)`. It may accept additional request parameters through `input.parameters` and change existing resources outside the source-reference scope selected by `related-resource-type`, for example resources explicitly selected by the caller. The algorithm validates its own assignment rules. Every existing-resource mutation requires the current snapshot version and is included in the merge audit. The source must be deleted exactly once, the target cannot be deleted, and server-managed resources remain protected. See the [JavaScript algorithm API](javascript-algorithm-api.md) for the complete contract and [Algorithm management](algorithms.md) to create or configure scripts.
 
 These server-managed plan rules do not apply to client-plan operations; those have the separate contract below.
 

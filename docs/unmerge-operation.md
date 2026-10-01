@@ -58,7 +58,7 @@ Both built-ins leave resources outside the original merge changes untouched and 
 
 ### Custom algorithms
 
-Select a custom script using `unmerge-algorithm`. Scripts may accept additional request parameters and must return a plan that restores the source exactly once, keeps the target, and changes only resources covered by the merge audit. All writes require version or absence preconditions.
+Select a custom script using `unmerge-algorithm`. Scripts may accept additional request parameters through `input.parameters` and change resources outside the original merge audit, for example caller-selected resources created after merge. The algorithm validates its own assignment rules. All writes require version or absence preconditions and are included in the new unmerge audit. The source must be restored exactly once, the target cannot be deleted, and server-managed resources remain protected. Built-in `restore` and `strict` leave resources outside the original merge changes untouched.
 
 See [Algorithm management](algorithms.md) for built-in settings, database scripts, and Git sources. The [JavaScript algorithm API](javascript-algorithm-api.md) describes inputs, helpers, result shapes, and plan restrictions.
 
