@@ -80,7 +80,7 @@ These are the complete registered function sets. Helpers described as unmerge-on
 | Function | Merge | Unmerge |
 | --- | --- | --- |
 | `referencePatchPaths` | Yes | Yes |
-| `referencePatchEntries` | Yes | Yes, with different Reference replacement behavior |
+| `referencePatchEntries` | Yes | Yes |
 | `mutatingRequest` | Yes | Yes |
 | `transactionBundle` | Yes | Yes |
 | `currentVersion` | Yes | No |
@@ -122,20 +122,13 @@ Both built-in unmerge algorithms use this discovery to warn about target-referen
 
 Builds one FHIRPath PATCH Bundle entry per patch target. Each request contains `method: 'PATCH'`, `url: 'ResourceType/id'`, and `ifMatch: 'W/"version"'` from that target's `'version-id'`. Its resource is a FHIR `Parameters` containing `replace` operations. Only `'resource-type'`, `id`, `'version-id'`, and `paths` are needed; timestamp fields are ignored. An empty array returns `[]`.
 
-The default behavior depends on the operation:
-
-- **Merge:** replaces the whole Reference with `{reference: targetReference}`.
-  Existing `display`, `identifier`, or extensions on that Reference are removed.
-  Merge also accepts a third boolean argument, `preserveMetadata`; passing
-  `true` replaces only the `.reference` string. The default is `false`.
-- **Unmerge:** always replaces only the `.reference` string, preserving current
-  sibling fields. Its JS function accepts two arguments, not a third override.
-
-The built-in `simple` merge algorithm passes `true` for `preserveMetadata`. It keeps sibling fields and extensions while moving source references, including references nested inside another Reference's extensions:
+Both merge and unmerge replace only the `.reference` string by default. They preserve current sibling fields such as `type`, `display`, `identifier`, and extensions. This applies to custom algorithms and the built-in `simple` merge, including references nested inside another Reference's extensions:
 
 ```javascript
-mdm.referencePatchEntries(input.targetReference, patchTargets, true);
+mdm.referencePatchEntries(input.targetReference, patchTargets);
 ```
+
+Merge also accepts an optional third boolean argument, `preserveMetadata`, defaulting to `true`. Passing `false` explicitly replaces the whole Reference with `{reference: targetReference}` and removes all sibling fields, including extensions. Such a replacement can invalidate later PATCH operations targeting references nested inside those extensions. Unmerge always preserves sibling fields and accepts only two arguments.
 
 Do not append `.reference` to the input paths yourself. For strict unmerge, use paths selected by `referenceFhirPathsToRestoreSource`, not every reference currently pointing to target.
 
