@@ -4,17 +4,15 @@ description: Use the $unlink operation to reverse a previous link with an audita
 
 # Unlink operation
 
-The `$unlink` operation reverses a previous `$link`. The client provides a reverse transaction Bundle, usually deleting the profiled `Linkage`; MDMbox validates the original link Task, adds audit resources, flips the original link Task to `unlinked`, and executes everything atomically.
+The `$unlink` operation reverses a previous `$link`. Supply a reverse transaction Bundle, usually deleting the profiled `Linkage`. MDMbox validates the original link Task, adds audit records, sets its status to `unlinked`, and commits all changes atomically.
 
 Use `$unlink` when a link cluster was created by mistake or when a client needs to remove records from an MDMbox-managed Linkage.
 
 ## How it works
 
-1. The client finds the original link `Task`.
-2. The client builds a reverse transaction Bundle, typically deleting the Linkage created by `$link`.
-3. The client calls `$unlink` with the link Task reference and the reverse plan.
-4. MDMbox adds an unlink `Task`, `Provenance`, and `AuditEvent`, updates the original link Task to `businessStatus=unlinked`, and executes the Bundle as one transaction.
-5. If anything fails, the entire transaction rolls back, including its success audit records and the link Task status update. A separate best-effort AuditEvent records the failed non-preview attempt.
+1. Find the original link Task and build a reverse transaction Bundle.
+2. Send the Task reference and reverse plan to `$unlink`.
+3. MDMbox adds audit records, marks the original Task `unlinked`, and commits or rolls back the transaction as a whole.
 
 ## Request
 

@@ -11,7 +11,7 @@ MDMbox supports two types of models:
 - **MatchingModel** — for online `$match` queries against individual resources
 - **BulkMatchingModel** — shared by Bulk matching jobs and Continuous matching processes
 
-Both are stored as FHIR resources. `MatchingModel` has dedicated MDMbox REST endpoints. `BulkMatchingModel` is managed through the Admin UI or the adjacent Aidbox FHIR API.
+Both are stored as FHIR resources. Manage `MatchingModel` through MDMbox REST endpoints, and `BulkMatchingModel` through the Admin UI or the [Aidbox FHIR API](https://www.health-samurai.io/docs/aidbox/api/rest-api/crud).
 
 ## Concepts
 
@@ -33,7 +33,7 @@ Variables extract values from FHIR resources using SQL expressions. They are ref
 
 The `#` prefix is replaced with the table alias at query time (`l.` for the left record, `r.` for the right).
 
-`public.immutable_unaccent_upper(text)` removes accents and converts text to uppercase. It preserves whitespace; wrap it in `btrim(...)` when surrounding spaces should be ignored. The function is `IMMUTABLE`, `STRICT`, and `PARALLEL SAFE`, so missing input remains SQL `NULL` and the helper is eligible for parallel queries. If you compose parallel-safe functions into a custom SQL helper, explicitly declare that helper `PARALLEL SAFE` too.
+`public.immutable_unaccent_upper(text)` removes accents, converts text to uppercase, and preserves SQL `NULL`. Wrap it in `btrim(...)` to ignore surrounding whitespace. Declare custom SQL helpers `PARALLEL SAFE` when all their functions support parallel queries.
 
 ### Blocks
 
@@ -175,7 +175,7 @@ Content-Type: application/json
 
 ## BulkMatchingModel
 
-Used by both [Bulk matching](bulk-match.md) and [Continuous matching](continuous-matching.md). It defines extracted columns, blocking rules, comparison features and thresholds for matching across a dataset. Bulk matching runs a finite job over prepared data; Continuous matching keeps processing newly inserted records. Both use the same `BulkMatchingModel` resource type.
+Defines columns, blocks, features, and thresholds for both [Bulk matching](bulk-match.md) jobs and [Continuous matching](continuous-matching.md) processes.
 
 Create and update these resources through Aidbox's FHIR API, or use the MDMbox Admin UI:
 
@@ -239,9 +239,7 @@ Key differences from MatchingModel:
 
 ## Admin UI
 
-Models can be managed through the Admin UI at `/admin`. The UI provides a JSON editor for creating and editing both MatchingModel and BulkMatchingModel resources.
-
-Select a model in the **Models** list to edit it, or choose **New Model** and paste a model definition. A **bulk** badge identifies BulkMatchingModel resources. Check the resource type before saving or deleting: the two model types can have the same ID. Red markers in the editor indicate JSON syntax errors.
+In the Admin UI at `/admin`, select a model in **Models** to edit its JSON, or choose **New Model** to create one. A **bulk** badge identifies BulkMatchingModel resources. Check the resource type before saving or deleting: the two model types can share an ID.
 
 ## Tuning
 

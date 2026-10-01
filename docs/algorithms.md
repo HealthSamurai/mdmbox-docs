@@ -4,7 +4,7 @@ description: Choose, edit, and load server-side merge and unmerge algorithms.
 
 # Algorithm management
 
-Algorithms build the transaction for [server-managed merge](merge-operation.md#server-managed-merge) and [unmerge](unmerge-operation.md#server-managed-unmerge). Start with a built-in algorithm, or create a custom JavaScript script when your policy needs different behavior. Client-plan operations do not use these scripts.
+Algorithms build the transaction for [server-managed merge](merge-operation.md#server-managed-merge) and [unmerge](unmerge-operation.md#server-managed-unmerge). Start with a built-in algorithm, or create a JavaScript script for your policy.
 
 ## Built-in algorithms
 
@@ -18,7 +18,7 @@ Select an algorithm with `merge-algorithm` or `unmerge-algorithm` in the request
 
 `MDMBOX_BUILT_IN_ALGORITHMS` controls which built-ins are available. Unset enables all; an empty value disables all; `simple,strict` enables only those two. Unknown IDs prevent startup. Changing this setting requires a restart and does not restrict custom algorithms.
 
-The default IDs remain `simple` and `restore`. If a default is unavailable, the request returns HTTP 400; MDMbox does not choose a different algorithm automatically.
+When disabling a default (`simple` or `restore`), select an available algorithm explicitly. An unavailable selection returns HTTP 400.
 
 ## Create or edit a script
 
@@ -30,8 +30,6 @@ The default IDs remain `simple` and `restore`. If a default is unavailable, the 
 Use `function merge(input, mdm)` or `function unmerge(input, mdm)` and return `{plan: bundle}` with an optional OperationOutcome. See the [JavaScript algorithm API](javascript-algorithm-api.md) for inputs, helpers, examples, limits, and allowed changes. Use operation preview to inspect a script's proposed changes before executing them.
 
 Database scripts are editable and can be deleted. Built-in and Git scripts are read-only; duplicate them to create an editable database copy. The editor shows the storage type and, for Git, the source, path, and published commit.
-
-If an algorithm fails to load, select it again to retry.
 
 Only trusted administrators should manage scripts and Git sources. Algorithm code can read and propose changes to the resources allowed by its operation.
 
@@ -55,15 +53,15 @@ Only regular `.js` files directly inside these directories are supported. Nested
 1. Open **Algorithms → Configuration** and choose **Add Git source**.
 2. Enter a unique source ID, repository URL, and ref. Use `HEAD`, a full branch ref such as `refs/heads/main`, a full tag ref, or a 40-character commit SHA that the remote allows fetching.
 3. For private repositories, configure access as described below. Choose **Save source**.
-4. Choose **Sync**. Saving configuration alone does not fetch scripts.
+4. Choose **Sync** to fetch and publish scripts.
 
 Sync fetches and validates all scripts, then publishes both catalogs together. A failed sync keeps the last successful catalog and commit. Operations use the published scripts even when Git is unavailable. A sync does not change an operation already in progress.
 
-After changing scripts in Git, choose **Sync** again. There is no automatic polling. Branches and tags are resolved again on sync; a commit SHA stays pinned. Fetch and validation must finish within 60 seconds, so keep the repository and its history small.
+After changing scripts in Git, choose **Sync** again. Branches and tags are resolved on each sync; a commit SHA stays pinned. Fetch and validation must finish within 60 seconds, so keep the repository and its history small.
 
 ### Private repository access
 
-For HTTPS, mount a read-only token file and give the container's `app` user access to it. Enter its absolute server-side path and the Git username in the source form. Do not paste tokens into the form or put credentials in repository URLs or scripts. An optional mounted PEM CA file supports private certificate authorities.
+For HTTPS, mount a read-only token file accessible to the container's `app` user. Enter its absolute path and the Git username in the source form. Use a mounted PEM CA file for a private certificate authority.
 
 For SSH, use a URL such as `ssh://git@git.example/team/mdm-algorithms.git`. Provide a read-only deploy key and verified `known_hosts` under the runtime user's `.ssh` directory, or use an SSH agent. Interactive passwords and host-key prompts are not supported. The Docker image includes Git and OpenSSH; other deployments must install them.
 
@@ -75,7 +73,7 @@ Required credential and CA files must be available on every instance that can pe
 
 **Remove** deletes the source and its published Git scripts. It keeps the remote repository, database-authored scripts, and past operation Tasks. Running operations keep the script they already selected.
 
-Runtime sources and their published scripts survive restarts. Up to 20 sources are allowed, including the environment source. Up to two syncs can run per instance, and only one sync per source can run across instances. After a process interruption, retry that source after its 90-second lease expires.
+Sources and published scripts survive restarts. Up to 20 sources are allowed, including the environment source. Up to two syncs can run per instance, and one sync per source can run across instances. After an interrupted sync, wait 90 seconds before retrying.
 
 ### Configure a source through the environment
 
@@ -104,6 +102,6 @@ Catalog views, script and source changes, and manual sync are [audited](audit.md
 
 ## Troubleshooting algorithm failures
 
-If an algorithm throws an exception or returns an invalid plan, the operation returns HTTP 500 with the generic message `Merge algorithm failed` or `Unmerge algorithm failed`. This also applies when a PATCH cannot be evaluated during preview. The application logs contain an `ERROR` entry with the algorithm ID, exception message, stack trace, and original cause. Runtime phase and timeout or execution-limit information are included when available.
+An algorithm exception or invalid plan returns HTTP 500 with `Merge algorithm failed` or `Unmerge algorithm failed`. Check the application log for the algorithm ID and error details.
 
-When reporting a failure, include the MDMbox version, algorithm ID, whether the request used preview, and a log excerpt around the request timestamp with its timezone. Request bodies and clinical resources are not added to the algorithm log context. Exception messages are retained in server logs, so keep sensitive values out of custom script errors and remove identifying information before sharing logs.
+When reporting a failure, include the MDMbox version, algorithm ID, preview setting, and the error log with its timestamp.

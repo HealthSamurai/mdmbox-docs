@@ -11,13 +11,11 @@ Authentication is enabled by default and is controlled by `MDMBOX_AUTH_ENABLED`.
 | API | Basic credentials for an Aidbox `Client`, an Aidbox access token, or an external JWT validated by `TokenIntrospector` |
 | Admin UI | Aidbox browser session backed by an Aidbox `User` |
 
-{% hint style="warning" %}
-MDMbox uses Aidbox for authentication but does not evaluate Aidbox `AccessPolicy` resources. Every successfully authenticated credential has the same access to protected MDMbox endpoints. Restrict network access to MDMbox and only configure trusted token issuers.
-{% endhint %}
+Every authenticated credential has full access to protected MDMbox endpoints.
 
 ## Basic API authentication
 
-Set both variables to bootstrap an Aidbox `Client` with the `basic` grant:
+Set both variables to create credentials for API access:
 
 ```bash
 MDMBOX_API_CLIENT_ID=mdmbox-api
@@ -33,48 +31,27 @@ curl --user "mdmbox-api:$MDMBOX_API_CLIENT_SECRET" \
 
 ## Admin UI authentication
 
-The Admin UI uses an Aidbox `User` and browser session. To bootstrap an admin for browser login, set both variables:
+Set both variables to create an admin for browser login:
 
 ```bash
 MDMBOX_ADMIN_ID=admin
 MDMBOX_ADMIN_PASSWORD=<password>
 ```
 
-External JWT authentication applies to API requests only; it does not create an Admin UI session.
+Use these credentials to sign in at `/login`.
 
-Login and logout are [audited](audit.md). Passwords and session tokens are not copied into audit events.
+Login and logout are [audited](audit.md).
 
 ## External JWT authentication
 
-MDMbox uses Aidbox `TokenIntrospector` resources. Configure the introspector in Aidbox; there is no separate MDMbox configuration.
-
-For example, a Keycloak deployment can validate RS256 tokens through its JWKS endpoint:
-
-```http
-PUT https://<aidbox-host>/TokenIntrospector/keycloak
-Content-Type: application/json
-
-{
-  "resourceType": "TokenIntrospector",
-  "id": "keycloak",
-  "type": "jwt",
-  "jwt": {
-    "iss": "https://keycloak.example/realms/my-realm"
-  },
-  "jwks_uri": "https://keycloak.example/realms/my-realm/protocol/openid-connect/certs"
-}
-```
-
-The JWT issuer must exactly match `jwt.iss`. After Aidbox stores the introspector, send the token directly to MDMbox:
+Configure token validation using the [Aidbox Token Introspector documentation](https://www.health-samurai.io/docs/aidbox/access-control/authentication/token-introspector), then send the token to MDMbox:
 
 ```bash
 curl http://localhost:3000/api/models \
   --header "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
-For one runnable example of this setup, see the [Keycloak authentication example](https://github.com/HealthSamurai/mdmbox-playground/tree/main/examples/token-introspector-without-user). It uses a preconfigured Keycloak realm and an RS256 token with no corresponding Aidbox `User`. Keycloak is the provider chosen for the example, not an MDMbox requirement.
-
-See the Aidbox documentation for the other supported `TokenIntrospector` configurations, including shared secrets, explicit keys, and opaque tokens: [Token Introspector](https://www.health-samurai.io/docs/aidbox/access-control/authentication/token-introspector).
+For a runnable setup, see the [Keycloak authentication example](https://github.com/HealthSamurai/mdmbox-playground/tree/main/examples/token-introspector-without-user). For existing users, clients, and sessions, see [Aidbox authentication](https://www.health-samurai.io/docs/aidbox/access-control/authentication).
 
 ## Public endpoints
 

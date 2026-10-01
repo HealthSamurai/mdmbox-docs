@@ -7,7 +7,7 @@ description: Keep matching newly inserted records with a persistent continuous m
 A continuous matching process finds duplicate pairs in existing data and keeps processing new records. It uses a [BulkMatchingModel](matching-models.md#bulkmatchingmodel) to prepare the comparison data, score pairs, and save those reaching the model's `probable` threshold. Each model has one process and one accumulated result set. Matching does not automatically merge records.
 
 {% hint style="warning" %}
-Continuous matching captures **inserts only**. Updates and deletions do not refresh the prepared data or remove old pairs. To reflect those changes, pause, reset, and start the process again. Run one MDMbox instance; see [Deployment and upgrades](#deployment-and-upgrades).
+Continuous matching captures **new inserts**. To include updates and deletions, pause, reset, and start the process again.
 {% endhint %}
 
 For a job that finishes after processing a prepared dataset, use [Bulk matching](bulk-match.md).
@@ -29,15 +29,11 @@ Run settings are editable only while the process is inactive. Use [Reset](#reset
 
 Process status and activity update automatically. Matching continues when you leave the page.
 
-Reload the page to see newly created or deleted models. If a model fails to load, choose **Retry loading**.
+The overview shows preparation, catch-up, batch collection, and waiting for new records. Progress reaches 100% when the current queue is clear; the process keeps running and the total grows with new inserts. **Workers matching** shows busy workers, and **Pairs found** shows accumulated results.
 
-The overview distinguishes **Preparing data**, **Catching up**, **Collecting a batch**, and **Waiting for new records**. A caught-up process remains running; idle workers are expected while it waits for inserts. Paused processes, failed batches and unavailable insert capture have separate states. During an upgrade, either instance can display the same shared progress.
+**Recent batch activity** shows matching batches in blue, completed batches in green, and failed batches in red. Select a batch to inspect its size, duration, and failed attempts. **Timeout batch** identifies a batch processed after the configured wait time.
 
-Progress compares processed records with the records currently captured for matching. The total grows with new inserts, so 100% means the current queue is clear, not that the process has stopped. Counts use the actual number of records in each batch, including smaller batches. The queue separates records **Waiting for a batch**, **Queued**, **Matching**, and **Failed**. **Workers matching** shows busy workers out of the configured count; **Pairs found** is the accumulated result count.
-
-**Recent batch activity** shows one timeline lane per worker, with matching batches in blue, completed batches in green, and failed batches in red. It includes every currently matching batch and the latest 50 completed or failed batches, along with batches crossing the left edge of that time window. Select a bar to see its batch size, duration and failed-attempt count; batches cut after the wait time also show **timeout batch**. The **i** button explains the chart. Running durations grow as the page refreshes; finished durations stay fixed. Retried batches show their latest attempt rather than a separate bar for each attempt.
-
-**Diagnostics** includes model versions, capture status, recorded errors and the full batch history, newest first. The table shows 10 batches per page. Click the **Status** column header with the filter icon to choose **All statuses**, **Pending**, **Matching**, **Completed** or **Failed**. Changing the filter opens its first page; automatic updates preserve the current page and filter. Selecting another model resets both. The status filter does not affect the activity chart. **Timeout** means a batch was cut after the wait time. **Initial / size** means it came from initial preparation or reaching the batch size; the last batch from initial preparation can be smaller than the configured size.
+Open **Diagnostics** to review model versions, capture errors, and batch history. Filter history by status to find failed batches.
 
 ## Model versions and restarts
 
@@ -45,7 +41,7 @@ An active process keeps the model version it started with. Saving the model does
 
 To apply a saved change, pause the process and choose **Rebuild**. This rebuilds the prepared data (the projection) and recomputes its pairs. Starting an unchanged paused process resumes its pending work and keeps existing pairs.
 
-After an application restart, active processes resume automatically; interrupted builds restart and processes left pausing finish pausing. Keep the process's saved model version in FHIR history. A process owned by another instance is left untouched until that instance releases it; the replacement then resumes it automatically. Processes explicitly paused or failed are not automatically restarted.
+After an application restart, active processes resume automatically with their saved model version; interrupted builds restart. Keep that version in FHIR history. Paused and failed processes require manual action to resume.
 
 ### Deployment and upgrades
 
@@ -61,15 +57,13 @@ updateStrategy:
     maxUnavailable: 0
 ```
 
-Matching briefly pauses during handover; database sync triggers continue collecting inserted records. Start, Pause, status and results can be requested through either instance. Pause is asynchronous: wait for `paused` (or `idle` when cancelling preparation) before resetting or rebuilding. A request accepted by the replacement is also delivered to the old owner.
+Matching briefly pauses during handover while new inserts continue to be captured. Start, Pause, status, and results are available through either instance. Pause is asynchronous: wait for `paused` (or `idle` when cancelling preparation) before resetting or rebuilding.
 
-Allow enough termination grace time for matching workers to stop and for other application components to shut down. An abrupt shutdown is recovered after the database releases the old connection; interrupted batches are recomputed. The PostgreSQL connection budget must accommodate all instances, including additional pods during an update. When scaling down, the remaining instances need enough bulk pool capacity to resume the processes whose owners stop. See [connection pool sizing](config-reference.md#mdmbox-connection-pools).
+Allow enough termination grace time for workers to stop. Interrupted batches are recomputed after recovery. Size PostgreSQL connections for all instances, including additional pods during an update. When scaling down, the remaining instances need enough bulk pool capacity to resume active processes. See [connection pool sizing](config-reference.md#mdmbox-connection-pools).
 
 ## Results and failures
 
-The process card shows waiting records, batch counts, stored pairs, and errors. Expand **Diagnostics** for capture status, workers, and batch history. **Download CSV** exports all accumulated pairs using the same [columns as Bulk matching](bulk-match.md#step-3-download-results).
-
-The recent intervals table's **took** column shows elapsed wall-clock time from the worker claiming an interval to recording its outcome, including matching query execution. It excludes the final transaction commit. A retry replaces the timestamps with those of the latest attempt; time spent waiting in the pending queue is excluded.
+**Download CSV** exports all accumulated pairs using the same [columns as Bulk matching](bulk-match.md#step-3-download-results).
 
 Decision status is evaluated at download time. Results still use the process's saved model version, even if you have since edited the model. Missing model history causes an HTTP 500 OperationOutcome before the export starts.
 
@@ -110,7 +104,16 @@ A missing model on Start, or a missing process on the other operations, returns 
 }
 ```
 
-A resumed process returns `status: running` and `rebuild: false`. Repeating Start for an already active process returns HTTP 200 without changing its settings, including through the replacement instance. A Start received while Pause is pending does not reverse that Pause. Pause returns `status: pausing` (`cancelling` during preparation) and `cancelled` (sessions cancelled immediately by the receiving instance, `valueDecimal`); this count can be zero when the owner handles the request asynchronously. Retry returns `requeued` (`valueDecimal`); Reset returns `status: deleted`. Every response includes `mode` and `model`.
+Every command response includes `mode` and `model`, plus these parameters:
+
+| Command | Response parameters |
+| --- | --- |
+| Start / Resume | `status` and `rebuild`; a resumed process returns `running` and `false` |
+| Pause | `status: pausing` (`cancelling` during preparation); `cancelled` (`valueDecimal`) counts immediately cancelled sessions and can be zero while the owner handles Pause asynchronously |
+| Retry | `requeued` (`valueDecimal`), the number of failed batches queued again |
+| Reset | `status: deleted` |
+
+Repeating Start for an active process returns HTTP 200 and keeps its settings. If Pause is pending, wait for it to finish before resuming.
 
 Poll progress with:
 

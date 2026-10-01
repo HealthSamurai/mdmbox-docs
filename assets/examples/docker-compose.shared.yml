@@ -14,13 +14,14 @@ services:
       retries: 5
 
   aidbox:
-    image: healthsamurai/aidboxone:${AIDBOX_VERSION:?Set AIDBOX_VERSION to a compatible published Aidbox version}
+    image: healthsamurai/aidboxone:latest
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "8888:8080"
     environment:
+      AIDBOX_LICENSE:
       BOX_DB_HOST: db
       BOX_DB_PORT: "5432"
       BOX_DB_DATABASE: aidbox
@@ -58,13 +59,14 @@ services:
       start_period: 30s
 
   mdmbox:
-    image: healthsamurai/mdmbox:${MDMBOX_VERSION:?Set MDMBOX_VERSION to a published release tag}
+    image: healthsamurai/mdmbox:latest
     depends_on:
       aidbox:
         condition: service_healthy
     ports:
       - "3000:3000"
     environment:
+      MDMBOX_LICENSE:
       # License — get a JWT from https://aidbox.app/ui/portal (select MDMbox product).
       # Leave unset to activate via browser on first visit to http://localhost:3000.
       # MDMBOX_LICENSE: "<paste JWT here>"

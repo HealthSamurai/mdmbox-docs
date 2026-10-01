@@ -18,13 +18,11 @@ MDMbox finds duplicate FHIR records and helps you resolve them. A matching model
 | Record that two records are different entities | [$mark-not-a-match](mark-not-a-match.md) |
 | Inspect who performed an operation and what changed | [Audit](audit.md) |
 
-The Admin UI manages models, matching jobs, continuous processes, and merge/unmerge algorithms. Bulk and Continuous matching export pairs as CSV or NDJSON; they do not merge records automatically. For an application that reviews pairs and resolves them, see the [Data Steward UI example](https://github.com/HealthSamurai/mdmbox-playground/tree/main/examples/data-steward-ui).
+The Admin UI manages models, matching jobs, continuous processes, and merge/unmerge algorithms. Bulk and Continuous matching export pairs as CSV or NDJSON for review and resolution. See the [Data Steward UI example](https://github.com/HealthSamurai/mdmbox-playground/tree/main/examples/data-steward-ui) for a complete review workflow.
 
 ## Deployment architecture
 
-MDMbox is deployed together with Aidbox. They run as separate services and connect to the same PostgreSQL database, so MDMbox operations work with the FHIR resources stored in Aidbox.
-
-Aidbox provides the FHIR API and storage platform. MDMbox provides matching, linking, merging, bulk matching, and its Admin UI.
+MDMbox and [Aidbox](https://www.health-samurai.io/docs/aidbox) run as separate services connected to the same PostgreSQL database. MDMbox operates on the FHIR records stored there; use Aidbox's FHIR API to manage those records.
 
 Start with the [Docker Compose walkthrough](getting-started.md), which includes compatible versions and shared configuration. Matching models can target Patient, Practitioner, Organization, or another supported FHIR resource type.
 

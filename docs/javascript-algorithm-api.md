@@ -1,20 +1,20 @@
 # JavaScript algorithm API
 
-This page documents the `input` and `mdm` objects available to administrator-written algorithms for [server-managed merge](merge-operation.md#server-managed-merge) and [server-managed unmerge](unmerge-operation.md#server-managed-unmerge). This JavaScript API runs on the server. Client-plan operations do not execute these scripts.
+Use the `input` and `mdm` objects to write algorithms for [server-managed merge](merge-operation.md#server-managed-merge) and [unmerge](unmerge-operation.md#server-managed-unmerge).
 
-The same API is used for built-in, Git, and database algorithms. See [Algorithm management](algorithms.md) for creating a script or duplicating a built-in implementation.
+Built-in, Git, and database algorithms use the same API. See [Algorithm management](algorithms.md) to create or duplicate a script.
 
 ## Entry points and execution
 
-Define a synchronous `function merge(input, mdm)` or `function unmerge(input, mdm)`. Do not return a Promise. The server supplies `input` and a frozen `mdm` object with only the functions listed below. Arguments and return values cross the boundary as JSON: use ordinary objects, arrays, strings, numbers, booleans, and `null`, not JVM objects or JavaScript classes. Modifying a returned resource only changes the local JavaScript copy.
+Define a synchronous `function merge(input, mdm)` or `function unmerge(input, mdm)`. Use JSON values: objects, arrays, strings, numbers, booleans, and `null`.
 
-The API provides reads and plan builders, not immediate writes. Reads use the operation's database snapshot; constructing a Bundle or PATCH entry does not execute it. The server validates the returned plan, adds audit resources, and either returns a preview or executes it atomically. Reading a resource does not grant permission to mutate it in the plan.
+Read resources and build a transaction plan using the functions below. MDMbox validates the returned plan, adds audit resources, and returns a preview or executes it atomically.
 
-The sandbox has no arbitrary JVM, filesystem, network, subprocess, or guest-thread access. Each compilation or execution has a 100,000-statement limit and a 30-second wall-clock budget, including host calls. There is no separate guest heap limit: scripts must be trusted administrator-authored code, not arbitrary untrusted uploads. There is no `mdm` HTTP, SQL, transaction-execution, or logging function.
+Scripts are limited to 100,000 statements and 30 seconds. Resource access uses the documented functions; filesystem and network access are unavailable.
 
 ## Input objects
 
-References use `ResourceType/id`, for example `Patient/source` or `Organization/target`. Source and target have the same resource type; algorithms must not assume they are Patients. Treat versions as opaque strings, not numbers.
+References use `ResourceType/id`, for example `Patient/source` or `Organization/target`. Source and target have the same resource type. Keep version IDs as strings.
 
 ### Merge input
 
@@ -27,9 +27,9 @@ References use `ResourceType/id`, for example `Patient/source` or `Organization/
 | `target` | Current target FHIR resource, including `meta.versionId` |
 | `result` | Requested target content, or `null` if omitted |
 | `relatedResourceTypes` | Array of the requested related resource types; `[]` when omitted |
-| `matchVerdict` | Currently `null` for server-managed HTTP requests; the request parser does not populate this field |
+| `matchVerdict` | `null` |
 
-The server checks that the pair exists before running the algorithm. The resource reader represents an absent resource as `null`; custom scripts should not invent a replacement source or target. `result` is desired content, not a source of concurrency metadata: protect target writes with `input.target.meta.versionId`, not `input.result.meta.versionId`.
+The pair must exist before the algorithm runs. Use `result` for desired target content and `input.target.meta.versionId` as the target write precondition.
 
 ### Unmerge input
 
@@ -46,7 +46,7 @@ The server checks that the pair exists before running the algorithm. The resourc
 
 Use `provenance.entity[*].what.reference` to read pre-merge snapshots and versioned `provenance.target[*].reference` for post-merge baselines. The Task target and deleted-resource targets are unversioned; not every target is a created resource. An unchanged merge target has its baseline in the Task's `target-version`, exposed by `preMergeTargetVersion`.
 
-The original target must still exist. Audit/history checks and LIFO validation run on the server before the script.
+The original target and required history must exist. Later merges into the same target must be reversed first.
 
 ### Custom parameters (merge and unmerge)
 
@@ -75,7 +75,7 @@ Custom parameters remain inside `input.parameters` and cannot replace server-sup
 
 ## Function availability
 
-These are the complete registered function sets. Helpers described as unmerge-only are not available from `merge`, even if they would be useful there.
+Available functions by operation:
 
 | Function | Merge | Unmerge |
 | --- | --- | --- |
@@ -112,11 +112,11 @@ const targets = mdm.referencePatchPaths('Patient/source', ['Observation']);
 // }
 ```
 
-The exact keys are `'resource-type'`, `id`, `'version-id'`, `'created-at'`, `'last-updated'`, and `paths`. The hyphenated keys require bracket access in JS, for example `target['version-id']`. The timestamp fields are storage timestamp strings, not a replacement for FHIR `meta`; do not use them as version tokens.
+The keys are `'resource-type'`, `id`, `'version-id'`, `'created-at'`, `'last-updated'`, and `paths`. Use bracket access for hyphenated keys, such as `target['version-id']`. Use `'version-id'` for write preconditions; the two timestamps are strings.
 
-Paths are zero-based **FHIRPath** paths to whole Reference objects, not JSONPath, JSON Pointer, or paths to their `.reference` fields. Storage-specific reference shapes are converted to FHIR paths. Contained `#id` references are excluded. An empty type array or no matches returns `[]`. Pass the operation's recorded scope rather than inferring extra types from audit snapshots.
+Paths use **FHIRPath**, zero-based array indexes, and point to whole Reference objects. Contained `#id` references are excluded. An empty type array or no matches returns `[]`.
 
-Both built-in unmerge algorithms use this discovery to warn about target-referencing resources outside the merge changes. They exclude the references represented by pre-merge snapshots and `provenance.target`, preserving all remaining resources regardless of age. This is a snapshot search, not a claim about creation or commit order.
+Built-in unmerge algorithms use this function to warn about resources that refer to the target outside the original merge changes. The search is limited to the recorded `relatedResourceTypes`.
 
 ### referencePatchEntries(targetReference, patchTargets)
 
@@ -128,28 +128,28 @@ Both merge and unmerge replace only the `.reference` string by default. They pre
 mdm.referencePatchEntries(input.targetReference, patchTargets);
 ```
 
-Merge also accepts an optional third boolean argument, `preserveMetadata`, defaulting to `true`. Passing `false` explicitly replaces the whole Reference with `{reference: targetReference}` and removes all sibling fields, including extensions. Such a replacement can invalidate later PATCH operations targeting references nested inside those extensions. Unmerge always preserves sibling fields and accepts only two arguments.
+Merge accepts a third argument, `preserveMetadata`, defaulting to `true`. Set it to `false` to replace the whole Reference with `{reference: targetReference}`, removing other fields and extensions. Unmerge takes two arguments and always preserves other fields.
 
-Do not append `.reference` to the input paths yourself. For strict unmerge, use paths selected by `referenceFhirPathsToRestoreSource`, not every reference currently pointing to target.
+Pass paths to whole Reference objects. For strict unmerge, select them with `referenceFhirPathsToRestoreSource`.
 
 ### mutatingRequest(method, reference, versionId)
 
-Builds a Bundle request without reading or writing anything:
+Builds a Bundle request:
 
 ```javascript
 mdm.mutatingRequest('PUT', 'Patient/target', '123');
 // {method: 'PUT', url: 'Patient/target', ifMatch: 'W/"123"'}
 ```
 
-Pass the current snapshot version for PUT, PATCH, or DELETE. Passing `null` as the third argument omits `ifMatch`; this helper does not validate the request. Such an unprotected mutation is rejected by the server-managed plan boundary. For restoring an absent resource, use unmerge's `putRequestWithPrecondition` instead.
+Pass the current resource version for PUT, PATCH, or DELETE. MDMbox rejects existing-resource changes without a version precondition. To restore an absent resource, use `putRequestWithPrecondition`.
 
 ### transactionBundle(entries)
 
-Returns `{resourceType: 'Bundle', type: 'transaction', entry: entries}` without validation or execution. Return it inside `{plan: bundle}`, not directly. The server rejects an empty executable plan.
+Returns `{resourceType: 'Bundle', type: 'transaction', entry: entries}`. Supply at least one entry and return the Bundle inside `{plan: bundle}`.
 
 ### currentVersion(reference)
 
-**Merge only.** Reads the current version string for a local `ResourceType/id`, or returns `null` if absent. For the pair, prefer versions already supplied in `input.source` and `input.target`; discovery results contain related-resource versions. This function does not read historical versions or return a resource.
+**Merge only.** Returns the current version string for a local `ResourceType/id`, or `null` if absent. Pair versions are also available in `input.source` and `input.target`; reference discovery returns related-resource versions.
 
 ## Unmerge resource helpers
 
@@ -162,13 +162,11 @@ mdm.fhirGet('Patient/source');
 mdm.fhirGet('Patient/source/_history/123');
 ```
 
-Returns the resource directly, with `resourceType`, `id`, and `meta`, or `null` when absent, including a deleted current resource or an unavailable historical version. A current deletion does not prevent reading retained earlier versions. There is no `{resource, versionId, created}` wrapper. Versioned references must identify an exact version; there is no substitution with the latest resource.
-
-This is not general HTTP: searches, absolute URLs, arbitrary endpoints, and contained references are outside its supported contract. Invalid reference structure and host read failures can throw; do not treat exceptions as normal `null` results.
+Returns the FHIR resource with `resourceType`, `id`, and `meta`, or `null` if the requested resource or historical version is absent. Retained history remains readable after deletion. Invalid references and read failures throw errors.
 
 ### resourceReference(resource)
 
-Returns `resource.resourceType + '/' + resource.id`. Supply an identified FHIR resource; the helper does not validate missing fields or append a history suffix.
+Returns `resource.resourceType + '/' + resource.id`. Supply a resource with both fields.
 
 ### referenceWithoutHistoryVersion(reference)
 
@@ -176,11 +174,11 @@ Returns `ResourceType/id` from either that local form or `ResourceType/id/_histo
 
 ### restorableResource(resource)
 
-Returns a copy without `meta.versionId`, `meta.lastUpdated`, and the configured creation-time extension. Other metadata, including profiles, tags, security labels, and unrelated extensions, is preserved. Empty `meta` is omitted. This does not read current state or supply a write precondition.
+Returns a copy with `meta.versionId`, `meta.lastUpdated`, and the configured creation-time extension removed. Other metadata is preserved; empty `meta` is omitted.
 
 ### resourceCreatedAt(resource)
 
-Returns the configured creation-time extension's `valueInstant` string, retaining its precision and timezone, or `null` if the resource or extension is absent. It is not `meta.lastUpdated`. Use the helper instead of hard-coding the extension URL or rounding it through JavaScript `Date`.
+Returns the configured creation-time extension's `valueInstant` string with its original precision and timezone, or `null` if absent.
 
 ### preMergeTargetVersion(mergeTask)
 
@@ -190,7 +188,7 @@ Returns the first saved `target-version` string from the MDM merge Task input co
 
 Compares the current `meta.versionId` with the matching versioned `provenance.target`. If that baseline is absent, it uses the optional pre-merge resource's version. Supply the latter for a resource left unchanged by merge. A current resource with a version but no baseline is considered changed.
 
-Returns a boolean; `null` current state returns `false`, so the caller must handle deletion separately. It performs no database read, does not compare timestamps, and does not establish whether a resource was created by merge.
+Returns a boolean. A `null` current resource returns `false`; handle deleted resources separately.
 
 ### referenceFhirPathsToRestoreSource(preMergeResource, currentResource, sourceReference, targetReference, postMergeResource?)
 
@@ -200,13 +198,13 @@ Every containing array, including ancestor arrays, must equal the corresponding 
 
 The returned paths include source References nested inside another Reference's extensions. Reordering, adding/removing an element, or changing any field inside a source-containing array gives `null`; object key order does not matter. For example, swapping the two elements after `[a → source, b → target]` becomes `[a → target, b → target]` must be refused. Changes outside those arrays, including scalar Reference metadata, are allowed.
 
-The helper does not check target drift, source recreation, or related-resource deletion/recreation, build PATCH entries, or return an OperationOutcome. Those checks belong to the algorithm. It is not a universal inverse for custom merges; the original source Reference slots must still identify the references to reverse.
+The algorithm must separately check changes to the target and recreation of the source or related resources. This helper supports reversing references at their original paths.
 
 ### putRequestWithPrecondition(reference, currentResource)
 
-Returns a PUT request with `ifMatch` from the current resource's `meta.versionId`. If `currentResource` is `null`, returns `{method: 'PUT', url: reference, ifNoneMatch: '*'}`. An existing resource without a version throws instead of producing an unconditional write. It does not read the database or check that the supplied resource identifies `reference`.
+Returns a PUT request with `ifMatch` from `currentResource.meta.versionId`. If `currentResource` is `null`, returns `{method: 'PUT', url: reference, ifNoneMatch: '*'}`. An existing resource without a version throws an error.
 
-For a versioned reference from `input.provenance.entity[*].what.reference`, the following fragment prepares one restore entry, not a complete unmerge:
+This example prepares one restore entry using a versioned reference from `input.provenance.entity[*].what.reference`:
 
 ```javascript
 const snapshot = mdm.fhirGet(versionReference);
@@ -225,7 +223,7 @@ The snapshot supplies content; the current resource or its absence supplies the 
 
 ### operationOutcomeIssue(severity, code, message, diagnostics?)
 
-Builds one issue, not a complete OperationOutcome:
+Builds one OperationOutcome issue:
 
 ```javascript
 mdm.operationOutcomeIssue('warning', 'processing', 'Later changes will be overwritten', 'Observation/related');
@@ -236,7 +234,7 @@ mdm.operationOutcomeIssue('warning', 'processing', 'Later changes will be overwr
 // }
 ```
 
-Omitted/null diagnostics are omitted from the result. Supported result severities are `information`, `warning`, `error`, and `fatal`. The helper constructs data; it does not validate issue codes or log anything. Keep messages and diagnostics free of clinical payloads, credentials, and tokens. Merge scripts construct the same issue shape directly; this convenience helper is currently unmerge-only.
+Supported severities are `information`, `warning`, `error`, and `fatal`. Omitted or `null` diagnostics are left out of the result. This helper is available for unmerge; merge scripts can construct the same issue object directly.
 
 ## Algorithm result and errors
 
@@ -254,25 +252,18 @@ return {
 };
 ```
 
-Such an outcome returns HTTP 409 and blocks execution. If a non-null plan is supplied alongside a blocking outcome, it must still pass plan validation. Use `plan: null` for a deliberate refusal. The `plan` key is always required. Uncaught script/host errors, timeouts, and invalid algorithm results return HTTP 500 with an OperationOutcome, not a successful partial plan. Server state checks and FHIR execution errors have their own statuses described on the operation pages.
+An `error` or `fatal` outcome returns HTTP 409 and blocks execution. Return `plan: null` to refuse the operation; a supplied plan must still be valid. The `plan` key is required. Script errors, timeouts, and invalid results return HTTP 500 with an OperationOutcome. See the operation pages for other error statuses.
 
-Warnings/information do not block a valid plan. Successful HTTP responses are FHIR `Parameters` with `outcome` and either preview `plan` or execution `task`, not the raw JS result. The server supplies an informational outcome if omitted.
+Warnings and information allow a valid plan to proceed. Successful HTTP responses are FHIR `Parameters` with `outcome` and either preview `plan` or execution `task`. MDMbox supplies an informational outcome when the script omits it.
 
 ## Server-enforced plan boundaries
 
-Builders do not bypass validation, including during preview:
+Plans must meet these rules:
 
-- Use canonical relative URLs and matching resource identities. Existing-resource
-  mutations require the version observed in the operation snapshot. Non-POST
-  entries must omit `fullUrl`; use FHIR request fields, not custom HTTP headers.
+- Use canonical relative URLs and matching resource identities. Existing-resource changes require the observed version. Use FHIR request fields for preconditions and `fullUrl` only for POST entries.
 - Merge must delete the current source version exactly once and cannot otherwise mutate source or delete target. Custom algorithms may also mutate existing resources outside the source-reference scope selected by `related-resource-type`, for example resources explicitly selected through custom parameters. Algorithms validate their own assignment rules. Every mutation is included in the merge audit. Built-in `simple` reassigns only source references in the requested resource types.
-- Merge may create other resources with unconditional POST and a unique stable
-  `urn:uuid:` fullUrl. It cannot create another resource of the pair's type.
-  Conditional creation (`ifNoneExist`, including null/empty values, or the
-  equivalent header) is forbidden.
+- Merge may create resources of other types using unconditional POST with a unique `urn:uuid:` fullUrl. Omit `ifNoneExist`.
 - Unmerge must PUT source exactly once, cannot delete target, and cannot use POST. Custom algorithms may also mutate resources absent from the original merge audit, for example caller-selected resources created after merge. Algorithms validate their own assignment rules. Existing-resource mutations require the observed version; restoration of an absent resource requires `ifNoneMatch: '*'`. The unmerge audit records every mutation, including additional resources. Built-in `restore` and `strict` leave resources outside the original merge changes untouched.
-- Task, Provenance, AuditEvent, and Device are server-managed and cannot be
-  added, changed, or removed by algorithm plans. The server owns audit assembly
-  and lifecycle changes, including marking the original Task unmerged.
+- Task, Provenance, AuditEvent, and Device are server-managed and protected from changes in algorithm plans.
 
 Preview executes no writes. For execution, successful business changes, Task, Provenance, and AuditEvent commit or roll back together. Failed non-preview attempts use a separate best-effort AuditEvent write; see [Audit](audit.md). See the operation pages for the built-in restore/strict policies, history retention, and response details.

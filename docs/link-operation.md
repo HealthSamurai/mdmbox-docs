@@ -10,12 +10,9 @@ Use `$link` when records should remain separate resources but should be tracked 
 
 ## How it works
 
-1. The client decides which records belong in a link cluster.
-2. The client builds a transaction Bundle that creates or patches a profiled `Linkage`.
-3. If needed, the client includes a contained golden view in the Linkage: a client-built canonical view of the linked records.
-4. MDMbox validates that linked records do not already belong to another active profiled Linkage.
-5. MDMbox adds a link `Task`, `Provenance`, and `AuditEvent`, then executes the Bundle as one transaction.
-6. If anything fails, the entire transaction rolls back, including its success audit records. A separate best-effort AuditEvent records the failed non-preview attempt.
+1. Build a transaction Bundle that creates or extends a profiled `Linkage`, optionally including a golden view.
+2. Send the plan to `$link`. MDMbox checks cluster membership and adds audit records.
+3. Save the returned Task ID to [unlink](unlink-operation.md) later. The transaction commits or rolls back as a whole.
 
 ## Request
 
@@ -86,17 +83,7 @@ The Linkage is expected to be active. MDMbox uses the profile namespace when che
 
 The plan must be a transaction Bundle and must create or patch at least one `Linkage`.
 
-Allowed methods:
-
-- `POST` - create a profiled Linkage
-- `PATCH` - extend an existing profiled Linkage using FHIRPath Patch
-
-Forbidden methods:
-
-- `PUT`
-- `DELETE`
-
-`PATCH` entries must use a FHIRPath Patch `Parameters` resource, and each operation must be `add` or `insert`. Destructive patch operations are rejected.
+Use `POST` to create a profiled Linkage, or `PATCH` to extend one with FHIRPath Patch `add` or `insert` operations. Other methods and patch operations are rejected.
 
 ### Golden view
 
@@ -120,7 +107,7 @@ A Linkage may include a contained "golden view" resource: a client-built canonic
 }
 ```
 
-The contained golden view is not a separate persisted FHIR resource. MDMbox does not count `#golden` in cluster membership checks and does not include it in the audit Task input.
+The golden view is stored inside the Linkage. Membership checks and the audit Task include only external record references.
 
 ## Search
 
@@ -131,28 +118,14 @@ GET https://<aidbox-host>/fhir/Linkage?_id=linkage-123&_profile=https://mdm.heal
 Accept: application/json
 ```
 
-To include resources that reference those Patients, add standard FHIR `_revinclude:iterate` parameters:
-
-```http
-GET https://<aidbox-host>/fhir/Linkage?_id=linkage-123&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage&_include=Linkage:item:Patient&_revinclude:iterate=Encounter:subject:Patient
-Accept: application/json
-```
-
-If you do not know the `Linkage.id`, search Linkage by a known member reference and the MDM Linkage profile:
-
-```http
-GET https://<aidbox-host>/fhir/Linkage?item=Patient/pat-1&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage
-Accept: application/json
-```
-
-Use the returned `Linkage.id` as the cluster id for follow-up searches.
-
-To retrieve the whole cluster and its Encounters without a separate Linkage lookup, combine the same profile and member filters with includes:
+To find a cluster by a known Patient and include its members and Encounters:
 
 ```http
 GET https://<aidbox-host>/fhir/Linkage?item=Patient/pat-1&_profile=https://mdm.health-samurai.io/fhir/StructureDefinition/mdm-linkage&_include=Linkage:item:Patient&_revinclude:iterate=Encounter:subject:Patient
 Accept: application/json
 ```
+
+For include parameters and other resource types, see [Aidbox FHIR search](https://www.health-samurai.io/docs/aidbox/api/rest-api/fhir-search/include-and-revinclude).
 
 ## Preview mode
 

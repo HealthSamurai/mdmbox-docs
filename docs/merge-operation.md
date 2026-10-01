@@ -4,11 +4,11 @@ description: Use the $merge operation to merge duplicate FHIR resources with ful
 
 # Merge operation
 
-MDMbox provides two merge operations: server-managed `$merge/v2`, which builds the transaction with a sandboxed server-side algorithm, and client-plan `$merge`, which executes a transaction Bundle supplied by the caller. Both modes add Task, Provenance, and AuditEvent records and commit successful business and audit changes atomically.
+MDMbox provides two merge operations: server-managed `$merge/v2` builds the transaction with a selected algorithm; client-plan `$merge` executes a transaction Bundle supplied by the caller. Both commit resource changes, Task, Provenance, and AuditEvent atomically.
 
 ## Server-managed merge
 
-`$merge/v2` merges one duplicate FHIR resource (`source`) into the surviving resource (`target`). They must have the same `resourceType`, for example two Patients or two Organizations. Task, Provenance, AuditEvent, and Device are server-managed and cannot be a merge pair. The caller may supply the desired target `result`, select a server-side algorithm, and list the related resource types whose source references must be reassigned. There is no client-provided transaction plan.
+`$merge/v2` merges a duplicate (`source`) into a surviving resource (`target`) of the same `resourceType`, such as two Patients. Task, Provenance, AuditEvent, and Device are protected from merging. Supply the desired target `result`, choose an algorithm, and list the related resource types whose references should move to the target.
 
 ```http
 POST https://<mdmbox-host>/api/fhir/$merge/v2
@@ -96,9 +96,9 @@ GET https://<aidbox-host>/fhir/Provenance?target=Task/<task-id>
 
 ### Custom algorithms
 
-A custom algorithm builds a transaction plan using `merge(input, mdm)`. It may accept additional request parameters through `input.parameters` and change existing resources outside the source-reference scope selected by `related-resource-type`, for example resources explicitly selected by the caller. The algorithm validates its own assignment rules. Every existing-resource mutation requires the current snapshot version and is included in the merge audit. The source must be deleted exactly once, the target cannot be deleted, and server-managed resources remain protected. See the [JavaScript algorithm API](javascript-algorithm-api.md) for the complete contract and [Algorithm management](algorithms.md) to create or configure scripts.
+Use `merge(input, mdm)` to build a custom plan and read additional request parameters through `input.parameters`. A custom script may change existing resources outside the requested `related-resource-type` scope and validates its own assignment rules. Changes require version preconditions and are audited.
 
-These server-managed plan rules do not apply to client-plan operations; those have the separate contract below.
+See the [JavaScript algorithm API](javascript-algorithm-api.md) for plan rules and [Algorithm management](algorithms.md) to create or configure scripts.
 
 ### Git algorithm storage
 
@@ -114,10 +114,9 @@ The `$merge` operation merges two FHIR resources by executing a client-provided 
 
 ### How it works
 
-1. The client identifies a duplicate pair (source and target)
-2. The client builds a FHIR transaction Bundle describing the merge (update target, reassign references, delete source)
-3. MDMbox validates the request, adds audit resources (Task, Provenance, and AuditEvent), and executes the Bundle as a single transaction
-4. If anything fails, the entire transaction rolls back, including its success audit records; a separate best-effort AuditEvent records the failed non-preview attempt
+1. Build a FHIR transaction Bundle to update the target, move related references, and delete the source.
+2. Send it to `$merge` with the source and target references. MDMbox validates the request and adds audit records.
+3. Save the returned Task ID to [unmerge](unmerge-operation.md) later. The transaction commits or rolls back as a whole.
 
 ### Request
 
@@ -322,21 +321,7 @@ MDMbox validates the merge request before execution:
 
 #### Profiled resources in the merge plan
 
-If a resource written by the merge `plan` declares `meta.profile`, install the package that contains the profile in Aidbox before calling `$merge`. For US Core 6.1.0:
-
-```http
-POST https://<aidbox-host>/fhir/$fhir-package-install
-Content-Type: application/json
-```
-
-```json
-{
-  "resourceType": "Parameters",
-  "parameter": [{ "name": "package", "valueString": "hl7.fhir.us.core@6.1.0" }]
-}
-```
-
-During `$merge`, every profiled resource in the transaction is validated. If any resource violates its declared profile, MDMbox returns the FHIR validation `OperationOutcome` and rolls back the complete merge transaction.
+For resources with `meta.profile`, install the corresponding package using the [Aidbox Implementation Guide installation guide](https://www.health-samurai.io/docs/aidbox/tutorials/artifact-registry-tutorials/upload-fhir-implementation-guide). MDMbox validates every resource in the transaction; a validation failure returns an OperationOutcome and rolls back the complete merge.
 
 ### Finding related resources
 

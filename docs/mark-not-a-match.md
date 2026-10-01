@@ -4,7 +4,7 @@ description: Record that two FHIR records represent different entities and exclu
 
 # Mark not a match
 
-Use `$mark-not-a-match` after reviewing a candidate pair and deciding that the records represent different people or entities. MDMbox saves the decision as a Task; it does not change either record.
+Use `$mark-not-a-match` after deciding that a candidate pair represents different people or entities. MDMbox saves the decision in a separate Task, preserving both records.
 
 ## Request
 
@@ -35,7 +35,7 @@ Content-Type: application/fhir+json
 
 ## Response and effect
 
-HTTP 200 returns FHIR `Parameters` with `outcome` (OperationOutcome) and `task` (the saved assertion Task). Repeating the request for the same pair returns the existing Task, even if the records are supplied in the opposite order. It does not update the original reason or note.
+HTTP 200 returns FHIR `Parameters` with `outcome` (OperationOutcome) and `task` (the saved decision Task). Repeating a request for the same pair, in either order, returns the original Task with its saved reason and note.
 
 - **$match:** excludes this pair when matching a resource with an ID. An anonymous input resource has no pair decision to apply.
 - **Bulk and Continuous matching:** keep the scored pair in their results and label it `not-a-match` at export time. Use `?decisionStatus=pending` to export only undecided pairs.

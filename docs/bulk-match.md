@@ -6,9 +6,7 @@ description: Run bulk matching to find all duplicate pairs across large datasets
 
 Bulk matching finds duplicate pairs across a prepared dataset and finishes when the job has processed its batches. Unlike `$match`, which compares one resource at a time, it compares records across the dataset in parallel.
 
-{% hint style="warning" %}
-Bulk matching requires a BulkMatchingModel. See [Matching models](matching-models.md). For a persistent process that also matches newly inserted records, see [Continuous matching](continuous-matching.md).
-{% endhint %}
+Configure a [BulkMatchingModel](matching-models.md#bulkmatchingmodel) to define the comparisons. To keep matching newly inserted records, use [Continuous matching](continuous-matching.md).
 
 ## How it works
 
@@ -31,13 +29,13 @@ Open **Matching → Bulk matching** at `/admin/bulk-match` and select a model. I
 
 Status and job history update automatically. Jobs continue running when you leave the page. If a model fails to load, choose **Retry loading**.
 
-Choose **Start job** to match using prepared data. MDMbox prepares data automatically when no compatible snapshot is available. To include records inserted, updated, or deleted since the previous preparation, use the adjacent **Refresh and start** button: it rebuilds prepared data from the current source records, then starts a new job. Both buttons use **Run settings**, which defaults to 4 workers and batches of 1000 records. A model can have one active job at a time; both start buttons are disabled while it is active.
+Choose **Start job** to match using prepared data; MDMbox prepares it automatically when needed. Choose **Refresh and start** to include records inserted, updated, or deleted since the previous preparation. **Run settings** defaults to 4 workers and batches of 1000 records. Each model supports one active job at a time.
 
 **Prepared data** shows whether Start will rebuild the snapshot or only update indexes. Jobs display **Preparing data** while preparing the snapshot or updating indexes, then **In progress** when matching begins. **Prepared with model version** identifies the version used to build the snapshot; each job records the version used for its matching rules.
 
 The history shows up to 50 unarchived jobs for the selected model, prioritizing active jobs before recent finished jobs. Each job has its own stop, resume, CSV download and archive actions. Archiving removes a job from this history.
 
-Worker timelines show completed batches in green and failed batches in red, with up to 200 batches per page. They open on the latest page; use the previous and next buttons to browse the full history. Automatic updates preserve a page selected manually. **Latest** returns to the latest page and follows newly finished batches. The time axis measures elapsed time from the beginning of matching across all pages, with ticks at round intervals that adapt to the visible time span. Select a bar to inspect its record range, duration, and any error; the **i** button beside **Batch activity** explains the chart. Job counters also show zero pairs and batches when the prepared snapshot is empty.
+**Batch activity** shows worker timelines, with completed batches in green and failed batches in red. Select a batch to inspect its record range, duration, and error. Browse previous pages to review older batches.
 
 ## API workflow
 
@@ -73,7 +71,7 @@ Each new Start uses the latest saved model. What it prepares depends on the chan
 
 For example, you can change a threshold and run Start again to compare results on the same data. The new job uses the new threshold; previous jobs keep their results and model versions. Saving a model does not alter an active job.
 
-Start also prepares data when no usable snapshot exists, including after a PostgreSQL restart. After an upgrade, a snapshot whose compatibility cannot be verified is rebuilt on its next Start. An index-only update preserves the snapshot and its preparation date. If the index update fails or is cancelled, its changes are rolled back; fix the model or retry Start without refreshing source data.
+Start rebuilds unavailable or incompatible snapshots, including after a PostgreSQL restart. Index-only updates preserve the snapshot and its preparation date. If an index update fails or is cancelled, its changes roll back; fix the model or retry Start.
 
 The Admin UI offers batch sizes from 100 to 10000 and 1 to 16 workers. The API accepts integers from 1 to 2147483647 and rejects invalid settings with HTTP 400. Each active job needs `workersCount + 1` bulk connections; insufficient capacity returns HTTP 409.
 

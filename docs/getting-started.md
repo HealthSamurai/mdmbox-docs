@@ -8,13 +8,31 @@ This walkthrough starts MDMbox, Aidbox, and PostgreSQL on your computer. You nee
 
 Aidbox stores and serves FHIR resources. MDMbox connects to the same PostgreSQL database and provides matching and record-management operations. For an existing Kubernetes deployment, see [Kubernetes (Helm)](#kubernetes-helm).
 
+## Versions and compatibility
+
+MDMbox is compatible with Aidbox from the current LTS through the latest release, including LTS. Every MDMbox release is tested with each Aidbox monthly version in that range. The MDMbox and Aidbox version numbers do not need to match.
+
+For a local trial, use `healthsamurai/mdmbox:latest` together with `healthsamurai/aidboxone:latest`. To stay on a selected monthly version, use its tag, such as `2608`. Monthly tags receive updates within that version.
+
+Compatible Aidbox versions for each MDMbox monthly version are listed in [Release notes](release-notes.md).
+
+[Published MDMbox images](https://hub.docker.com/r/healthsamurai/mdmbox/tags) support Linux amd64 and arm64:
+
+| Tag | What it selects |
+| --- | --- |
+| `latest` | The newest published version, including its updates. Moves forward as new versions are released. |
+| `YYMM`, for example `2608` | A selected monthly version, including its updates. |
+| `edge` | A development build. Use a released monthly version for production. |
+
+Use PostgreSQL 14 or later and pass the same `BOX_DB_*` and relevant `BOX_FHIR_*` settings to Aidbox and MDMbox.
+
 ## Docker Compose
 
 ### 1. Download the configuration
 
 Save this file as `docker-compose.yml` in an empty directory:
 
-{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=3295c8d795c538ed" %}
+{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=64968a2f52bfbbb1" %}
 docker-compose.yml
 {% endfile %}
 
@@ -22,23 +40,24 @@ The example is for local use and includes development credentials. Aidbox and MD
 
 ### 2. Start the services
 
-Run these commands from the directory containing `docker-compose.yml`:
+Run these commands from the directory containing `docker-compose.yml` to start the latest releases of both services:
 
 ```bash
-export MDMBOX_VERSION=2608
-export AIDBOX_VERSION=2608.4
+docker compose pull
 docker compose up -d
 ```
+
+To stay on selected monthly versions, replace `latest` in the services' `image` values with their monthly tags. For an existing Aidbox deployment, keep its version within the [supported range](#versions-and-compatibility).
 
 Initial startup downloads images and FHIR packages and can take several minutes. Follow progress with `docker compose logs -f`.
 
 ### 3. Activate and sign in
 
-1. Open `http://localhost:8888` and follow the Aidbox activation flow.
+1. Open `http://localhost:8888` and activate Aidbox following the [Aidbox setup guide](https://www.health-samurai.io/docs/aidbox/getting-started/run-aidbox-locally).
 2. Open `http://localhost:3000` and activate MDMbox with your Aidbox account.
 3. If the MDMbox login form appears, use `postgres` as both the username and password for this local example.
 
-For deployments with an existing license, set `MDMBOX_LICENSE` in the MDMbox environment. See [Configuration reference](config-reference.md#license).
+For unattended MDMbox activation, set `MDMBOX_LICENSE`. See [Configuration reference](config-reference.md#license). For Aidbox activation, see [Aidbox licensing](https://www.health-samurai.io/docs/aidbox/overview/aidbox-user-portal/licenses).
 
 ### 4. Try matching
 
@@ -54,30 +73,17 @@ The starter model is a `MatchingModel` for `$match`. To try Bulk or Continuous m
 
 ### Stop or update
 
-`docker compose down` stops the services and keeps the database volume. To update the selected monthly release, run `docker compose pull` followed by `docker compose up -d`, with the version variables still set.
-
-## Versions and compatibility
-
-Use `healthsamurai/mdmbox:2608` for the latest minor in the August 2026 series, or `healthsamurai/mdmbox:2608.0` for that exact release. [Published images](https://hub.docker.com/r/healthsamurai/mdmbox/tags) support Linux amd64 and arm64. The MDMbox tag does not determine the Aidbox version.
-
-Each release is tested against the latest available minor of every Aidbox monthly series from the latest LTS through the newest series, including LTS. The image records the tested versions at publication. Before changing Aidbox, inspect that list and choose one of its versions:
-
-```bash
-docker pull healthsamurai/mdmbox:2608
-docker image inspect --format '{{ index .Config.Labels "io.healthsamurai.mdmbox.aidbox-versions" }}' healthsamurai/mdmbox:2608
-```
-
-For an existing deployment, use PostgreSQL 14 or later and pass the same `BOX_DB_*` and relevant `BOX_FHIR_*` settings to Aidbox and MDMbox.
+`docker compose down` stops the services and keeps the database volume. To update this local trial, run `docker compose pull` followed by `docker compose up -d`. With `latest`, this updates both services to their latest releases; with a monthly tag, it updates within that series.
 
 ## Kubernetes (Helm)
 
-For Kubernetes, MDMbox is published as a Helm chart: [HealthSamurai/helm-charts/mdmbox](https://github.com/HealthSamurai/helm-charts/tree/main/mdmbox). The chart adds MDMbox to an existing Aidbox deployment; it does not provision Aidbox or PostgreSQL. Point it at the same database configuration used by Aidbox.
+The [MDMbox Helm chart](https://github.com/HealthSamurai/helm-charts/tree/main/mdmbox) installs MDMbox alongside an existing Aidbox deployment. Use its database configuration.
 
-Create `values.yaml` using the names of your existing Aidbox ConfigMap and Secret:
+Use an Aidbox version within the [supported range](#versions-and-compatibility). Create `values.yaml` using the names of your existing Aidbox ConfigMap and Secret. This example follows `latest`; to stay on a selected monthly version, set `image.tag` to its monthly tag:
 
 ```yaml
 image:
-  tag: "2608"
+  tag: "latest"
   pullPolicy: Always
 
 aidboxConfigMap: aidbox-config
@@ -110,9 +116,7 @@ The full list of values is in the [chart README](https://github.com/HealthSamura
 
 ## Configuration
 
-For production, pass `MDMBOX_LICENSE` as an environment variable. For local trial runs, you can leave it unset and activate MDMbox in the browser after startup.
-
-See [Authentication](authentication.md) for API and Admin UI authentication. See [Configuration reference](config-reference.md) for all environment variables and runtime defaults.
+See [Authentication](authentication.md) for API and browser login, and [Configuration reference](config-reference.md) for environment variables and defaults.
 
 ## Endpoints
 

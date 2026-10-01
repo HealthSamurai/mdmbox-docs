@@ -4,7 +4,7 @@ description: Complete list of MDMbox REST API endpoints.
 
 # API reference
 
-All paths below use the MDMbox host. Use [API authentication](authentication.md) for protected endpoints. General FHIR resource CRUD and search use the separate Aidbox host at `/fhir`.
+All paths below use the MDMbox host. Use [API authentication](authentication.md) for protected endpoints. For FHIR resource management, use the [Aidbox REST API](https://www.health-samurai.io/docs/aidbox/api/rest-api/crud) on the Aidbox host at `/fhir`.
 
 Open `/api/docs` for Swagger UI or `/api/openapi.json` for the full specification and request schemas. The specification reports the running image version.
 
@@ -31,7 +31,7 @@ The `mdm` helpers supplied to server-side scripts are documented separately in t
 | `PUT` | `/api/models/:id` | Update model |
 | `DELETE` | `/api/models/:id` | Delete model |
 
-These endpoints manage `MatchingModel` resources. Manage `BulkMatchingModel` resources through the Admin UI or the adjacent Aidbox FHIR API.
+These endpoints manage `MatchingModel` resources. Manage `BulkMatchingModel` through the Admin UI or the Aidbox FHIR API.
 
 ## FHIR operations
 
@@ -41,14 +41,12 @@ These endpoints manage `MatchingModel` resources. Manage `BulkMatchingModel` res
 | --- | --- | --- |
 | `POST` | `/api/fhir/:resource/$match` | Match a resource (FHIR Parameters body) |
 | `POST` | `/api/fhir/:resource/:id/$match` | Match existing resource by ID |
-| `POST` | `/api/fhir/r4/:resource/$match` | Match a resource using the R4 operation implementation |
-| `POST` | `/api/fhir/r4/:resource/:id/$match` | Match an existing resource by ID using the R4 operation implementation |
-| `POST` | `/api/fhir/r6/:resource/$match` | Match a resource using the R6 operation implementation |
-| `POST` | `/api/fhir/r6/:resource/:id/$match` | Match an existing resource by ID using the R6 operation implementation |
+| `POST` | `/api/fhir/r4/:resource/$match` | Match a resource using FHIR R4 |
+| `POST` | `/api/fhir/r4/:resource/:id/$match` | Match an existing resource using FHIR R4 |
+| `POST` | `/api/fhir/r6/:resource/$match` | Match a resource using FHIR R6 |
+| `POST` | `/api/fhir/r6/:resource/:id/$match` | Match an existing resource using FHIR R6 |
 
 The unversioned routes use the release selected by `MDMBOX_DEFAULT_FHIR_RELEASE`.
-
-For body-based `$match`, MDMbox validates the input `resource` before running matching. If the resource declares `meta.profile`, the referenced profile must be available in the FHIR package registry and the resource must satisfy it. Validation failures return `422 Unprocessable Entity` with an `OperationOutcome`.
 
 See [Find duplicates: $match](match-operation.md).
 
@@ -118,7 +116,7 @@ Commands and status return FHIR `Parameters`; errors use `OperationOutcome`. Bot
 | `GET` | `/api/continuous-match/:model-id/result` | Export accumulated pairs |
 | `DELETE` | `/api/continuous-match/:model-id` | Reset a paused process, keeping the model and source records |
 
-Commands and status return FHIR `Parameters`, using the same progress fields as Bulk matching; errors use `OperationOutcome`. Results support the same CSV/NDJSON formats and decision filters as Bulk matching. See [Continuous matching](continuous-matching.md) for settings and operating limits.
+Commands and status return FHIR `Parameters`; errors use `OperationOutcome`. Results support CSV, NDJSON, and paginated JSON with a `decisionStatus` filter. See [Continuous matching](continuous-matching.md) for parameters and limits.
 
 ## Admin UI
 
@@ -129,5 +127,3 @@ The admin interface is available at `/admin`. It provides:
 - `/admin/continuous-match` — Continuous matching (start, pause, retry, download, reset)
 
 The **Algorithms** section manages merge and unmerge scripts and their Git sources. See [Algorithm management](algorithms.md).
-
-The Admin UI uses server-sent events for real-time updates. No separate frontend deployment is required.

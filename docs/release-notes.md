@@ -4,9 +4,11 @@ description: New features, improvements, and changes in MDMbox releases.
 
 # Release notes
 
-## August 2026 _`2608`_
+Release notes are grouped by monthly version. Each version lists compatible Aidbox monthly versions. See [Versions and compatibility](getting-started.md#versions-and-compatibility) for the supported range and Docker release tags.
 
-### 2608.1
+## August 2026 _`2608`_ — `latest`
+
+**Compatible Aidbox versions:** `2605` (LTS), `2606`, `2607`, `2608`.
 
 **Improvements**
 
@@ -16,8 +18,6 @@ description: New features, improvements, and changes in MDMbox releases.
 **API changes**
 
 * Replace calls to `/api/bulk-match/{model-id}/prepare` with `/api/bulk-match/{model-id}/start`. To rebuild prepared data, pass `{"refreshSourceData": true}` to Start. Update response parsing to read FHIR parameters by `name`; see the [Bulk](bulk-match.md#api-workflow) and [Continuous](continuous-matching.md#api) examples.
-
-### 2608.0
 
 **Features**
 

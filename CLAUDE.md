@@ -24,6 +24,13 @@ redirects.yaml  — URL redirects
 
 ## Writing Documentation
 
+### Writing Style
+
+- Use plain English, short paragraphs, and direct instructions. Describe what users can do and what happens.
+- Include API fields, configuration, guarantees, and limits needed to use MDMbox. Leave implementation details and explanations of internal error handling in developer documentation.
+- Link to the relevant Aidbox documentation for its licensing, authentication, configuration, and other features instead of repeating those instructions here.
+- Omit generic advice, unrelated warnings, and repeated explanations. For troubleshooting, state the error, where to find details, and the action specific to MDMbox.
+
 ### Setup
 
 Run `bun install` once after cloning — this installs docs-tools and sets up git hooks.

@@ -8,34 +8,16 @@ Use [Aidbox Topic-Based Subscriptions](https://www.health-samurai.io/docs/aidbox
 
 ## How it works
 
-Every [merge](merge-operation.md) or unmerge operation creates a `Task` resource as part of its atomic transaction. The Task carries a code (`merge` or `unmerge`) and a `businessStatus` reflecting the outcome. When a matching Task is created or updated, the subscription fires and delivers the event to the configured destination.
-
-```mermaid
-graph LR
-    A("$merge request"):::blue2 --> B("Atomic transaction"):::neutral1
-    B --> C("Task created"):::neutral1
-    C --> D("Subscription fires"):::green2
-    D --> E("Event delivered"):::violet2
-```
-
-The setup consists of two resources:
-
-1. **AidboxSubscriptionTopic** — declares _what_ to watch (resource type, interactions, FHIRPath filter)
-2. **AidboxTopicDestination** — declares _where_ to deliver and with what guarantees
+Every [merge](merge-operation.md) or [unmerge](unmerge-operation.md) creates a `Task` in the same transaction as its resource changes. Subscribe to Tasks with the operation code `merge` or `unmerge` to receive completed operations.
 
 ## What the recipient gets
 
-The webhook below receives a FHIR Bundle containing an AidboxSubscriptionStatus entry and the matching Task entries. Read Tasks from `entry[].resource`; the HTTP body is not a single Task. See the [Aidbox webhook format](https://www.health-samurai.io/docs/aidbox/tutorials/subscriptions-tutorials/webhook-aidboxtopicdestination).
+Read Tasks from `entry[].resource` in the notification Bundle. For payload format and delivery settings, see the [Aidbox webhook guide](https://www.health-samurai.io/docs/aidbox/tutorials/subscriptions-tutorials/webhook-aidboxtopicdestination).
 
 Use each Task to inspect the operation:
 
-- **Task** — contains `focus` (target resource), `for` (source resource), and `businessStatus` (outcome)
-- **Provenance** — fetch from Aidbox via `GET /fhir/Provenance?target=Task/<task-id>`:
-  - `target` — every resource affected by the operation
-  - `entity[].what` — versioned references to pre-operation resource states (e.g. `Patient/456/_history/3`)
-  - `recorded` — timestamp of the operation
-
-This allows the recipient to know exactly which resources changed, what their state was before the operation, and fetch their current state to compute deltas.
+- `Task.focus`, `Task.for`, and `Task.businessStatus` identify the target, source, and outcome.
+- `GET https://<aidbox-host>/fhir/Provenance?target=Task/<task-id>` returns affected resources, versioned references to their previous states, and the operation timestamp.
 
 ## AidboxSubscriptionTopic
 
@@ -62,55 +44,12 @@ Content-Type: application/fhir+json
 }
 ```
 
-| Field | Description |
-| --- | --- |
-| `url` | Canonical URL — referenced by the destination to bind topic to delivery |
-| `trigger[].resource` | FHIR resource type to watch |
-| `trigger[].supportedInteraction` | Which interactions fire the trigger (`create`, `update`, `delete`) |
-| `trigger[].fhirPathCriteria` | FHIRPath expression that must evaluate to `true` for the event to fire |
-
 To subscribe to unmerge events, create a second topic with `code='unmerge'` in the FHIRPath filter, or broaden the filter to match both.
 
-The example watches creation only. Including `update` would also notify you when unmerge changes the original merge Task to `businessStatus=unmerged`; that update is not a new merge.
+Use `create` for newly completed operations. Include `update` to also track lifecycle changes, such as the original merge Task changing to `businessStatus=unmerged`.
 
 ## AidboxTopicDestination
 
-Create the destination on the Aidbox host, replacing the endpoint with a URL reachable from Aidbox:
+Configure delivery using the [Aidbox webhook guide](https://www.health-samurai.io/docs/aidbox/tutorials/subscriptions-tutorials/webhook-aidboxtopicdestination). Set the destination's `topic` to `https://mdm.health-samurai.io/fhir/SubscriptionTopic/task-merge` from the example above.
 
-```http
-POST https://<aidbox-host>/fhir/AidboxTopicDestination
-Content-Type: application/fhir+json
-```
-
-```json
-{
-  "resourceType": "AidboxTopicDestination",
-  "id": "task-merge-webhook",
-  "meta": {
-    "profile": [
-      "http://health-samurai.io/fhir/core/StructureDefinition/aidboxtopicdestination-webhookAtLeastOnceProfile"
-    ]
-  },
-  "kind": "webhook-at-least-once",
-  "content": "full-resource",
-  "topic": "https://mdm.health-samurai.io/fhir/SubscriptionTopic/task-merge",
-  "parameter": [
-    {
-      "name": "endpoint",
-      "valueUrl": "https://your-service.example.com/on-merge"
-    },
-    { "name": "maxMessagesInBatch", "valueUnsignedInt": 1 },
-    { "name": "timeout", "valueUnsignedInt": 10 }
-  ]
-}
-```
-
-| Field | Description |
-| --- | --- |
-| `kind` | Delivery mechanism; this example uses `webhook-at-least-once` |
-| `topic` | Canonical URL of the AidboxSubscriptionTopic to subscribe to |
-| `parameter` | Destination-specific settings (endpoint URL, batch size, timeout, etc.) |
-
-See [Aidbox Topic-Based Subscriptions docs](https://www.health-samurai.io/docs/aidbox/modules/topic-based-subscriptions/aidbox-topic-based-subscriptions) for the full list of destination kinds and their parameters.
-
-At-least-once delivery can repeat events. For this creation-only topic, handle each operation Task ID once. To stop notifications, delete `AidboxTopicDestination/task-merge-webhook` through Aidbox's FHIR API.
+For at-least-once delivery, handle each operation Task ID once to avoid processing repeated notifications.

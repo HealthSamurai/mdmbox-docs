@@ -12,7 +12,7 @@ MDMbox follows the request and response shape of the FHIR R6 [`Patient/$match`](
 
 Unversioned routes such as `/api/fhir/Patient/$match` use the FHIR release selected by `MDMBOX_DEFAULT_FHIR_RELEASE`. Versioned routes are also available as `/api/fhir/r4/:resource/$match` and `/api/fhir/r6/:resource/$match`. Instance-level matching is available at `/api/fhir/r4/:resource/:id/$match` and `/api/fhir/r6/:resource/:id/$match`.
 
-For body-based `$match`, MDMbox validates the input `resource` before matching. If the resource declares `meta.profile`, the corresponding FHIR package must be installed and the resource must satisfy that profile. For example, a Patient with `meta.profile` set to the US Core Patient profile requires the US Core package to be installed first. Profile validation failures return `422 Unprocessable Entity` with an `OperationOutcome`.
+MDMbox validates body-based input before matching. See [Profiled input resources](#profiled-input-resources) when using `meta.profile`.
 
 ## Match a resource
 
@@ -57,7 +57,7 @@ Content-Type: application/json
 }
 ```
 
-MDMbox retrieves `Patient/123` by ID and uses it as the source resource. The source resource itself is excluded from the response by ID, so `Patient/123` will not be returned as its own match.
+MDMbox retrieves `Patient/123` and compares it with other records, excluding the source ID from results.
 
 Pairs recorded with [$mark-not-a-match](mark-not-a-match.md) are excluded when the input identifies an existing resource. A new resource without an ID has no recorded pair decisions to apply.
 
@@ -76,21 +76,7 @@ The default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and is `10` un
 
 ### Profiled input resources
 
-If `$match` input includes `meta.profile`, install the package that contains the profile before calling `$match`. For US Core 6.1.0:
-
-```http
-POST https://<aidbox-host>/fhir/$fhir-package-install
-Content-Type: application/json
-```
-
-```json
-{
-  "resourceType": "Parameters",
-  "parameter": [{ "name": "package", "valueString": "hl7.fhir.us.core@6.1.0" }]
-}
-```
-
-After the package is installed, a profiled input resource that violates the profile is rejected before matching. The response is a `422` `OperationOutcome`; no candidate search is executed for that request.
+If input declares `meta.profile`, install the package containing that profile in Aidbox using its [Implementation Guide installation guide](https://www.health-samurai.io/docs/aidbox/tutorials/artifact-registry-tutorials/upload-fhir-implementation-guide). MDMbox validates the resource against the profile before searching. Invalid input returns HTTP 422 with an OperationOutcome.
 
 ### R6 flag behavior
 

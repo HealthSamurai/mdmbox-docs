@@ -54,17 +54,17 @@ Strict has an additional rule for references inside arrays: every containing arr
 
 Strict supports the reference changes made by the built-in `simple` merge algorithm. It is not a general inverse of arbitrary custom merge scripts.
 
-Both built-ins leave resources outside the original merge changes untouched and report one warning per discovered resource that still refers to the target. This search uses only the `related-resource-type` scope saved by the merge Task. It does not search other types or include writes committed after the unmerge snapshot.
+Both built-ins preserve resources outside the original merge changes and warn about remaining references to the target. This search covers the `related-resource-type` scope saved by the merge Task.
 
 ### Custom algorithms
 
-Select a custom script using `unmerge-algorithm`. Scripts may accept additional request parameters through `input.parameters` and change resources outside the original merge audit, for example caller-selected resources created after merge. The algorithm validates its own assignment rules. All writes require version or absence preconditions and are included in the new unmerge audit. The source must be restored exactly once, the target cannot be deleted, and server-managed resources remain protected. Built-in `restore` and `strict` leave resources outside the original merge changes untouched.
+Select a custom script with `unmerge-algorithm` and pass additional parameters through `input.parameters`. Scripts may change resources outside the original merge, including records created later, and validate their own assignment rules. All changes require version or absence preconditions and are audited.
 
 See [Algorithm management](algorithms.md) for built-in settings, database scripts, and Git sources. The [JavaScript algorithm API](javascript-algorithm-api.md) describes inputs, helpers, result shapes, and plan restrictions.
 
 ### Later merge chain
 
-Pair unmerge is last-in-first-out for merges into the same target resource. Before computing a plan, MDMbox verifies that the Task's target resource still exists and looks for active merge Tasks into that resource created after the requested Task. If any exist, the response is `409 Conflict`; `OperationOutcome.issue.diagnostics` contains the full chronological Task chain and identifies the latest Task that must be unmerged first.
+Reverse merges into the same target in reverse order, starting with the latest. If a later merge is still active, MDMbox returns HTTP 409 with an OperationOutcome listing the Task chain and the Task to unmerge first.
 
 ### Preview and response
 
@@ -72,7 +72,7 @@ For preview, the response is a `Parameters` resource containing `outcome` (`Oper
 
 Set `preview=false` to execute. Success returns HTTP 200 with `outcome` and the new unmerge `task`. Warnings do not block execution. The reversal and its successful audit records commit together; failed attempts are audited separately. See [Audit](audit.md).
 
-Both algorithms execute against a version-protected database snapshot. Restore intentionally discards changes made before that snapshot, but does not overwrite a concurrent write made while it computes or executes its plan: such a conflict returns HTTP 409 and rolls back the restoration and its successful audit together.
+Concurrent changes during unmerge return HTTP 409 and roll back the operation. This protects new writes even when using `restore` to replace earlier edits.
 
 | Status | Meaning |
 | --- | --- |
@@ -96,11 +96,9 @@ The `$unmerge` operation reverses a previous merge by executing a client-provide
 
 ### How it works
 
-1. The client finds the original merge `Task`.
-2. The client reads the merge audit trail with `GET https://<aidbox-host>/fhir/Provenance?target=Task/<task-id>` and builds a reverse transaction Bundle.
-3. The client calls `$unmerge` with the merge Task reference and the reverse plan.
-4. MDMbox adds an unmerge `Task`, `Provenance`, and `AuditEvent`, updates the original merge Task to `businessStatus=unmerged`, and executes the Bundle as one transaction.
-5. If anything fails, the entire transaction rolls back, including its success audit records and the merge Task status update. A separate best-effort AuditEvent records the failed non-preview attempt.
+1. Read the merge Task and its Provenance with `GET https://<aidbox-host>/fhir/Provenance?target=Task/<task-id>`.
+2. Build a reverse transaction Bundle and send it to `$unmerge` with the Task reference.
+3. MDMbox adds audit records, marks the original Task `unmerged`, and commits or rolls back the transaction as a whole.
 
 ### Request
 
