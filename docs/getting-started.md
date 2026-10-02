@@ -32,11 +32,11 @@ Use PostgreSQL 14 or later and pass the same `BOX_DB_*` and relevant `BOX_FHIR_*
 
 Save this file as `docker-compose.yml` in an empty directory:
 
-{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=64968a2f52bfbbb1" %}
+{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=3d3d96f7afac3722" %}
 docker-compose.yml
 {% endfile %}
 
-The example is for local use and includes development credentials. Aidbox and MDMbox receive the same database and FHIR settings.
+The example is for local use and includes development credentials. Aidbox and MDMbox receive the same database and FHIR settings. It explicitly sets the required `MDMBOX_AIDBOX_URL` to `http://localhost:8888`. For a different deployment, replace it with the Aidbox URL reachable by users and API clients.
 
 ### 2. Start the services
 
@@ -59,7 +59,7 @@ Initial startup downloads images and FHIR packages and can take several minutes.
 
 For unattended MDMbox activation, set `MDMBOX_LICENSE`. See [Configuration reference](config-reference.md#license). For Aidbox activation, see [Aidbox licensing](https://www.health-samurai.io/docs/aidbox/overview/aidbox-user-portal/licenses).
 
-If the Admin UI shows **Activate Aidbox**, follow its link and complete Aidbox activation. The banner disappears after activation. For an Aidbox address other than `http://localhost:8888`, set [`MDMBOX_AIDBOX_URL`](config-reference.md#aidbox-url) to the public Aidbox URL.
+If the Admin UI shows **Activate Aidbox**, follow its link and complete Aidbox activation. The banner disappears after activation. Its link and the resource URLs returned by matching operations use [`MDMBOX_AIDBOX_URL`](config-reference.md#aidbox-url).
 
 ### 4. Try matching
 
@@ -81,12 +81,11 @@ The starter model is a `MatchingModel` for `$match`. To try Bulk or Continuous m
 
 The [MDMbox Helm chart](https://github.com/HealthSamurai/helm-charts/tree/main/mdmbox) installs MDMbox alongside an existing Aidbox deployment. Use its database configuration.
 
-Use an Aidbox version within the [supported range](#versions-and-compatibility). Create `values.yaml` using the names of your existing Aidbox ConfigMap and Secret. This example follows `latest`; to stay on a selected monthly version, set `image.tag` to its monthly tag:
+Use an Aidbox version within the [supported range](#versions-and-compatibility). Create `values.yaml` using the names of your existing Aidbox ConfigMap and Secret and replace `https://aidbox.example.com` with your public Aidbox base URL. The chart defaults to `latest`; to stay on a selected monthly version, set `image.tag` to its monthly tag:
 
 ```yaml
-image:
-  tag: "latest"
-  pullPolicy: Always
+config:
+  MDMBOX_AIDBOX_URL: https://aidbox.example.com
 
 aidboxConfigMap: aidbox-config
 aidboxSecret: aidbox-secret

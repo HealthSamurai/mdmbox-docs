@@ -29,9 +29,11 @@ For Aidbox activation, see [Aidbox licensing](https://www.health-samurai.io/docs
 
 Set the public base URL of the separate Aidbox service. MDMbox uses it for the **Activate Aidbox** link in the Admin UI and the `fullUrl` values in `$match` and `$referencing` results. Use the address that users and API clients use to access Aidbox.
 
-| Variable | Description | Default |
+The URL is required and has no default. An unset, empty, or invalid value prevents startup with an error naming `MDMBOX_AIDBOX_URL`. Use an absolute `http://` or `https://` URL without a query or fragment, for example `https://aidbox.example.com`. A deployment path such as `https://example.com/aidbox` is supported; trailing slashes are removed. This setting does not configure the database connection; supply `BOX_DB_*` separately.
+
+| Variable | Description | Required |
 | --- | --- | --- |
-| `MDMBOX_AIDBOX_URL` | Public base URL of Aidbox | `http://localhost:8888` |
+| `MDMBOX_AIDBOX_URL` | Public base URL of Aidbox | Yes |
 
 ## Authentication
 
