@@ -11,7 +11,7 @@ MDMbox is configured through environment variables.
 MDMbox requires an active license. Choose an activation method:
 
 1. **Production and CI:** obtain an MDMbox license from the [portal](https://aidbox.app/ui/portal) and set `MDMBOX_LICENSE` in the MDMbox environment.
-2. **Local development:** start MDMbox, open `http://localhost:3000`, and activate it with your portal account. The license is saved in the database and reused on restart.
+2. **Local development:** start MDMbox, open `http://localhost:3000`, and activate it with your portal account. Operations are available immediately after activation. The license is saved in the database and reused on restart.
 
 An expired or inactive license restricts requests with HTTP 403. If the license portal is temporarily unavailable, MDMbox allows a 24-hour grace period. `/healthz` remains available for liveness checks.
 
