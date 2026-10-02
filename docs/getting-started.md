@@ -32,11 +32,11 @@ Use PostgreSQL 14 or later and pass the same `BOX_DB_*` and relevant `BOX_FHIR_*
 
 Save this file as `docker-compose.yml` in an empty directory:
 
-{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=3d3d96f7afac3722" %}
+{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=fa1b5fd3db353f00" %}
 docker-compose.yml
 {% endfile %}
 
-The example is for local use and includes development credentials. Aidbox and MDMbox receive the same database and FHIR settings. It explicitly sets the required `MDMBOX_AIDBOX_URL` to `http://localhost:8888`. For a different deployment, replace it with the Aidbox URL reachable by users and API clients.
+The example is for local use and includes development credentials. Aidbox and MDMbox receive the same database and FHIR settings, including `BOX_WEB_BASE_URL: http://localhost:8888`. For a different deployment, set the same public Aidbox base URL in both services, reachable by users and API clients.
 
 ### 2. Start the services
 
@@ -59,7 +59,7 @@ Initial startup downloads images and FHIR packages and can take several minutes.
 
 For unattended MDMbox activation, set `MDMBOX_LICENSE`. See [Configuration reference](config-reference.md#license). For Aidbox activation, see [Aidbox licensing](https://www.health-samurai.io/docs/aidbox/overview/aidbox-user-portal/licenses).
 
-If the Admin UI shows **Activate Aidbox**, follow its link and complete Aidbox activation. The banner disappears after activation. Its link and the resource URLs returned by matching operations use [`MDMBOX_AIDBOX_URL`](config-reference.md#aidbox-url).
+If the Admin UI shows **Activate Aidbox**, follow its link and complete Aidbox activation. The banner disappears after activation. Its link and the resource URLs returned by matching operations use [`BOX_WEB_BASE_URL`](config-reference.md#aidbox-url).
 
 ### 4. Try matching
 
@@ -81,12 +81,9 @@ The starter model is a `MatchingModel` for `$match`. To try Bulk or Continuous m
 
 The [MDMbox Helm chart](https://github.com/HealthSamurai/helm-charts/tree/main/mdmbox) installs MDMbox alongside an existing Aidbox deployment. Use its database configuration.
 
-Use an Aidbox version within the [supported range](#versions-and-compatibility). Create `values.yaml` using the names of your existing Aidbox ConfigMap and Secret and replace `https://aidbox.example.com` with your public Aidbox base URL. The chart defaults to `latest`; to stay on a selected monthly version, set `image.tag` to its monthly tag:
+Use an Aidbox version within the [supported range](#versions-and-compatibility). Create `values.yaml` using the names of your existing Aidbox ConfigMap and Secret. The ConfigMap should contain `BOX_WEB_BASE_URL` with the public Aidbox base URL as well as the shared database settings. MDMbox reads the address from that same ConfigMap. The chart defaults to `latest`; to stay on a selected monthly version, set `image.tag` to its monthly tag:
 
 ```yaml
-config:
-  MDMBOX_AIDBOX_URL: https://aidbox.example.com
-
 aidboxConfigMap: aidbox-config
 aidboxSecret: aidbox-secret
 extraEnvFromSecrets:
@@ -111,7 +108,7 @@ helm upgrade --install mdmbox healthsamurai/mdmbox \
   --values values.yaml
 ```
 
-Put non-secret MDMbox settings, such as connection pool sizes, under `config:`. Use `extraEnvFromSecrets` for the MDMbox license and credentials.
+Put non-secret MDMbox settings, such as connection pool sizes, under `config:`. If `BOX_WEB_BASE_URL` is absent from your existing Aidbox ConfigMap, add it there or supply the same address as `config.BOX_WEB_BASE_URL`. The legacy `AIDBOX_BASE_URL` is also supported. Use `extraEnvFromSecrets` for the MDMbox license and credentials.
 
 The full list of values is in the [chart README](https://github.com/HealthSamurai/helm-charts/blob/main/mdmbox/README.md).
 

@@ -67,7 +67,7 @@ services:
       - "3000:3000"
     environment:
       MDMBOX_LICENSE:
-      MDMBOX_AIDBOX_URL: http://localhost:8888
+      BOX_WEB_BASE_URL: http://localhost:8888
       # License — get a JWT from https://aidbox.app/ui/portal (select MDMbox product).
       # Leave unset to activate via browser on first visit to http://localhost:3000.
       # MDMBOX_LICENSE: "<paste JWT here>"

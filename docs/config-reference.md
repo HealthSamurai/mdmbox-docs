@@ -27,13 +27,16 @@ For Aidbox activation, see [Aidbox licensing](https://www.health-samurai.io/docs
 
 ## Aidbox URL
 
-Set the public base URL of the separate Aidbox service. MDMbox uses it for the **Activate Aidbox** link in the Admin UI and the `fullUrl` values in `$match` and `$referencing` results. Use the address that users and API clients use to access Aidbox.
+Pass Aidbox's `BOX_WEB_BASE_URL` to MDMbox as well. MDMbox uses the same public Aidbox address for the **Activate Aidbox** link in the Admin UI and the `fullUrl` values in `$match` and `$referencing` results. Use the address that users and API clients use to access Aidbox. With Helm, the existing `aidboxConfigMap` supplies it when the variable is present there.
 
-The URL is required and has no default. An unset, empty, or invalid value prevents startup with an error naming `MDMBOX_AIDBOX_URL`. Use an absolute `http://` or `https://` URL without a query or fragment, for example `https://aidbox.example.com`. A deployment path such as `https://example.com/aidbox` is supported; trailing slashes are removed. This setting does not configure the database connection; supply `BOX_DB_*` separately.
+The URL is required and has no default. An unset, empty, or invalid value prevents startup with an error naming `BOX_WEB_BASE_URL`. Use an absolute `http://` or `https://` URL without a query or fragment, for example `https://aidbox.example.com`. A deployment path such as `https://example.com/aidbox` is supported; trailing slashes are removed. This setting does not configure the database connection; supply `BOX_DB_*` separately.
+
+The deprecated Aidbox alias `AIDBOX_BASE_URL` is also accepted. If both variables are present, `BOX_WEB_BASE_URL` takes precedence, as in [Aidbox's Base URL setting](https://www.health-samurai.io/docs/aidbox/reference/all-settings#base-url). Set the same variable and value in both services; a shared ConfigMap avoids duplicating it.
 
 | Variable | Description | Required |
 | --- | --- | --- |
-| `MDMBOX_AIDBOX_URL` | Public base URL of Aidbox | Yes |
+| `BOX_WEB_BASE_URL` | Public base URL of Aidbox, shared with MDMbox | Yes, unless the legacy alias is supplied |
+| `AIDBOX_BASE_URL` | Deprecated alias for `BOX_WEB_BASE_URL` | No |
 
 ## Authentication
 
