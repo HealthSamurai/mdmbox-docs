@@ -11,15 +11,27 @@ MDMbox is configured through environment variables.
 MDMbox requires an active license. Choose an activation method:
 
 1. **Production and CI:** obtain an MDMbox license from the [portal](https://aidbox.app/ui/portal) and set `MDMBOX_LICENSE` in the MDMbox environment.
-2. **Local development:** start MDMbox, open `http://localhost:3000`, and activate it with your portal account. Operations are available immediately after activation. The license is saved in the database and reused on restart.
+2. **Local development:** start MDMbox, open `http://localhost:3000`, and click **Sign in to activate** to issue a development license with your portal account. Operations are available immediately after activation. The license is saved in the database and reused on restart. Replicas waiting for activation on the same database pick up the saved license automatically.
 
-An expired or inactive license restricts requests with HTTP 403. If the license portal is temporarily unavailable, MDMbox allows a 24-hour grace period. `/healthz` remains available for liveness checks.
+Before activation, MDMbox redirects API and Admin UI requests to its activation page. If an upgrade finds multiple previously saved MDMbox licenses, the page explains the ambiguity: set `MDMBOX_LICENSE` to the intended license and restart, or issue a new development license through the page.
+
+An invalid, expired, or inactive configured or saved license prevents startup. Check the startup log for the verification error, set `MDMBOX_LICENSE` to a valid MDMbox license, and restart.
+
+If a running instance's license expires or becomes inactive, MDMbox returns HTTP 403 with `{"error":"MDMbox license verification failed"}`. A temporary license portal outage allows a 24-hour grace period; requests receive the same HTTP 403 response after that period expires. Both `/healthz` and `/readyz` remain available while activation is pending or a running instance is restricted.
 
 For Aidbox activation, see [Aidbox licensing](https://www.health-samurai.io/docs/aidbox/overview/aidbox-user-portal/licenses).
 
 | Variable | Description | Required |
 | --- | --- | --- |
 | `MDMBOX_LICENSE` | MDMbox license JWT | For unattended activation |
+
+## Aidbox URL
+
+Set the public base URL of the separate Aidbox service. MDMbox uses it for the **Activate Aidbox** link in the Admin UI and the `fullUrl` values in `$match` and `$referencing` results. Use the address that users and API clients use to access Aidbox.
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `MDMBOX_AIDBOX_URL` | Public base URL of Aidbox | `http://localhost:8888` |
 
 ## Authentication
 

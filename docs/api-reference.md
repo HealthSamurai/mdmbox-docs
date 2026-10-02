@@ -21,6 +21,8 @@ The `mdm` helpers supplied to server-side scripts are documented separately in t
 
 `/readyz` returns HTTP 200 when ready, otherwise 503. Its JSON body contains `status` and the individual `checks.db` and `checks.fhir` results.
 
+Both probes remain available before license activation and while a running instance is restricted by its license. A successful probe does not indicate that the license is active. See [License configuration](config-reference.md#license).
+
 ## Matching models
 
 | Method | Path | Description |
