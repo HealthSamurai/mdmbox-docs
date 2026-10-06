@@ -1,0 +1,17 @@
+{
+  "resourceType": "MatchingModel",
+  "id": "tutorial-patient",
+  "resource": "Patient",
+  "thresholds": { "certain": 25, "probable": 15 },
+  "variable": [
+    { "name": "given", "expression": "immutable_unaccent_upper(#.resource->'name'->0->'given'->>0)" },
+    { "name": "family", "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'family')" },
+    { "name": "birthDate", "expression": "(#.resource->>'birthDate')" }
+  ],
+  "block": [{ "name": "birthDate", "variable": "birthDate" }],
+  "feature": [
+    { "name": "given", "case": [{ "expression": "l.#given = r.#given", "weight": 10 }, { "else": -10 }] },
+    { "name": "family", "case": [{ "expression": "l.#family = r.#family", "weight": 10 }, { "else": -10 }] },
+    { "name": "birthDate", "case": [{ "expression": "l.#birthDate = r.#birthDate", "weight": 10 }, { "else": -10 }] }
+  ]
+}

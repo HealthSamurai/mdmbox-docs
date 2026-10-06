@@ -2,6 +2,7 @@
 
 - [MDMbox](README.md)
 - [Getting started](getting-started.md)
+- [Match, merge, and unmerge records](tutorials/match-merge-unmerge.md)
 - [Release notes](release-notes.md)
 
 ## Matching

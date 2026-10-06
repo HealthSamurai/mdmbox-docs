@@ -6,7 +6,7 @@ description: MDMbox adds probabilistic record matching, deduplication, and mergi
 
 MDMbox finds duplicate FHIR records and helps you resolve them. A matching model defines how to compare fields such as names, dates of birth, and addresses. MDMbox scores candidate pairs; your application or a reviewer decides what to do with them.
 
-Start with [Getting started](getting-started.md) to run MDMbox locally and try matching in the UI. For an existing Aidbox installation, see [Kubernetes deployment](deployment/kubernetes.md). See [Release notes](release-notes.md) for available releases and Aidbox compatibility.
+Start with [Getting started](getting-started.md) to run MDMbox locally and try matching in the UI. Follow [Match, merge, and unmerge records](tutorials/match-merge-unmerge.md) for a complete API walkthrough. For an existing Aidbox installation, see [Kubernetes deployment](deployment/kubernetes.md). See [Release notes](release-notes.md) for available releases and Aidbox compatibility.
 
 ## Core capabilities
 

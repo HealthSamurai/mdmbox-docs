@@ -61,6 +61,7 @@ You can manage models at `http://localhost:3000/admin` and explore API requests 
 
 ## Next steps
 
+- Follow [Match, merge, and unmerge records](tutorials/match-merge-unmerge.md) to resolve a duplicate and restore it through the API.
 - Configure [Matching models](matching-models.md) for your records.
 - Find pairs across a dataset with [Bulk matching](bulk-match.md).
 - See [Updating MDMbox](deployment/updating-mdmbox.md) to stop or update this environment.
