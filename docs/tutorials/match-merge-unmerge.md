@@ -28,7 +28,7 @@ tutorial-data.json
 tutorial-model.json
 {% endfile %}
 
-The model uses canonical `mdm_` function names introduced in the next release. For an earlier release that only has [legacy names](../sql-functions.md#legacy-names), download this model instead and save it as `tutorial-model.json`:
+The model uses canonical `mdm_` function names. If your installation only has [legacy names](../sql-functions.md#legacy-names), download this model instead and save it as `tutorial-model.json`:
 
 {% file src="/docs/mdmbox/assets/examples/tutorial-model-legacy.json?v=d1828f42d1f756ac" %}
 tutorial-model-legacy.json

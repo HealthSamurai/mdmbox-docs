@@ -6,10 +6,6 @@ description: New features, improvements, and changes in MDMbox releases.
 
 Release notes are grouped by monthly version. Each version lists compatible Aidbox monthly versions. See [Versions and compatibility](deployment/versions-and-compatibility.md) for the supported range and Docker release tags.
 
-## Unreleased
-
-* **[SQL functions](sql-functions.md)** — Matching helpers use the canonical names `mdm_unaccent`, `mdm_unaccent_upper`, `mdm_unaccent_upper_no_spaces`, and `mdm_jaro_winkler` in `public`. Upgrades retain installed legacy names for existing models and SQL dependencies. Clean installations create only canonical names; use them when importing older models.
-
 ## August 2026
 
 **Docker tags:** `2608`, `latest`

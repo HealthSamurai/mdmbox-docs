@@ -8,27 +8,40 @@ Use SQL functions in [matching models](matching-models.md) to normalize extracte
 
 MDMbox installs four matching helpers in the `public` schema and enables the PostgreSQL extensions `unaccent`, `fuzzystrmatch`, and `pg_trgm` during startup. The examples below run against the PostgreSQL database shared by MDMbox and Aidbox. Extension functions can vary with your PostgreSQL version; the comparison functions listed below are available on PostgreSQL 14 and later unless stated otherwise.
 
-The canonical `mdm_` names below are introduced in the next release and are available in development builds. On earlier releases, use the corresponding [legacy names](#legacy-names).
+Use the `mdm_` names for new models. If your installation has only the [legacy names](#legacy-names), use those until you upgrade.
 
 ## Normalization helpers
 
 All three helpers accept `text` and return `text`. They preserve SQL `NULL` and return `''` for an empty string.
 
-| Function | Behavior | Example input → output |
-| --- | --- | --- |
-| `public.mdm_unaccent(text)` | Removes accents while preserving letter case and spaces. | `' José da Silva '` → `' Jose da Silva '` |
-| `public.mdm_unaccent_upper(text)` | Removes accents and converts to uppercase, preserving spaces. | `' José da Silva '` → `' JOSE DA SILVA '` |
-| `public.mdm_unaccent_upper_no_spaces(text)` | Removes accents, converts to uppercase, and removes ordinary spaces (`U+0020`). | `' José da Silva '` → `'JOSEDASILVA'` |
-
 Accent removal uses the installed [PostgreSQL unaccent dictionary](https://www.postgresql.org/docs/14/unaccent.html), including its rules for ligatures such as `Æ` → `AE`.
 
 The extension also provides `unaccent(text)` and `unaccent(regdictionary, text)`; the latter selects a dictionary explicitly. The MDMbox helpers provide immutable normalization expressions for indexing.
 
+### Remove accents
+
+```text
+public.mdm_unaccent(text) → text
+```
+
+Removes accents while preserving letter case and spaces.
+
 ```sql
-SELECT
-  public.mdm_unaccent(' José da Silva ') AS unaccented,
-  public.mdm_unaccent_upper(' José da Silva ') AS uppercase,
-  public.mdm_unaccent_upper_no_spaces(' José da Silva ') AS compact;
+SELECT public.mdm_unaccent(' José da Silva ');
+-- ' Jose da Silva '
+```
+
+### Remove accents and uppercase
+
+```text
+public.mdm_unaccent_upper(text) → text
+```
+
+Removes accents and converts to uppercase, preserving spaces.
+
+```sql
+SELECT public.mdm_unaccent_upper(' José da Silva ');
+-- ' JOSE DA SILVA '
 ```
 
 For names where only surrounding spaces should be ignored, use `btrim`:
@@ -38,13 +51,28 @@ SELECT btrim(public.mdm_unaccent_upper(' José da Silva ')) AS trimmed;
 -- JOSE DA SILVA
 ```
 
-The compact helper removes ordinary spaces throughout the value. Tabs and line breaks remain:
+### Remove accents, uppercase, and spaces
+
+```text
+public.mdm_unaccent_upper_no_spaces(text) → text
+```
+
+Removes accents, converts to uppercase, and removes ordinary spaces (`U+0020`) throughout the value. Tabs and line breaks remain.
+
+```sql
+SELECT public.mdm_unaccent_upper_no_spaces(' José da Silva ');
+-- 'JOSEDASILVA'
+```
+
+For example, tabs and line breaks survive normalization:
 
 ```sql
 SELECT public.mdm_unaccent_upper_no_spaces(E'José\tda Silva\n')
        = E'JOSE\tDASILVA\n' AS preserves_tabs_and_newlines;
 -- true
 ```
+
+### Use in matching models
 
 Use normalization consistently on both sides of a comparison. For example, extract a family name in a `MatchingModel`:
 
@@ -67,7 +95,11 @@ For a `BulkMatchingModel` column, use the same function with its `source` expres
 
 ## Jaro–Winkler similarity
 
-`public.mdm_jaro_winkler(text, text)` returns `double precision` between `0` and `1`; higher values mean greater similarity. It compares the supplied characters directly, so normalize case, accents, and spaces before calling it when those differences should be ignored.
+```text
+public.mdm_jaro_winkler(text, text) → double precision
+```
+
+Returns a value between `0` and `1`; higher values mean greater similarity. It compares the supplied characters directly, so normalize case, accents, and spaces before calling it when those differences should be ignored.
 
 | Inputs | Result |
 | --- | --- |
@@ -112,17 +144,44 @@ The weights and cutoff above are illustrative. [Tune them](matching-models.md#tu
 
 These functions come from [fuzzystrmatch](https://www.postgresql.org/docs/14/fuzzystrmatch.html):
 
-| Function | Returns | Use |
-| --- | --- | --- |
-| `levenshtein(text, text)` | `integer` | Edit distance; `0` means identical. |
-| `levenshtein_less_equal(text, text, integer)` | `integer` | Exact distance up to the third argument's cutoff; a larger result otherwise. |
-| `soundex(text)` | `text` | Soundex phonetic code. |
-| `difference(text, text)` | `integer` | Matching Soundex code positions, from `0` to `4`. |
-| `metaphone(text, integer)` | `text` | Metaphone code, limited to the requested output length. |
-| `dmetaphone(text)` | `text` | Primary Double Metaphone code. |
-| `dmetaphone_alt(text)` | `text` | Alternate Double Metaphone code. |
+#### Edit distance
 
-Levenshtein also accepts insertion, deletion, and substitution costs in that order; each defaults to `1`. Its cost overload is `levenshtein(text, text, integer, integer, integer)`. The corresponding cutoff overload is `levenshtein_less_equal(text, text, integer, integer, integer, integer)`, with the cutoff last. Levenshtein and Metaphone inputs are limited to 255 characters. Soundex and Metaphone variants have limitations with multibyte text; choose comparisons suited to your names and languages.
+```text
+levenshtein(text, text) → integer
+levenshtein_less_equal(text, text, integer) → integer
+```
+
+`levenshtein` returns the edit distance; `0` means identical. `levenshtein_less_equal` returns the exact distance up to the third argument's cutoff, or a larger result when the distance exceeds it.
+
+Levenshtein also accepts insertion, deletion, and substitution costs in that order; each defaults to `1`. The cutoff comes last in the bounded overload:
+
+```text
+levenshtein(text, text, integer, integer, integer) → integer
+levenshtein_less_equal(text, text, integer, integer, integer, integer) → integer
+```
+
+Levenshtein inputs are limited to 255 characters.
+
+#### Soundex codes
+
+```text
+soundex(text) → text
+difference(text, text) → integer
+```
+
+`soundex` returns a phonetic code. `difference` counts matching Soundex code positions, from `0` to `4`.
+
+#### Metaphone codes
+
+```text
+metaphone(text, integer) → text
+dmetaphone(text) → text
+dmetaphone_alt(text) → text
+```
+
+`metaphone` returns a phonetic code limited to the output length supplied in its second argument; inputs are limited to 255 characters. `dmetaphone` returns the primary Double Metaphone code, and `dmetaphone_alt` returns the alternate code.
+
+Soundex and Metaphone variants have limitations with multibyte text; choose comparisons suited to your names and languages.
 
 ```sql
 SELECT
@@ -142,12 +201,17 @@ PostgreSQL 16 and later also provide [`daitch_mokotoff(text)`](https://www.postg
 
 These functions come from [pg_trgm](https://www.postgresql.org/docs/14/pgtrgm.html):
 
-| Function | Returns | Use |
-| --- | --- | --- |
-| `similarity(text, text)` | `real` | Whole-string trigram similarity, from `0` to `1`. |
-| `word_similarity(text, text)` | `real` | Best similarity to a continuous part of the second argument. |
-| `strict_word_similarity(text, text)` | `real` | Best similarity to whole words in the second argument. |
-| `show_trgm(text)` | `text[]` | Inspect the trigrams extracted from a value. |
+```text
+similarity(text, text) → real
+word_similarity(text, text) → real
+strict_word_similarity(text, text) → real
+show_trgm(text) → text[]
+```
+
+- `similarity` compares whole strings, returning a score from `0` to `1`.
+- `word_similarity` finds the best similarity to a continuous part of the second argument.
+- `strict_word_similarity` finds the best similarity to whole words in the second argument.
+- `show_trgm` returns the trigrams extracted from a value.
 
 Higher scores mean greater similarity. `pg_trgm` normally ignores case and non-alphanumeric separators; it still distinguishes accented letters. `word_similarity` and `strict_word_similarity` depend on argument order. Use an explicit numeric cutoff in feature expressions, for example `similarity(l.#family, r.#family) >= 0.8`.
 
@@ -171,12 +235,21 @@ All four MDMbox helpers are declared `IMMUTABLE`, so they can be used in express
 
 Use canonical names in new models. Both sets of names belong to the `public` schema; PostgreSQL extension functions keep their existing names.
 
-| Canonical name | Legacy name |
-| --- | --- |
-| `mdm_unaccent(text)` | `immutable_unaccent(text)` |
-| `mdm_unaccent_upper(text)` | `immutable_unaccent_upper(text)` |
-| `mdm_unaccent_upper_no_spaces(text)` | `immutable_remove_spaces_unaccent_upper(text)` |
-| `mdm_jaro_winkler(text, text)` | `mdmbox_jarowinkler(text, text)` |
+Replace legacy calls with the corresponding canonical name:
+
+```text
+immutable_unaccent(text)
+  → mdm_unaccent(text)
+
+immutable_unaccent_upper(text)
+  → mdm_unaccent_upper(text)
+
+immutable_remove_spaces_unaccent_upper(text)
+  → mdm_unaccent_upper_no_spaces(text)
+
+mdmbox_jarowinkler(text, text)
+  → mdm_jaro_winkler(text, text)
+```
 
 When upgrading to the version with canonical names, MDMbox keeps each legacy name that was already installed as a compatibility alias. Existing models, expression indexes, views, and Continuous matching processes keep working; you do not need to rewrite their expressions or rebuild their indexes for this rename. A clean installation of that version creates only canonical names, so a model imported from an older installation must use the canonical names.
 

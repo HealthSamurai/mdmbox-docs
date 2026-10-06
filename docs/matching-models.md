@@ -19,7 +19,7 @@ Both are stored as FHIR resources. Manage `MatchingModel` through MDMbox REST en
 
 Variables extract values from FHIR resources using SQL expressions. They are referenced by blocks and features.
 
-The normalization examples use the canonical `mdm_` names introduced in the next release. On earlier releases, use their [legacy names](sql-functions.md#legacy-names), such as `immutable_unaccent_upper` for `mdm_unaccent_upper`.
+The normalization examples use canonical `mdm_` names. If your installation only has [legacy names](sql-functions.md#legacy-names), use the corresponding function, such as `immutable_unaccent_upper` for `mdm_unaccent_upper`.
 
 ```json
 {
