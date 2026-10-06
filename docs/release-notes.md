@@ -4,7 +4,7 @@ description: New features, improvements, and changes in MDMbox releases.
 
 # Release notes
 
-Release notes are grouped by monthly version. Each version lists compatible Aidbox monthly versions. See [Versions and compatibility](getting-started.md#versions-and-compatibility) for the supported range and Docker release tags.
+Release notes are grouped by monthly version. Each version lists compatible Aidbox monthly versions. See [Versions and compatibility](deployment/versions-and-compatibility.md) for the supported range and Docker release tags.
 
 ## August 2026
 

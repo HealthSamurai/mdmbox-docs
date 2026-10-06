@@ -26,7 +26,13 @@
 - [Algorithm management](algorithms.md)
 - [JavaScript algorithm API](javascript-algorithm-api.md)
 
-## Deployment and operations
+## Deployment
+
+- [Versions and compatibility](deployment/versions-and-compatibility.md)
+- [Kubernetes deployment](deployment/kubernetes.md)
+- [Updating MDMbox](deployment/updating-mdmbox.md)
+
+## Operations
 
 - [Configuration reference](config-reference.md)
 - [Authentication](authentication.md)
