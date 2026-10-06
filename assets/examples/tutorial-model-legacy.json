@@ -4,8 +4,8 @@
   "resource": "Patient",
   "thresholds": { "certain": 25, "probable": 15 },
   "variable": [
-    { "name": "given", "expression": "mdm_unaccent_upper(#.resource->'name'->0->'given'->>0)" },
-    { "name": "family", "expression": "mdm_unaccent_upper(#.resource->'name'->0->>'family')" },
+    { "name": "given", "expression": "immutable_unaccent_upper(#.resource->'name'->0->'given'->>0)" },
+    { "name": "family", "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'family')" },
     { "name": "birthDate", "expression": "(#.resource->>'birthDate')" }
   ],
   "block": [{ "name": "birthDate", "variable": "birthDate" }],

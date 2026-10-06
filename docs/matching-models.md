@@ -19,13 +19,15 @@ Both are stored as FHIR resources. Manage `MatchingModel` through MDMbox REST en
 
 Variables extract values from FHIR resources using SQL expressions. They are referenced by blocks and features.
 
+The normalization examples use the canonical `mdm_` names introduced in the next release. On earlier releases, use their [legacy names](sql-functions.md#legacy-names), such as `immutable_unaccent_upper` for `mdm_unaccent_upper`.
+
 ```json
 {
   "variable": [
     { "name": "dob", "expression": "(#.resource->>'birthDate')" },
     {
       "name": "family",
-      "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'family')"
+      "expression": "mdm_unaccent_upper(#.resource->'name'->0->>'family')"
     }
   ]
 }
@@ -33,7 +35,7 @@ Variables extract values from FHIR resources using SQL expressions. They are ref
 
 The `#` prefix is replaced with the table alias at query time (`l.` for the left record, `r.` for the right).
 
-`public.immutable_unaccent_upper(text)` removes accents, converts text to uppercase, and preserves SQL `NULL`. Wrap it in `btrim(...)` to ignore surrounding whitespace. Declare custom SQL helpers `PARALLEL SAFE` when all their functions support parallel queries.
+`public.mdm_unaccent_upper(text)` removes accents, converts text to uppercase, and preserves SQL `NULL`. Wrap it in `btrim(...)` to ignore surrounding spaces. See [SQL functions](sql-functions.md#normalization-helpers) for all normalization helpers, examples, and handling of empty values.
 
 ### Blocks
 
@@ -74,6 +76,8 @@ Features define the comparison logic. Each feature has a list of cases evaluated
 ```
 
 The total match score is the sum of all feature weights.
+
+See [SQL functions](sql-functions.md) for Jaro–Winkler, edit distance, phonetic codes, and trigram comparisons available to feature expressions.
 
 ### Thresholds
 
@@ -116,11 +120,11 @@ Content-Type: application/json
     { "name": "dob", "expression": "(#.resource->>'birthDate')" },
     {
       "name": "given",
-      "expression": "immutable_unaccent_upper(#.resource->'name'->0->'given'->>0)"
+      "expression": "mdm_unaccent_upper(#.resource->'name'->0->'given'->>0)"
     },
     {
       "name": "family",
-      "expression": "immutable_unaccent_upper(#.resource->'name'->0->>'family')"
+      "expression": "mdm_unaccent_upper(#.resource->'name'->0->>'family')"
     },
     { "name": "gender", "expression": "(#.resource->>'gender')" }
   ],
@@ -207,7 +211,7 @@ Key differences from MatchingModel:
     {
       "name": "family",
       "type": "text",
-      "source": "immutable_unaccent_upper(resource->'name'->0->>'family')"
+      "source": "mdm_unaccent_upper(resource->'name'->0->>'family')"
     }
   ],
   "index": [

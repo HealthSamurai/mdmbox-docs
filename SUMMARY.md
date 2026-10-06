@@ -8,6 +8,7 @@
 ## Matching
 
 - [Matching models](matching-models.md)
+- [SQL functions](sql-functions.md)
 - [Find duplicates: $match](match-operation.md)
 - [Bulk matching](bulk-match.md)
 - [Continuous matching](continuous-matching.md)

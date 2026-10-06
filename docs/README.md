@@ -30,7 +30,7 @@ See [Versions and compatibility](deployment/versions-and-compatibility.md) for i
 
 ## Explore the documentation
 
-- **Matching:** configure [Matching models](matching-models.md), choose a matching workflow from the table above, and understand scores in [Mathematical details](mathematical-details.md).
+- **Matching:** configure [Matching models](matching-models.md), choose normalization and comparison functions from [SQL functions](sql-functions.md), and understand scores in [Mathematical details](mathematical-details.md).
 - **Duplicate resolution:** merge or link confirmed duplicates, reverse a previous decision, or [mark a pair as not a match](mark-not-a-match.md). Use [$referencing](referencing-operation.md) to find related records before building a merge plan.
 - **Customizing merge and unmerge:** manage built-in and custom scripts in [Algorithm management](algorithms.md), then use the [JavaScript algorithm API](javascript-algorithm-api.md) to implement your merge and unmerge policy.
 - **Deployment:** choose [compatible versions](deployment/versions-and-compatibility.md), deploy with [Kubernetes](deployment/kubernetes.md), and [update MDMbox](deployment/updating-mdmbox.md).

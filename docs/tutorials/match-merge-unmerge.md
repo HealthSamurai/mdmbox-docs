@@ -24,11 +24,19 @@ Save these files in an empty working directory:
 tutorial-data.json
 {% endfile %}
 
-{% file src="/docs/mdmbox/assets/examples/tutorial-model.json?v=d1828f42d1f756ac" %}
+{% file src="/docs/mdmbox/assets/examples/tutorial-model.json?v=b692af06d467ba23" %}
 tutorial-model.json
 {% endfile %}
 
+The model uses canonical `mdm_` function names introduced in the next release. For an earlier release that only has [legacy names](../sql-functions.md#legacy-names), download this model instead and save it as `tutorial-model.json`:
+
+{% file src="/docs/mdmbox/assets/examples/tutorial-model-legacy.json?v=d1828f42d1f756ac" %}
+tutorial-model-legacy.json
+{% endfile %}
+
 Both Patients have the same name and birth date. The model compares given name, family name, and birth date, assigning a weight of 10 to each exact match. These weights demonstrate the workflow; [tune your model](../matching-models.md#tuning) for real data.
+
+The name variables use [`mdm_unaccent_upper`](../sql-functions.md#normalization-helpers) to ignore accents and letter case.
 
 Set the service URLs, load the FHIR records through Aidbox, and create the model through MDMbox:
 
