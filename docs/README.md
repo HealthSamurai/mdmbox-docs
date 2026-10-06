@@ -6,6 +6,8 @@ description: MDMbox adds probabilistic record matching, deduplication, and mergi
 
 MDMbox finds duplicate FHIR records and helps you resolve them. A matching model defines how to compare fields such as names, dates of birth, and addresses. MDMbox scores candidate pairs; your application or a reviewer decides what to do with them.
 
+Start with [Getting started](getting-started.md) to run MDMbox locally or deploy it with Helm. See [Release notes](release-notes.md) for available releases and Aidbox compatibility.
+
 ## Core capabilities
 
 | You want to… | Use |
@@ -26,34 +28,10 @@ MDMbox and [Aidbox](https://www.health-samurai.io/docs/aidbox) run as separate s
 
 Start with the [Docker Compose walkthrough](getting-started.md), which includes compatible versions and shared configuration. Matching models can target Patient, Practitioner, Organization, or another supported FHIR resource type.
 
-{% content-ref %}
-[Getting started](getting-started.md)
-{% endcontent-ref %}
+## Explore the documentation
 
-{% content-ref %}
-[Release notes](release-notes.md)
-{% endcontent-ref %}
-
-{% content-ref %}
-[Matching models](matching-models.md)
-{% endcontent-ref %}
-
-{% content-ref %}
-[Find duplicates: $match](match-operation.md)
-{% endcontent-ref %}
-
-{% content-ref %}
-[Bulk matching](bulk-match.md)
-{% endcontent-ref %}
-
-{% content-ref %}
-[Merge operation](merge-operation.md)
-{% endcontent-ref %}
-
-{% content-ref %}
-[Mathematical details](mathematical-details.md)
-{% endcontent-ref %}
-
-{% content-ref %}
-[API reference](api-reference.md)
-{% endcontent-ref %}
+- **Matching:** configure [Matching models](matching-models.md), choose a matching workflow from the table above, and understand scores in [Mathematical details](mathematical-details.md).
+- **Duplicate resolution:** merge or link confirmed duplicates, reverse a previous decision, or [mark a pair as not a match](mark-not-a-match.md). Use [$referencing](referencing-operation.md) to find related records before building a merge plan.
+- **Customizing merge and unmerge:** manage built-in and custom scripts in [Algorithm management](algorithms.md), then use the [JavaScript algorithm API](javascript-algorithm-api.md) to implement your merge and unmerge policy.
+- **Deployment and operations:** set environment variables in [Configuration reference](config-reference.md), configure [Authentication](authentication.md), and inspect the [Audit](audit.md) trail.
+- **API and integrations:** find endpoints in [API reference](api-reference.md) and subscribe to merge and unmerge events with [Notifications](notifications.md).
