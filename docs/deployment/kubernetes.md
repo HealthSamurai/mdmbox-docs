@@ -22,6 +22,9 @@ aidboxSecret: aidbox-secret
 extraEnvFromSecrets:
   - mdmbox-secret # Contains MDMBOX_LICENSE
 
+config:
+  MDMBOX_AIDBOX_APP_ENDPOINT_URL: http://mdmbox:3000/api/aidbox-app-proxy
+
 replicaCount: 1
 autoscaling:
   enabled: false
@@ -29,6 +32,8 @@ updateStrategy:
   type: Recreate
   rollingUpdate: null
 ```
+
+Set `MDMBOX_AIDBOX_APP_ENDPOINT_URL` to the MDMbox Service URL that Aidbox can reach; adjust the Service name and port when your release uses different values. Open the UI at `/mdmbox` on the Aidbox public address.
 
 Put non-secret MDMbox settings, such as connection pool sizes, under `config:`. If `BOX_WEB_BASE_URL` is absent from your existing Aidbox ConfigMap, add it there or supply the same address as `config.BOX_WEB_BASE_URL`. The legacy `AIDBOX_BASE_URL` is also supported. Use `extraEnvFromSecrets` for the MDMbox license and credentials.
 

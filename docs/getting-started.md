@@ -12,7 +12,7 @@ Aidbox serves the FHIR records; MDMbox finds and resolves duplicates in the same
 
 Save this file as `docker-compose.yml` in an empty directory:
 
-{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=fa1b5fd3db353f00" %}
+{% file src="/docs/mdmbox/assets/examples/docker-compose.shared.yml?v=1bef672a875b887b" %}
 docker-compose.yml
 {% endfile %}
 
@@ -32,14 +32,14 @@ Initial startup downloads images and FHIR packages and can take several minutes.
 ## 3. Activate and sign in
 
 1. Open `http://localhost:8888` and activate Aidbox following the [Aidbox setup guide](https://www.health-samurai.io/docs/aidbox/getting-started/run-aidbox-locally).
-2. Open `http://localhost:3000` and click **Sign in to activate** to activate MDMbox with your Aidbox account.
-3. If the MDMbox login form appears, use `postgres` as both the username and password for this example.
+2. Sign in to Aidbox with `postgres` as both the username and password for this example.
+3. Open `http://localhost:8888/mdmbox` and click **Sign in to activate** if MDMbox needs activation.
 
 For unattended activation, set `MDMBOX_LICENSE`; see [License configuration](config-reference.md#license). If the Admin UI shows **Activate Aidbox**, complete Aidbox activation through its link.
 
 ## 4. Try matching in the UI
 
-Open `http://localhost:3000/welcome` and follow the three steps:
+Open `http://localhost:8888/mdmbox/welcome` and follow the three steps:
 
 1. **Import sample patients:** click **Import 1,000 patients** to load synthetic FHIR records. When the import finishes, the page shows the patient count. If you already have patient data, continue with that dataset.
 2. **Install matching model:** click **Install model** to create the example `patient-example` model. Use **Show model JSON** to inspect it or **View in Models** to open it in the Admin UI.
@@ -57,7 +57,7 @@ Use **Re-pick patient** to try another record. These tests find matches without 
 
 If **Wrong birthdate** reports `FHIRSchema validation error`, swapping that patient's month and day produced an invalid date. Click **Re-pick patient** and run the tests again.
 
-You can manage models at `http://localhost:3000/admin` and explore API requests at `http://localhost:3000/api/docs`.
+You can manage models at `http://localhost:8888/mdmbox/admin` and explore API requests at `http://localhost:8888/api/docs`.
 
 ## Next steps
 

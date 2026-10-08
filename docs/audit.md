@@ -39,7 +39,6 @@ GET https://<aidbox-host>/fhir/AuditEvent?source=Device/mdmbox&entity:identifier
 | Algorithm catalogs, detail, configuration, and Git source detail | One completion or failure event |
 | Algorithm and Git source create/update/delete; manual Git synchronization | Required request event and a separate result; manual sync also records its background completion or failure |
 | Onboarding | Page/init and each step; patient import and model installation require a request event before execution |
-| Login page, login, logout | Page view and the result of each login/logout attempt |
 | Automatic bulk and Git source status polling | Failures only, with repeated equivalent failures throttled |
 
 Failed attempts are also audited, including validation errors, conflicts, authentication rejections, and server errors. Malformed JSON on audited endpoints is recorded without a verified caller identity.
@@ -71,13 +70,12 @@ Export events identify the selected job rather than individual patient pairs.
 | Algorithms | `algorithm-view` (page/list), `algorithm-detail`, `algorithm-configuration-view`, `algorithm-create`, `algorithm-update`, `algorithm-delete` |
 | Git sources | `git-source-detail`, `git-source-create`, `git-source-update`, `git-source-delete`, `git-source-sync`, `git-source-poll` (failures only) |
 | Onboarding | `onboarding-view` (page/init), `onboarding-seed-patients`, `onboarding-skip-step1`, `onboarding-install-model`, `onboarding-pick-patient`, `onboarding-run-tests` |
-| Session | `login-view`, `login`, `logout` |
 
 Algorithm events include an `algorithm-operation` entity (`merge` or `unmerge`) and, when supplied, an identifier such as `merge/my-algorithm` with system `https://mdm.health-samurai.io/fhir/NamingSystem/algorithm`. Git source identifiers use system `https://mdm.health-samurai.io/fhir/NamingSystem/algorithm-git-source`. Scripts, repository URLs, credential paths, tokens, passwords, SQL previews, and onboarding patient payloads are not copied into these events.
 
 ### Controlling event volume
 
-Explicit actions and login/logout attempts are recorded individually. Repeated page views and polling failures are coalesced to reduce noise; successful automatic polling is omitted. An event can include `suppressed-repeats` with the number of coalesced requests. Use these events to review activity, rather than count every page request.
+Explicit UI actions are recorded individually. Aidbox records sign-in and sign-out events. Repeated page views and polling failures are coalesced to reduce noise; successful automatic polling is omitted. An event can include `suppressed-repeats` with the number of coalesced requests. Use these events to review activity, rather than count every page request.
 
 ## What each record contains
 
@@ -91,7 +89,7 @@ The authenticated initiator is selected from the verified authentication context
 
 Local user and client identifiers use the system `https://mdm.health-samurai.io/fhir/NamingSystem/security-principal`. The initiator has `requestor=true`; `Device/mdmbox` is recorded as a separate service agent. When there is no resolvable verified initiator, including when authentication is disabled, only the service agent is recorded, with `requestor=true`. Unverified token claims are never used to identify a caller.
 
-Admin UI events use the verified session identity. Rejected sessions and failed UI actions are recorded as failures, including when the browser receives a redirect or an HTTP 200 response containing an error notification.
+Admin UI events use the verified identity forwarded by Aidbox. Rejected direct access and failed UI actions are recorded as failures, including an HTTP 200 response containing an error notification. Requests denied by Aidbox before forwarding are audited by Aidbox.
 
 When an initiator is available, its network address is the direct connection peer. Behind a proxy, this can be the proxy's address; forwarded IP headers are not used. Events also carry a request correlation identifier. Direct requests preserve `X-Request-Id` values containing 1–200 characters from `A-Z`, `a-z`, `0-9`, `.`, `_`, `:`, and `-`; otherwise MDMbox generates one. The response returns it as `X-Request-Id`.
 
@@ -119,7 +117,7 @@ Bulk commands require a durable request event (`outcomeDesc="Bulk command reques
 
 Bulk status and exports require an event with `outcomeDesc="Bulk data access authorized"` before returning data. An audit write failure returns HTTP 500. Export events record access when the stream opens; later streaming errors appear in the application log.
 
-Algorithm and Git source changes, manual Sync, onboarding import, and model installation require a durable `UI command requested` event before execution. Their `UI interaction completed` result is best-effort, as are page views, reads, other onboarding steps, and login/logout events.
+Algorithm and Git source changes, manual Sync, onboarding import, and model installation require a durable `UI command requested` event before execution. Their `UI interaction completed` result is best-effort, as are page views, reads, and other onboarding steps.
 
 Manual Git Sync also records a best-effort background result: `Git synchronization completed` (`outcome=0`) or `Git synchronization failed` (`outcome=8`). Check the source state before retrying a sync with no result event. Onboarding tests produce the usual `$match` events.
 

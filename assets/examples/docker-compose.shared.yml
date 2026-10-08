@@ -67,9 +67,13 @@ services:
       - "3000:3000"
     environment:
       MDMBOX_LICENSE:
+      MDMBOX_HTTP_HOST: "0.0.0.0"
+      MDMBOX_ADMIN_ID: postgres
+      MDMBOX_ADMIN_PASSWORD: postgres
+      MDMBOX_AIDBOX_APP_ENDPOINT_URL: http://mdmbox:3000/api/aidbox-app-proxy
       BOX_WEB_BASE_URL: http://localhost:8888
       # License — get a JWT from https://aidbox.app/ui/portal (select MDMbox product).
-      # Leave unset to activate via browser on first visit to http://localhost:3000.
+      # Leave unset to activate via browser at http://localhost:8888/mdmbox.
       # MDMBOX_LICENSE: "<paste JWT here>"
       # Same database as Aidbox
       BOX_DB_HOST: db

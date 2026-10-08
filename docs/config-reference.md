@@ -40,15 +40,17 @@ The deprecated Aidbox alias `AIDBOX_BASE_URL` is also accepted. If both variable
 
 ## Authentication
 
-Authentication is enabled by default. API requests use an `Authorization` header; the Admin UI uses browser login. Every authenticated credential has full access to protected MDMbox endpoints. See [Authentication](authentication.md) for setup and examples.
+Authentication is enabled by default. Direct API requests use an `Authorization` header; the Admin UI uses the Aidbox browser session and AccessPolicies through `App/mdmbox`. See [Authentication](authentication.md) for setup and examples.
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `MDMBOX_AUTH_ENABLED` | Enable authentication for API endpoints and the Admin UI. Accepted values: `true` or `false`. | `true` |
-| `MDMBOX_ADMIN_ID` | Admin `User` id for browser login. Set with `MDMBOX_ADMIN_PASSWORD`. | unset |
+| `MDMBOX_AUTH_ENABLED` | Require authentication for API endpoints and a forwarded identity for the Admin UI. The UI always requires verified Aidbox App credentials. Accepted values: `true` or `false`. | `true` |
+| `MDMBOX_ADMIN_ID` | Initial Aidbox `User` id with a seeded AccessPolicy for the MDMbox UI. Set with `MDMBOX_ADMIN_PASSWORD`. | unset |
 | `MDMBOX_ADMIN_PASSWORD` | Admin password. Set with `MDMBOX_ADMIN_ID`. | unset |
 | `MDMBOX_API_CLIENT_ID` | API `Client` id for Basic authentication. Set with `MDMBOX_API_CLIENT_SECRET`. | unset |
 | `MDMBOX_API_CLIENT_SECRET` | Secret for the bootstrapped API `Client`. Must be set together with `MDMBOX_API_CLIENT_ID`. | unset |
+| `MDMBOX_AIDBOX_APP_ENDPOINT_URL` | MDMbox App endpoint URL reachable from Aidbox. | `http://mdmbox:3000/api/aidbox-app-proxy` |
+| `MDMBOX_API_AIDBOX_APP_ONLY` | Accept protected API requests only through an authenticated Aidbox App, preventing direct bypass of Aidbox AccessPolicies. | `false` |
 
 ## Audit
 
