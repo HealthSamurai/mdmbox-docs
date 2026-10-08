@@ -109,13 +109,15 @@ Commands and status return FHIR `Parameters`; errors use `OperationOutcome`. Bot
 
 ### Continuous matching
 
+Continuous status includes `pendingChanges` and `appliedChanges` as whole-number `valueDecimal` parameters. They count captured events awaiting application and events applied since the latest build or reset. Several events can refer to one record. See [Continuous matching](continuous-matching.md#monitor-activity) for the separate application and matching progress shown in the admin UI.
+
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/api/continuous-match/:model-id/start` | Start, resume, or rebuild after a model change |
 | `POST` | `/api/continuous-match/:model-id/pause` | Pause while keeping progress and results |
 | `POST` | `/api/continuous-match/:model-id/retry` | Requeue failed batches |
 | `GET` | `/api/continuous-match/:model-id/status` | Get process status and counts |
-| `GET` | `/api/continuous-match/:model-id/result` | Export accumulated pairs |
+| `GET` | `/api/continuous-match/:model-id/result` | Export current pairs |
 | `DELETE` | `/api/continuous-match/:model-id` | Reset a paused process, keeping the model and source records |
 
 Commands and status return FHIR `Parameters`; errors use `OperationOutcome`. Results support CSV, NDJSON, and paginated JSON with a `decisionStatus` filter. See [Continuous matching](continuous-matching.md) for parameters and limits.
