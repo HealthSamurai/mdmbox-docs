@@ -32,8 +32,8 @@ Initial startup downloads images and FHIR packages and can take several minutes.
 ## 3. Activate and sign in
 
 1. Open `http://localhost:8888` and activate Aidbox following the [Aidbox setup guide](https://www.health-samurai.io/docs/aidbox/getting-started/run-aidbox-locally).
-2. Sign in to Aidbox with `postgres` as both the username and password for this example.
-3. Open `http://localhost:8888/mdmbox` and click **Sign in to activate** if MDMbox needs activation.
+2. Open `http://localhost:8888/mdmbox`. If redirected to Aidbox login, sign in with `postgres` as both the username and password for this example; you return to MDMbox after sign-in.
+3. Click **Sign in to activate** if MDMbox needs activation.
 
 For unattended activation, set `MDMBOX_LICENSE`; see [License configuration](config-reference.md#license). If the Admin UI shows **Activate Aidbox**, complete Aidbox activation through its link.
 

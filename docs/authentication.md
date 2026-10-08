@@ -31,7 +31,7 @@ curl --user "mdmbox-api:$MDMBOX_API_CLIENT_SECRET" \
 
 ## Admin UI through Aidbox
 
-Sign in to Aidbox, then open `/mdmbox` on the Aidbox address, for example `http://localhost:8888/mdmbox`. MDMbox uses the identity admitted by Aidbox and requires no separate UI role, login, or browser cookie. Direct UI requests to MDMbox return HTTP 403.
+Open `/mdmbox` on the Aidbox address, for example `http://localhost:8888/mdmbox`. If you are not signed in, the browser redirects to Aidbox login and returns to the requested page after sign-in. MDMbox uses the identity admitted by Aidbox and requires no separate UI role, login, or browser cookie. Direct UI requests to MDMbox return HTTP 403.
 
 At startup, MDMbox registers `App/mdmbox` and its UI and API operations in Aidbox. Set the address Aidbox uses to reach MDMbox:
 
@@ -40,6 +40,8 @@ MDMBOX_AIDBOX_APP_ENDPOINT_URL=http://mdmbox:3000/api/aidbox-app-proxy
 ```
 
 The value above is the default for Docker Compose. For Kubernetes, use the MDMbox Service address. The App endpoint secret is generated once and retained across restarts.
+
+The startup seed also creates `AccessPolicy/mdmbox-ui-login`. It permits anonymous HTML GET requests to the UI only to return the login redirect; it grants no access to page content, API operations, or UI mutations. Authenticated users still need a UI AccessPolicy. Requests for JSON or SSE retain Aidbox's authentication errors.
 
 To create an initial UI administrator, set both variables:
 
@@ -52,7 +54,7 @@ MDMbox creates the Aidbox `User` and `AccessPolicy/mdmbox-ui-admin-admin`, grant
 
 `MDMBOX_ADMIN_ROLE` is no longer used. Existing roles and `Client/mdmbox-ui` are not removed, but MDMbox no longer uses or creates them. Sign-in and sign-out use Aidbox's authentication and audit facilities; MDMbox [audits UI operations](audit.md) with the verified identity forwarded by Aidbox.
 
-`MDMBOX_AUTH_ENABLED=false` disables the requirement for a forwarded principal, but direct UI access remains forbidden and App credentials are still verified.
+`MDMBOX_AUTH_ENABLED=false` disables the requirement for a forwarded principal, but direct UI access remains forbidden and App credentials are still verified. Anonymous HTML navigation still redirects to Aidbox login.
 
 ## API through Aidbox
 
