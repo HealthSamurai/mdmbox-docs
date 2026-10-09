@@ -4,7 +4,7 @@ description: Complete list of MDMbox REST API endpoints.
 
 # API reference
 
-All paths below use the MDMbox host. Use [API authentication](authentication.md) for protected endpoints. For FHIR resource management, use the [Aidbox REST API](https://www.health-samurai.io/docs/aidbox/api/rest-api/crud) on the Aidbox host at `/fhir`.
+All paths below are available directly on MDMbox or through `App/mdmbox` on Aidbox. When `MDMBOX_API_AIDBOX_APP_ONLY=true`, use the Aidbox host and grant access with Aidbox AccessPolicies. Use [API authentication](authentication.md) for protected endpoints. For FHIR resource management, use the [Aidbox REST API](https://www.health-samurai.io/docs/aidbox/api/rest-api/crud) on the Aidbox host at `/fhir`.
 
 Open `/api/docs` for Swagger UI or `/api/openapi.json` for the full specification and request schemas. The specification reports the running image version.
 
