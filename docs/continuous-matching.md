@@ -14,7 +14,7 @@ For a job that finishes after processing a prepared dataset, use [Bulk matching]
 
 ## Start and pause
 
-1. Open **Matching → Continuous matching** at `/admin/continuous-match`.
+1. Open **Matching → Continuous matching** at `/mdmbox/admin/continuous-match` on the Aidbox address.
 2. Select a model. Optionally adjust workers, batch size, and batch wait time under **Run settings**.
 3. Choose **Start**. MDMbox prepares the data, matches existing records, then keeps matching new inserts.
 4. Choose **Download CSV** to review accumulated pairs, or **Pause** to suspend processing.
@@ -65,6 +65,8 @@ Allow enough termination grace time for workers to stop. Interrupted batches are
 
 **Download CSV** exports all accumulated pairs using the same [columns as Bulk matching](bulk-match.md#step-3-download-results).
 
+When downloading through Aidbox, follow the [App integration version recommendation](deployment/versions-and-compatibility.md#aidbox-app-integration) for streaming large exports.
+
 Decision status is evaluated at download time. Results still use the process's saved model version, even if you have since edited the model. Missing model history causes an HTTP 500 OperationOutcome before the export starts.
 
 A failed batch is retried after five seconds, up to three failed attempts. **Retry** gives failed batches a fresh attempt budget. Interrupted batches do not leave partial results.
@@ -79,7 +81,7 @@ Deleting a paused BulkMatchingModel also deletes its process and results. Pause 
 
 ## API
 
-All process endpoints use the MDMbox host and the same [API authentication](authentication.md) as other MDMbox operations.
+All process endpoints use the same [API authentication](authentication.md) as other MDMbox operations. The `/api/*` paths are available directly on MDMbox or through `App/mdmbox` on Aidbox. When `MDMBOX_API_AIDBOX_APP_ONLY=true`, use the Aidbox host and grant access with Aidbox AccessPolicies.
 
 | Method | Path | Result |
 | --- | --- | --- |

@@ -11,7 +11,7 @@ MDMbox is configured through environment variables.
 MDMbox requires an active license. Choose an activation method:
 
 1. **Production and CI:** obtain an MDMbox license from the [portal](https://aidbox.app/ui/portal) and set `MDMBOX_LICENSE` in the MDMbox environment.
-2. **Local development:** start MDMbox, open `http://localhost:3000`, and click **Sign in to activate** to issue a development license with your portal account. Operations are available immediately after activation. The license is saved in the database and reused on restart. Replicas waiting for activation on the same database pick up the saved license automatically.
+2. **Local development:** start MDMbox, open `/mdmbox` on your Aidbox address (`http://localhost:8888/mdmbox` in the local example), sign in to Aidbox, and click **Sign in to activate** to issue a development license with your portal account. Operations are available immediately after activation. The license is saved in the database and reused on restart. Replicas waiting for activation on the same database pick up the saved license automatically.
 
 Before activation, MDMbox redirects API and Admin UI requests to its activation page. If an upgrade finds multiple previously saved MDMbox licenses, the page explains the ambiguity: set `MDMBOX_LICENSE` to the intended license and restart, or issue a new development license through the page.
 
@@ -41,6 +41,8 @@ The deprecated Aidbox alias `AIDBOX_BASE_URL` is also accepted. If both variable
 ## Authentication
 
 Authentication is enabled by default. Direct API requests use an `Authorization` header; the Admin UI uses the Aidbox browser session and AccessPolicies through `App/mdmbox`. See [Authentication](authentication.md) for setup and examples.
+
+`MDMBOX_ADMIN_ROLE` is no longer used. UI access is granted by Aidbox AccessPolicies, including the initial policy created for `MDMBOX_ADMIN_ID`.
 
 | Variable | Description | Default |
 | --- | --- | --- |

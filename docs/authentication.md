@@ -33,6 +33,8 @@ curl --user "mdmbox-api:$MDMBOX_API_CLIENT_SECRET" \
 
 Open `/mdmbox` on the Aidbox address, for example `http://localhost:8888/mdmbox`. If you are not signed in, the browser redirects to Aidbox login and returns to the requested page after sign-in. MDMbox uses the identity admitted by Aidbox and requires no separate UI role, login, or browser cookie. Direct UI requests to MDMbox return HTTP 403.
 
+For CSV exports and incremental UI updates, follow the [Aidbox App version recommendation](deployment/versions-and-compatibility.md#aidbox-app-integration).
+
 At startup, MDMbox registers `App/mdmbox` and its UI and API operations in Aidbox. Set the address Aidbox uses to reach MDMbox:
 
 ```bash
