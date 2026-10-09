@@ -10,11 +10,13 @@ Compatible Aidbox versions for each MDMbox monthly version are listed in [Releas
 
 ## Aidbox App integration
 
-{% hint style="warning" %}
-We recommend Aidbox `2610` or later for MDMbox integration through an Aidbox App, including the Admin UI. Response streaming is planned for `2610`; use a released version containing that support once it is available. Earlier supported Aidbox versions buffer each App response before sending it to the client. The UI and completed downloads still work, but intermediate UI updates arrive at the end of the request and large or concurrent exports require enough Aidbox memory to hold their complete response bodies.
-{% endhint %}
+MDMbox supports serving its Admin UI and API through Aidbox. Clients use the Aidbox address: `/mdmbox` for the UI and `/api/*` for API operations. Aidbox authenticates requests, evaluates AccessPolicies, and forwards permitted requests through `App/mdmbox`, which MDMbox registers at startup.
 
-This applies to bulk and continuous matching CSV downloads and to incremental Admin UI responses served through `App/mdmbox`. Earlier Aidbox versions remain within the supported range. See [Authentication](../authentication.md) for App setup and [Release notes](../release-notes.md) for availability.
+The Admin UI is available only through Aidbox. To require the same route for all protected API operations, set `MDMBOX_API_AIDBOX_APP_ONLY=true`. Direct requests to those operations then return HTTP 403, so clients cannot bypass the AccessPolicies configured in Aidbox. Health checks and API documentation remain public. See [Authentication](../authentication.md) for access setup and [Configuration reference](../config-reference.md#authentication) for the required settings.
+
+{% hint style="warning" %}
+We recommend Aidbox `2610` or later for App integration. Response streaming is planned for `2610`; see [Release notes](../release-notes.md) for availability. Earlier supported Aidbox versions buffer each App response before sending it to the client. The UI and completed downloads still work, but intermediate UI updates arrive at the end of the request and large or concurrent bulk and continuous matching exports require enough Aidbox memory to hold their complete response bodies.
+{% endhint %}
 
 ## Docker image tags
 
