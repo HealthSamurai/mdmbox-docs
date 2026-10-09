@@ -25,10 +25,11 @@ We recommend Aidbox `2610` or later for App integration. Response streaming is p
 | Tag | What it selects |
 | --- | --- |
 | `latest` | The newest published version, including its updates. Moves forward as new versions are released. |
-| `YYMM`, for example `2608` | A selected monthly version, including its updates. |
+| `YYMM`, for example `2609` | A selected monthly version, including its updates. |
+| `YYMM.N`, for example `2609.0` | An exact published release. This tag does not move. |
 | `edge` | A development build. Use a released monthly version for production. |
 
-For a local trial, use `healthsamurai/mdmbox:latest` together with `healthsamurai/aidboxone:latest`, as in [Getting started](../getting-started.md). To stay on selected monthly versions, replace `latest` in each service's `image` value with its monthly tag, keeping Aidbox within the supported range.
+For a local trial, use `healthsamurai/mdmbox:latest` together with `healthsamurai/aidboxone:latest`, as in [Getting started](../getting-started.md). To stay on selected monthly versions, replace `latest` in each service's `image` value with its monthly tag, keeping Aidbox within the supported range. Use exact `YYMM.N` tags when you want to select each update explicitly.
 
 ## Shared configuration
 

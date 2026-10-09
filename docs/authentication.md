@@ -11,7 +11,7 @@ Authentication is enabled by default and is controlled by `MDMBOX_AUTH_ENABLED`.
 | API | Basic credentials for an Aidbox `Client`, an Aidbox access token, or an external JWT validated by `TokenIntrospector` |
 | Admin UI | Aidbox browser session and Aidbox `AccessPolicy`, forwarded through `App/mdmbox` |
 
-Every authenticated credential has full access to direct protected API endpoints. UI permissions are evaluated by Aidbox.
+When direct API access is enabled, every authenticated credential has full access to protected API endpoints on MDMbox. Requests through Aidbox are subject to its AccessPolicies. Set `MDMBOX_API_AIDBOX_APP_ONLY=true` to require that route for protected API operations. UI permissions are always evaluated by Aidbox.
 
 ## Basic API authentication
 

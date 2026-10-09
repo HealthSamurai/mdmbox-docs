@@ -18,15 +18,16 @@ Response streaming is planned for Aidbox `2610`. We recommend Aidbox `2610` or l
 
 ## September 2026
 
-**Planned Docker tag:** `2609`
+**Docker tags:** `2609.0`, `2609`, `latest`
 
-**Target Aidbox compatibility:** `2605` through `2609`. The release test matrix confirms the supported versions when the image is published.
+**Compatible Aidbox versions:** `2605`, `2606`, `2607`, `2608`, `2609`. Release `2609.0` was tested with `2605.10` (LTS), `2606.7`, `2607.5`, `2608.6`, and `2609.0`.
 
 **Features and improvements**
 
 * **[Admin UI through Aidbox](authentication.md#admin-ui-through-aidbox)** — Open MDMbox at `/mdmbox` on the Aidbox address. Aidbox handles browser sign-in, sign-out, and UI authorization through AccessPolicies. Anonymous browser navigation redirects to Aidbox login and returns to the requested page after sign-in. Direct UI access to MDMbox returns HTTP 403; a separate MDMbox UI role or login is no longer required.
 * **Automatic App setup** — MDMbox registers `App/mdmbox` and its UI, API, and Swagger operations at startup, keeping the App secret across restarts. It seeds policies for the login redirect and public API documentation. `MDMBOX_ADMIN_ID` and `MDMBOX_ADMIN_PASSWORD` create an initial Aidbox user and a UI AccessPolicy; existing policies are preserved.
 * **Shared database startup** — Fixed fresh MDMbox installation when Aidbox has already initialized the shared database.
+* **[SQL matching helpers](sql-functions.md)** — Canonical names are `mdm_unaccent`, `mdm_unaccent_upper`, `mdm_unaccent_upper_no_spaces`, and `mdm_jaro_winkler`. Upgrades retain legacy names as compatibility aliases, preserving existing model expressions and indexes. Fresh installations create the canonical helpers; use them when importing models from earlier versions.
 * **[API access through Aidbox](authentication.md#api-through-aidbox)** — The App exposes MDMbox operations at `/api/*` on Aidbox. Set `MDMBOX_API_AIDBOX_APP_ONLY=true` to enforce Aidbox AccessPolicies by rejecting direct protected API requests with HTTP 403. MDMbox verifies App credentials and uses the identity authenticated by Aidbox.
 * **[Continuous matching](continuous-matching.md)** — A persistent process matches existing records and keeps its results current as records are inserted, updated, and deleted. Changes to prepared fields recompute affected matches and weights; deletions retract pairs, while manual decisions and merge history remain available. Pause and Resume retain completed results and captured changes; active processes recover after restarts and hand over during rolling updates. The Admin UI shows separate change-application and matching progress with batch diagnostics. Download CSV or NDJSON, or browse results as paginated JSON with a decision-status filter.
 
@@ -42,7 +43,7 @@ See [Authentication](authentication.md), [Configuration reference](config-refere
 
 ## August 2026
 
-**Docker tags:** `2608`, `latest`
+**Docker tag:** `2608`
 
 **Compatible Aidbox versions:** `2605`, `2606`, `2607`, `2608`.
 

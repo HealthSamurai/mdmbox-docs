@@ -6,6 +6,8 @@ description: Update MDMbox images or stop the local Docker Compose environment.
 
 Choose image tags using [Versions and compatibility](versions-and-compatibility.md), and check [Release notes](../release-notes.md) for changes affecting your integration.
 
+When upgrading from `2608` to `2609`, pass the same public Aidbox `BOX_WEB_BASE_URL` to both services and set `MDMBOX_AIDBOX_APP_ENDPOINT_URL` to the MDMbox address reachable from Aidbox. Open the Admin UI through Aidbox at `/mdmbox`; direct UI access is no longer available. Grant UI access through Aidbox AccessPolicies, or set `MDMBOX_ADMIN_ID` and `MDMBOX_ADMIN_PASSWORD` to seed an initial administrator. See [Authentication](../authentication.md#admin-ui-through-aidbox) for setup.
+
 ## Docker Compose
 
 From the directory containing the `docker-compose.yml` used in [Getting started](../getting-started.md), run:

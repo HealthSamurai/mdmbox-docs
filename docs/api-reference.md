@@ -4,7 +4,7 @@ description: Complete list of MDMbox REST API endpoints.
 
 # API reference
 
-All paths below are available directly on MDMbox or through `App/mdmbox` on Aidbox. When `MDMBOX_API_AIDBOX_APP_ONLY=true`, use the Aidbox host and grant access with Aidbox AccessPolicies. Use [API authentication](authentication.md) for protected endpoints. For FHIR resource management, use the [Aidbox REST API](https://www.health-samurai.io/docs/aidbox/api/rest-api/crud) on the Aidbox host at `/fhir`.
+The `/api/*` paths below are available directly on MDMbox or through `App/mdmbox` on Aidbox. When `MDMBOX_API_AIDBOX_APP_ONLY=true`, use the Aidbox host and grant access with Aidbox AccessPolicies. Use [API authentication](authentication.md) for protected endpoints. For FHIR resource management, use the [Aidbox REST API](https://www.health-samurai.io/docs/aidbox/api/rest-api/crud) on the Aidbox host at `/fhir`.
 
 Open `/api/docs` for Swagger UI or `/api/openapi.json` for the full specification and request schemas. The specification reports the running image version.
 
@@ -19,7 +19,7 @@ The `mdm` helpers supplied to server-side scripts are documented separately in t
 | `GET`  | `/api/docs`         | Swagger UI            |
 | `GET`  | `/api/openapi.json` | OpenAPI specification |
 
-`/readyz` returns HTTP 200 when ready, otherwise 503. Its JSON body contains `status` and the individual `checks.db` and `checks.fhir` results.
+Call `/healthz` and `/readyz` directly on the MDMbox host; `App/mdmbox` does not expose these probes through Aidbox. `/readyz` returns HTTP 200 when ready, otherwise 503. Its JSON body contains `status` and the individual `checks.db` and `checks.fhir` results.
 
 Both probes remain available before license activation and while a running instance is restricted by its license. A successful probe does not indicate that the license is active. See [License configuration](config-reference.md#license).
 
@@ -124,10 +124,10 @@ Commands and status return FHIR `Parameters`; errors use `OperationOutcome`. Res
 
 ## Admin UI
 
-The admin interface is available at `/admin`. It provides:
+The admin interface is available through Aidbox at `/mdmbox/admin`. It provides:
 
-- `/admin` — model management (create, edit, delete MatchingModel and BulkMatchingModel)
-- `/admin/bulk-match` — Bulk matching (start, monitor, download, stop)
-- `/admin/continuous-match` — Continuous matching (start, pause, retry, download, reset)
+- `/mdmbox/admin` — model management (create, edit, delete MatchingModel and BulkMatchingModel)
+- `/mdmbox/admin/bulk-match` — Bulk matching (start, monitor, download, stop)
+- `/mdmbox/admin/continuous-match` — Continuous matching (start, pause, retry, download, reset)
 
 The **Algorithms** section manages merge and unmerge scripts and their Git sources. See [Algorithm management](algorithms.md).

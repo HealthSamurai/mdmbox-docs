@@ -6,7 +6,7 @@ description: Run bulk matching to find all duplicate pairs across large datasets
 
 Bulk matching finds duplicate pairs across a prepared dataset and finishes when the job has processed its batches. Unlike `$match`, which compares one resource at a time, it compares records across the dataset in parallel.
 
-Configure a [BulkMatchingModel](matching-models.md#bulkmatchingmodel) to define the comparisons. To keep matching newly inserted records, use [Continuous matching](continuous-matching.md).
+Configure a [BulkMatchingModel](matching-models.md#bulkmatchingmodel) to define the comparisons. To keep results current as records are inserted, updated, and deleted, use [Continuous matching](continuous-matching.md).
 
 ## How it works
 
@@ -25,7 +25,7 @@ graph LR
 
 ## Admin UI
 
-Open **Matching → Bulk matching** at `/admin/bulk-match` and select a model. Its prepared data, run settings, and job history appear on the right.
+Open **Matching → Bulk matching** at `/mdmbox/admin/bulk-match` on the Aidbox address and select a model. Its prepared data, run settings, and job history appear on the right.
 
 Status and job history update automatically. Jobs continue running when you leave the page. If a model fails to load, choose **Retry loading**.
 
@@ -39,7 +39,7 @@ The history shows up to 50 unarchived jobs for the selected model, prioritizing 
 
 ## API workflow
 
-The examples use the `patient-bulk` model from [Matching models](matching-models.md#bulkmatchingmodel) and MDMbox [API authentication](authentication.md). Commands and status return FHIR `Parameters` as JSON; errors return `OperationOutcome`. Read parameters by `name`, independently of their order.
+The examples use the `patient-bulk` model from [Matching models](matching-models.md#bulkmatchingmodel) and MDMbox [API authentication](authentication.md). Use the MDMbox host or the Aidbox host with `App/mdmbox`; when `MDMBOX_API_AIDBOX_APP_ONLY=true`, use Aidbox and grant access with its AccessPolicies. Commands and status return FHIR `Parameters` as JSON; errors return `OperationOutcome`. Read parameters by `name`, independently of their order.
 
 ### Step 1: Start a job
 

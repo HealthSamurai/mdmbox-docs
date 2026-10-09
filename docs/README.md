@@ -14,7 +14,7 @@ Start with [Getting started](getting-started.md) to run MDMbox locally and try m
 | --- | --- |
 | Find duplicates of one record | [$match](match-operation.md) |
 | Find duplicate pairs in an existing dataset | [Bulk matching](bulk-match.md) |
-| Match existing data and keep processing new records | [Continuous matching](continuous-matching.md) |
+| Keep duplicate pairs current after inserts, updates, and deletions | [Continuous matching](continuous-matching.md) |
 | Combine duplicates into one surviving record | [Merge](merge-operation.md) and [unmerge](unmerge-operation.md) |
 | Group records while keeping the originals | [Link](link-operation.md) and [unlink](unlink-operation.md) |
 | Record that two records are different entities | [$mark-not-a-match](mark-not-a-match.md) |

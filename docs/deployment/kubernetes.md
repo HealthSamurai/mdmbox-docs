@@ -14,7 +14,7 @@ Set `image.tag` explicitly to the monthly version you want to run. `pullPolicy: 
 
 ```yaml
 image:
-  tag: "2608"
+  tag: "2609"
   pullPolicy: Always
 
 aidboxConfigMap: aidbox-config

@@ -8,7 +8,7 @@ Use SQL functions in [matching models](matching-models.md) to normalize extracte
 
 MDMbox installs four matching helpers in the `public` schema and enables the PostgreSQL extensions `unaccent`, `fuzzystrmatch`, and `pg_trgm` during startup. The examples below run against the PostgreSQL database shared by MDMbox and Aidbox. Extension functions can vary with your PostgreSQL version; the comparison functions listed below are available on PostgreSQL 14 and later unless stated otherwise.
 
-Use the `mdm_` names for new models. If your installation has only the [legacy names](#legacy-names), use those until you upgrade.
+The `mdm_` names are available starting with MDMbox `2609.0`. Use them for new models. If your installation has only the [legacy names](#legacy-names), use those until you upgrade.
 
 ## Normalization helpers
 
