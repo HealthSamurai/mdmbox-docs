@@ -20,7 +20,7 @@ Response streaming is planned for Aidbox `2610`. We recommend Aidbox `2610` or l
 
 **Docker tags:** `2609.0`, `2609`, `latest`
 
-**Compatible Aidbox versions:** `2605`, `2606`, `2607`, `2608`, `2609`. Release `2609.0` was tested with `2605.10` (LTS), `2606.7`, `2607.5`, `2608.6`, and `2609.0`.
+**Compatible Aidbox versions:** `2605`, `2606`, `2607`, `2608`, `2609`.
 
 **Features and improvements**
 
