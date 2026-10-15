@@ -6,6 +6,8 @@ description: Environment variables and runtime configuration for MDMbox.
 
 MDMbox is configured through environment variables.
 
+For the Prometheus listener and its environment variables, see [Monitoring](monitoring.md).
+
 ## License
 
 MDMbox requires an active license. Choose an activation method:

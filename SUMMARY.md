@@ -36,6 +36,7 @@
 
 ## Operations
 
+- [Monitoring](monitoring.md)
 - [Configuration reference](config-reference.md)
 - [Authentication](authentication.md)
 - [Audit](audit.md)
