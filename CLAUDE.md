@@ -12,6 +12,7 @@ All documentation is written in **English**.
 - Do not put source-checkout development commands, local development credentials, test results, draft pull requests, or implementation investigations in published pages. Document supported operator workflows and released behavior instead.
 - Preserve exact public API/configuration identifiers, runnable examples, and observable limitations. For example, write "MDMbox returns HTTP 412 with an OperationOutcome"; explanations of the internal code producing it belong in developer docs.
 - Before publishing, review prose, snippets, and diagrams for internal runtime names and unnamed implementation details. These agent instructions are not published documentation.
+- Add every new user-facing feature to the current `edge` section of `docs/release-notes.md` when first documented. The release-notes section supplies its version; put **Available from:** on the feature page, not on individual release-notes entries. Use `edge` until an exact MDMbox Docker tag exists, then replace it with that tag. When only part of an existing feature changes, place the note beside that part instead of implying the whole feature is new. Do not guess future tags; state a separate dependency's version separately.
 
 ## Structure
 

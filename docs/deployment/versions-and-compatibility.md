@@ -10,12 +10,14 @@ Compatible Aidbox versions for each MDMbox monthly version are listed in [Releas
 
 ## Aidbox App integration
 
+**Available from:** `2609.0` for MDMbox UI and API access through Aidbox.
+
 MDMbox supports serving its Admin UI and API through Aidbox. Clients use the Aidbox address: `/mdmbox` for the UI and `/api/*` for API operations. Aidbox authenticates requests, evaluates AccessPolicies, and forwards permitted requests through `App/mdmbox`, which MDMbox registers at startup.
 
 The Admin UI is available only through Aidbox. To require the same route for all protected API operations, set `MDMBOX_API_AIDBOX_APP_ONLY=true`. Direct requests to those operations then return HTTP 403, so clients cannot bypass the AccessPolicies configured in Aidbox. Health checks and API documentation remain public. See [Authentication](../authentication.md) for access setup and [Configuration reference](../config-reference.md#authentication) for the required settings.
 
 {% hint style="warning" %}
-We recommend Aidbox `2610` or later for App integration. Response streaming is planned for `2610`; see [Release notes](../release-notes.md) for availability. Earlier supported Aidbox versions buffer each App response before sending it to the client. The UI and completed downloads still work, but intermediate UI updates arrive at the end of the request and large or concurrent bulk and continuous matching exports require enough Aidbox memory to hold their complete response bodies.
+**Available from:** MDMbox `edge` for response streaming; Aidbox support is planned for `2610`. We recommend Aidbox `2610` or later for App integration; see [Release notes](../release-notes.md) for availability. Earlier supported Aidbox versions buffer each App response before sending it to the client. The UI and completed downloads still work, but intermediate UI updates arrive at the end of the request and large or concurrent bulk and continuous matching exports require enough Aidbox memory to hold their complete response bodies.
 {% endhint %}
 
 ## Docker image tags

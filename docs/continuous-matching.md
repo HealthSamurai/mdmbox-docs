@@ -8,6 +8,8 @@ A continuous matching process finds duplicate pairs in existing data and keeps p
 
 Source changes are processed asynchronously. When prepared fields change, MDMbox retracts the record's old pairs and recomputes its matches, including their weights. Deletions remove the record from comparisons and retract its pairs. Recreating the same ID uses the new record's values. Changes outside the model's prepared fields do not trigger recomputation.
 
+**Available from:** `2609.0` for processing updates, deletions, and recreated IDs and recomputing affected pairs.
+
 Manual link and not-a-match decisions, merge history, and unmerge history are retained separately from calculated pairs. Recomputing a pair does not undo those actions. If a pair no longer reaches the threshold, it leaves the matching results even when it has a recorded decision.
 
 For a job that finishes after processing a prepared dataset, use [Bulk matching](bulk-match.md).
@@ -27,6 +29,8 @@ Run settings are editable only while the process is inactive. Use [Reset](#reset
 
 ## Monitor activity
 
+**Available from:** `2609.0` for separate record-change and matching progress and the batch diagnostics described below.
+
 Process status and activity update automatically. Matching continues when you leave the page.
 
 The overview shows preparation, application of record changes, catch-up, batch collection, and waiting for new records. Separate progress bars show **record changes applied** and **matching records processed**. Applying a change updates the comparison data and retracts obsolete pairs; matching then computes replacement pairs. Matching progress can reach 100% while changes still await application. Its total grows with new inserts and recomputed records, so an updated record can be counted more than once. **Workers matching** shows busy workers, **Record changes waiting** shows captured changes awaiting application, and **Pairs found** shows the current pair count, which can increase or decrease.
@@ -44,6 +48,8 @@ To apply a saved change, pause the process and choose **Rebuild**. This rebuilds
 After an application restart, active processes resume automatically with their saved model version; interrupted builds restart. Keep that version in FHIR history. Paused and failed processes require manual action to resume.
 
 ### Deployment and upgrades
+
+**Available from:** `2609.0` for automatic recovery and rolling handover of active processes.
 
 Each model has one matching owner at a time. During a rolling update, the old instance continues matching while its replacement becomes ready to serve API and admin UI requests. After the old instance stops, another instance automatically resumes matching with its saved model version and current results.
 
@@ -144,6 +150,8 @@ Additional status parameters:
 `modelVersion`, `currentModelVersion`, and `modelChanged` show whether a saved model change needs a rebuild. Counters use whole-number `valueDecimal` values, as in Bulk matching.
 
 Export results using `Accept`:
+
+**Available from:** `2609.0` for the decision-status filter and paginated JSON results.
 
 ```http
 GET https://<mdmbox-host>/api/continuous-match/patient-bulk/result?decisionStatus=pending

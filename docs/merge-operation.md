@@ -62,6 +62,8 @@ Only the listed related resource types are searched. If you omit them, related r
 
 ### Reference search indexes
 
+**Available from:** `2608`.
+
 For large related-resource tables, add GIN expression indexes in the PostgreSQL resource database used by MDMbox. Each index covers references to one source resource type within one related-resource table, including references nested in extensions. These indexes accelerate reference discovery for server-managed merge and unmerge.
 
 For example, when merging two Patients with `related-resource-type=Encounter`, create the following index. It is an index on the `encounter` table containing the IDs of Patient references inside Encounters:

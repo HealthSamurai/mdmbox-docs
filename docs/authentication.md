@@ -31,6 +31,8 @@ curl --user "mdmbox-api:$MDMBOX_API_CLIENT_SECRET" \
 
 ## Admin UI through Aidbox
 
+**Available from:** `2609.0`.
+
 Open `/mdmbox` on the Aidbox address, for example `http://localhost:8888/mdmbox`. If you are not signed in, the browser redirects to Aidbox login and returns to the requested page after sign-in. MDMbox uses the identity admitted by Aidbox and requires no separate UI role, login, or browser cookie. Direct UI requests to MDMbox return HTTP 403.
 
 For CSV exports and incremental UI updates, follow the [Aidbox App version recommendation](deployment/versions-and-compatibility.md#aidbox-app-integration).
@@ -59,6 +61,8 @@ MDMbox creates the Aidbox `User` and `AccessPolicy/mdmbox-ui-admin-admin`, grant
 `MDMBOX_AUTH_ENABLED=false` disables the requirement for a forwarded principal, but direct UI access remains forbidden and App credentials are still verified. Anonymous HTML navigation still redirects to Aidbox login.
 
 ## API through Aidbox
+
+**Available from:** `2609.0`.
 
 The startup App exposes API operations on Aidbox at the same `/api/*` paths as MDMbox. Configure Aidbox AccessPolicies for those operations. Set `MDMBOX_API_AIDBOX_APP_ONLY=true` to reject direct protected API calls with HTTP 403 and enforce the Aidbox policies. MDMbox verifies the App endpoint credentials and uses the principal Aidbox authenticated, without checking the caller's forwarded Authorization header again. Swagger and `/api/openapi.json` remain public.
 

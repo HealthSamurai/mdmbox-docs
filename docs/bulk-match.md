@@ -10,6 +10,8 @@ Configure a [BulkMatchingModel](matching-models.md#bulkmatchingmodel) to define 
 
 ## How it works
 
+**Available from:** `2608` for preparation during Start and selective reuse of prepared data.
+
 The bulk match pipeline has three stages:
 
 ```mermaid
@@ -25,6 +27,8 @@ graph LR
 
 ## Admin UI
 
+**Available from:** `2608` for separate **Start job** and **Refresh and start** actions, worker timelines, and paginated batch history.
+
 Open **Matching → Bulk matching** at `/mdmbox/admin/bulk-match` on the Aidbox address and select a model. Its prepared data, run settings, and job history appear on the right.
 
 Status and job history update automatically. Jobs continue running when you leave the page. If a model fails to load, choose **Retry loading**.
@@ -38,6 +42,8 @@ The history shows up to 50 unarchived jobs for the selected model, prioritizing 
 **Batch activity** shows worker timelines, with completed batches in green and failed batches in red. Select a batch to inspect its record range, duration, and error. Browse previous pages to review older batches.
 
 ## API workflow
+
+**Available from:** `2608` for the Start endpoint, FHIR `Parameters` command and status responses, and status by job ID.
 
 The examples use the `patient-bulk` model from [Matching models](matching-models.md#bulkmatchingmodel) and MDMbox [API authentication](authentication.md). Use the MDMbox host or the Aidbox host with `App/mdmbox`; when `MDMBOX_API_AIDBOX_APP_ONLY=true`, use Aidbox and grant access with its AccessPolicies. Commands and status return FHIR `Parameters` as JSON; errors return `OperationOutcome`. Read parameters by `name`, independently of their order.
 
