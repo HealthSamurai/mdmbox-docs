@@ -42,5 +42,5 @@ Set the same `BOX_WEB_BASE_URL` in both services to the public Aidbox address re
 ## Next steps
 
 - [Getting started](../getting-started.md) — run a local trial.
-- [Kubernetes deployment](kubernetes.md) — add MDMbox to an existing Aidbox deployment.
+- [Kubernetes deployment](kubernetes.md) — configure the MDMbox Helm chart for your Aidbox deployment.
 - [Updating MDMbox](updating-mdmbox.md) — update images or stop the local environment.

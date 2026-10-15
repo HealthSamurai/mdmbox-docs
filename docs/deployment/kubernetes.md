@@ -1,10 +1,10 @@
 ---
-description: Deploy MDMbox alongside an existing Aidbox installation using the Helm chart.
+description: Add MDMbox to an Aidbox deployment using the Helm chart.
 ---
 
 # Kubernetes deployment
 
-The [MDMbox Helm chart](https://github.com/HealthSamurai/helm-charts/tree/main/mdmbox) installs MDMbox alongside an existing Aidbox deployment. Use its database configuration and an Aidbox version within the [supported range](versions-and-compatibility.md).
+The [MDMbox Helm chart](https://github.com/HealthSamurai/helm-charts/tree/main/mdmbox) adds MDMbox to your Aidbox deployment. Use the Aidbox database configuration and an Aidbox version within the [supported range](versions-and-compatibility.md).
 
 ## Configure the chart
 
