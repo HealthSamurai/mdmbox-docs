@@ -48,7 +48,7 @@ Authentication is enabled by default. Direct API requests use an `Authorization`
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `MDMBOX_AUTH_ENABLED` | Require authentication for API endpoints and a forwarded identity for the Admin UI. The UI always requires verified Aidbox App credentials. Accepted values: `true` or `false`. | `true` |
+| `MDMBOX_AUTH_ENABLED` | Require authentication for API endpoints and Admin UI access through Aidbox. When `false` on `edge`, direct Admin UI access on the MDMbox address is allowed without sign-in. Accepted values: `true` or `false`. | `true` |
 | `MDMBOX_ADMIN_ID` | Initial Aidbox `User` id with a seeded AccessPolicy for the MDMbox UI. Set with `MDMBOX_ADMIN_PASSWORD`. | unset |
 | `MDMBOX_ADMIN_PASSWORD` | Admin password. Set with `MDMBOX_ADMIN_ID`. | unset |
 | `MDMBOX_API_CLIENT_ID` | API `Client` id for Basic authentication. Set with `MDMBOX_API_CLIENT_SECRET`. | unset |

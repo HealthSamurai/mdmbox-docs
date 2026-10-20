@@ -14,6 +14,7 @@ Release notes are grouped by monthly version. Each version lists compatible Aidb
 
 * **[Prometheus monitoring](monitoring.md)** — A separate metrics endpoint reports request rate, response codes, latency by route, JVM usage, and database connections. A Grafana dashboard includes route and status breakdowns.
 * **[Aidbox App integration](authentication.md#admin-ui-through-aidbox)** — Improved delivery of CSV exports and incremental Admin UI updates through Aidbox Apps. With Aidbox's response streaming, bulk and continuous matching downloads begin before the complete file is generated, and UI events arrive as MDMbox sends them. Aidbox no longer holds the complete response body in memory.
+* **[Direct Admin UI access for development](authentication.md#admin-ui-through-aidbox)** — With `MDMBOX_AUTH_ENABLED=false`, the Admin UI can open directly on the MDMbox address without Aidbox sign-in. Authentication remains enabled by default.
 
 Response streaming is planned for Aidbox `2610`. We recommend Aidbox `2610` or later for App integration once that release is available. Earlier supported Aidbox versions continue to serve the UI and downloads with buffered responses; see [App integration compatibility](deployment/versions-and-compatibility.md#aidbox-app-integration).
 

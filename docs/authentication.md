@@ -33,7 +33,9 @@ curl --user "mdmbox-api:$MDMBOX_API_CLIENT_SECRET" \
 
 **Available from:** `2609.0`.
 
-Open `/mdmbox` on the Aidbox address, for example `http://localhost:8888/mdmbox`. If you are not signed in, the browser redirects to Aidbox login and returns to the requested page after sign-in. MDMbox uses the identity admitted by Aidbox and requires no separate UI role, login, or browser cookie. Direct UI requests to MDMbox return HTTP 403.
+With authentication enabled, open `/mdmbox` on the public Aidbox address, for example `https://aidbox.example.com/mdmbox` or `http://localhost:8888/mdmbox` in the local example. If you are not signed in, the browser redirects to Aidbox login and returns to the requested page after sign-in. MDMbox uses the identity admitted by Aidbox and requires no separate UI role, login, or browser cookie. Direct UI access is blocked so requests cannot bypass Aidbox authentication and AccessPolicies.
+
+If you receive an `OperationOutcome` with `Open the MDMbox UI through Aidbox`, authentication is enabled and the UI request reached MDMbox directly. Use the Aidbox URL and make sure any reverse proxy routes `/mdmbox` to Aidbox.
 
 For CSV exports and incremental UI updates, follow the [Aidbox App version recommendation](deployment/versions-and-compatibility.md#aidbox-app-integration).
 
@@ -58,7 +60,7 @@ MDMbox creates the Aidbox `User` and `AccessPolicy/mdmbox-ui-admin-admin`, grant
 
 `MDMBOX_ADMIN_ROLE` is no longer used. Existing roles and `Client/mdmbox-ui` are not removed, but MDMbox no longer uses or creates them. Sign-in and sign-out use Aidbox's authentication and audit facilities; MDMbox [audits UI operations](audit.md) with the verified identity forwarded by Aidbox.
 
-`MDMBOX_AUTH_ENABLED=false` disables the requirement for a forwarded principal, but direct UI access remains forbidden and App credentials are still verified. Anonymous HTML navigation still redirects to Aidbox login.
+**Available from:** `edge`. Set `MDMBOX_AUTH_ENABLED=false` to open the Admin UI directly on the MDMbox address without signing in through Aidbox. This also disables authentication for MDMbox API requests, so use it only in a trusted development environment. Keep authentication enabled in production.
 
 ## API through Aidbox
 
