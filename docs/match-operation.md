@@ -8,6 +8,8 @@ The `$match` operation performs a probabilistic search using a matching model an
 
 A [MatchingModel](matching-models.md) must be created before using `$match`.
 
+**Available from:** `edge`: models saved by Model builder can use DuckDB to evaluate their transformations and comparisons against live PostgreSQL records. Pass the saved model ID in the same request format; see [Save a trained model](matching-models.md#save-a-trained-model) for engine selection and limits.
+
 MDMbox follows the request and response shape of the FHIR R6 [`Patient/$match`](https://build.fhir.org/patient-operation-match.html) operation: clients send a FHIR `Parameters` resource and receive a `Bundle` of type `searchset`. MDMbox generalizes the operation to any configured FHIR resource type and adds `modelId` and `threshold` parameters so callers can choose the matching model and score cutoff.
 
 Unversioned routes such as `/api/fhir/Patient/$match` use the FHIR release selected by `MDMBOX_DEFAULT_FHIR_RELEASE`. Versioned routes are also available as `/api/fhir/r4/:resource/$match` and `/api/fhir/r6/:resource/$match`. Instance-level matching is available at `/api/fhir/r4/:resource/:id/$match` and `/api/fhir/r6/:resource/:id/$match`.
@@ -151,7 +153,7 @@ The response is a FHIR Bundle of type `searchset`. Each entry includes:
 ```
 
 {% hint style="warning" %}
-For large datasets, create database indexes on columns used in matching model blocks. Without indexes, `$match` performs a full table scan for each block, which can be very slow.
+For PostgreSQL models, create database indexes on expressions used in matching blocks. Without indexes, matching can require full table scans. For DuckDB models, supported equality blocks can filter candidates in PostgreSQL while comparisons run in DuckDB. See [Accelerate DuckDB matching](matching-models.md#accelerate-duckdb-matching) for supported expressions and the required index. Other blocks can require a full scan.
 {% endhint %}
 
 ## Weight and score calculation

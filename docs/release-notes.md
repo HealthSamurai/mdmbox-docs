@@ -12,6 +12,8 @@ Release notes are grouped by monthly version. Each version lists compatible Aidb
 
 **Upcoming improvements**
 
+* **[Save trained models](matching-models.md#save-a-trained-model)** — Model builder saves field transformations, learned weights, thresholds, and matching blocks as a `MatchingModel`. `$match` can run these models in DuckDB over current PostgreSQL records, using the same comparison functions as training.
+* **[DuckDB candidate filtering](matching-models.md#accelerate-duckdb-matching)** — Equality blocks on supported JSON field expressions can filter records in PostgreSQL before running DuckDB comparisons. Matching expression indexes can accelerate this path; unsupported blocks retain the full scan.
 * **[Prometheus monitoring](monitoring.md)** — A separate metrics endpoint reports request rate, response codes, latency by route, JVM usage, and database connections. A Grafana dashboard includes route and status breakdowns.
 * **[Aidbox App integration](authentication.md#admin-ui-through-aidbox)** — Improved delivery of CSV exports and incremental Admin UI updates through Aidbox Apps. With Aidbox's response streaming, bulk and continuous matching downloads begin before the complete file is generated, and UI events arrive as MDMbox sends them. Aidbox no longer holds the complete response body in memory.
 * **[Direct Admin UI access for development](authentication.md#admin-ui-through-aidbox)** — With `MDMBOX_AUTH_ENABLED=false`, the Admin UI can open directly on the MDMbox address without Aidbox sign-in. Authentication remains enabled by default.
