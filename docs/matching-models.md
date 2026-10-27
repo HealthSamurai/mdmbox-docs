@@ -18,7 +18,9 @@ MDMbox supports shared scoring models and the existing FHIR model resources:
 
 **Available from:** `edge`.
 
-In **Models → Model builder**, use **Data** to profile Patient records and build a table of selected fields. Use **Blocking** to count candidate pairs and build indexes. In **Learning**, run the JavaScript example or write comparison features. The editor is above Results and Guide, with an AI assistant alongside it. Open **Validation** to inspect scores and choose thresholds, then select **Save model**.
+In **Models → Model builder**, use **Data** to profile Patient records and build a table of selected fields. Use **Blocking** to count candidate pairs and build indexes. In **Learning**, run the JavaScript example or write comparison features, with an AI assistant alongside the editor. Each result or error appears directly below the executed code block or selection. Open **Guide** for an example workflow. Open **Validation** to inspect scores and choose thresholds, then select **Save model**.
+
+Use Ctrl+Enter (⌘+Enter on a Mac) to run the current block or selection, or Ctrl+Shift+Enter to run all blocks in order. Running a block again replaces its previous output. Outputs can be collapsed or cleared and are separate from your saved code. After editing code, taking a new sample or restarting the session, outputs are marked as outdated: run the relevant blocks again before relying on them. **Restart** stops running code and clears the session's definitions; run the blocks again to restore them.
 
 Use the saved ID as `modelId` in a [$match request](match-operation.md) or select it in Bulk matching and Continuous matching. The model contains the selected fields, comparison definition, blocking rules and thresholds. Saving a changed definition creates an immutable version; saving the same definition again retains the version. Existing Bulk jobs and automatically resumed Continuous processes keep their original definition. An explicit Continuous Start or Resume uses the latest model and rebuilds when it changed.
 
