@@ -52,6 +52,14 @@ By default, the builder uses MDMbox's configured database. To use another Postgr
 
 Validation scores sampled candidates, pairs found by the Data-step duplicate nets, and random pairs. The share of confident pairs below review is not a measured recall rate: duplicates missed by the nets are not represented. Candidate counts projected to the whole table are illustrative; Learning keeps at most 200 candidates per sampled record and blocking rule, and displays when that limit is reached. Review example pairs before choosing thresholds.
 
+#### Compare changes
+
+Comparison is optional. You can save the first version of a model directly from Validation. To examine a later change, select **Set reference** after scoring the sample, edit and run the comparison in Learning, then return to Validation.
+
+**Changes since reference** groups candidate pairs by their decisions before and after the change. Select a group and a pair to inspect its scores, record fields and comparison levels or custom metadata. Both variants use the thresholds captured with the reference, even if you change the current thresholds for the main Validation results or saving. Counts describe the fixed candidate sample; review the pairs to judge whether the changed decisions are appropriate.
+
+**Replace reference** makes the current calculation the new starting point; **Clear reference** returns to normal Validation. The reference lasts for the open page and is cleared when you reload, take a new sample or restart the Learning session. Setting a reference does not save a model or create a version.
+
 ### Upgrade from the experimental engine
 
 The experimental file workspace is no longer read. Models previously written for that engine require compatible PostgreSQL expressions. An execution-engine field does not translate their SQL or retrain weights. Execution options belong to matching requests; new model definitions must not contain `executionEngine` or `bulkQueryStrategy`.
