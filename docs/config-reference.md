@@ -149,3 +149,34 @@ With the Helm chart, set `config.MDMBOX_LOG_LEVEL` to the desired level. Restart
 - [Getting started](getting-started.md)
 - [Authentication](authentication.md)
 - [Find duplicates: $match](match-operation.md)
+
+## Model builder
+
+**Available from:** `edge`.
+
+Model builder uses PostgreSQL to profile Patient records and store selected fields in a training table. By default it uses the configured MDMbox database. The workspace stores prepared data in the database and survives normal application restarts.
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `MDMBOX_MODEL_BUILDER_JDBC_URL` | Optional PostgreSQL JDBC URL for a separate training source and workspace | MDMbox database |
+
+When using a separate database, supply any required credentials and TLS settings in the JDBC URL. The account must read `public.patient` and create the workspace schema, tables and matching functions. The database must provide the standard `fuzzystrmatch`, `unaccent` and `pg_trgm` extensions; Model builder installs missing prerequisites when the account has permission. No custom native extension is required.
+
+The source override affects the builder workspace only. Saved models and online, Bulk and Continuous matching use MDMbox's configured database. The former `MDMBOX_MODEL_BUILDER_DUCKDB` setting is no longer used. See [Model builder preview](matching-models.md#model-builder-preview) for preparation and upgrade steps.
+
+## AI assistant
+
+**Available from:** `edge`.
+
+The Learning assistant supports OpenAI and Anthropic. Configure one or both providers and restart MDMbox. A provider becomes available when both its key and model are set. Choose a model available to your provider account.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MDMBOX_OPENAI_API_KEY` | Server-side OpenAI API key | Unset |
+| `MDMBOX_OPENAI_MODEL` | OpenAI model ID | Unset |
+| `MDMBOX_OPENAI_BASE_URL` | API base URL serving the Responses endpoint | `https://api.openai.com/v1` |
+| `MDMBOX_ANTHROPIC_API_KEY` | Server-side Anthropic API key | Unset |
+| `MDMBOX_ANTHROPIC_MODEL` | Anthropic model ID | Unset |
+| `MDMBOX_ANTHROPIC_BASE_URL` | API base URL serving the Messages endpoint | `https://api.anthropic.com/v1` |
+
+Provide keys through deployment secrets. The browser receives provider availability and model names, without keys. Kubernetes deployments can use the chart's `extraEnvFromSecrets` and `extraEnvFromConfigMaps` settings. The assistant sends messages, code, field names and aggregate counts to the selected provider when you send a request; it excludes sample records and REPL output. See [AI assistant](matching-models.md#ai-assistant) for the review workflow.

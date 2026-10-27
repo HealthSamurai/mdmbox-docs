@@ -6,9 +6,9 @@ description: Use the $match operation to find potential duplicate FHIR resources
 
 The `$match` operation performs a probabilistic search using a matching model and returns potential duplicates ranked by match score.
 
-A [MatchingModel](matching-models.md) must be created before using `$match`.
+A [MatchingModel or shared scoring model](matching-models.md) must be created before using `$match`.
 
-**Available from:** `edge`: models saved by Model builder can use DuckDB to evaluate their transformations and comparisons against live PostgreSQL records. Pass the saved model ID in the same request format; see [Save a trained model](matching-models.md#save-a-trained-model) for engine selection and limits.
+**Available from:** `edge`. Use a model saved by [Model builder](matching-models.md#model-builder-preview) as `modelId` in the same request format. Shared models use score thresholds from 0 to 1; existing `MatchingModel` resources keep their weight thresholds. Online matching uses current committed records and does not depend on the Builder's training tables.
 
 MDMbox follows the request and response shape of the FHIR R6 [`Patient/$match`](https://build.fhir.org/patient-operation-match.html) operation: clients send a FHIR `Parameters` resource and receive a `Bundle` of type `searchset`. MDMbox generalizes the operation to any configured FHIR resource type and adds `modelId` and `threshold` parameters so callers can choose the matching model and score cutoff.
 
@@ -153,7 +153,7 @@ The response is a FHIR Bundle of type `searchset`. Each entry includes:
 ```
 
 {% hint style="warning" %}
-For PostgreSQL models, create database indexes on expressions used in matching blocks. Without indexes, matching can require full table scans. For DuckDB models, supported equality blocks can filter candidates in PostgreSQL while comparisons run in DuckDB. See [Accelerate DuckDB matching](matching-models.md#accelerate-duckdb-matching) for supported expressions and the required index. Other blocks can require a full scan.
+Create PostgreSQL indexes on indexable expressions used in matching blocks. The index expression must match the model expression, including transformations and collation. Expressions containing subqueries cannot be used directly in expression indexes. Without a suitable index, matching can require a full table scan.
 {% endhint %}
 
 ## Weight and score calculation
@@ -161,6 +161,8 @@ For PostgreSQL models, create database indexes on expressions used in matching b
 Match weights are log2 Bayes factor sums. MDMbox exposes the raw weight in the `https://mdm.health-samurai.io/fhir/StructureDefinition/match-weight` extension and converts it to `search.score` using a sigmoid function:
 
 `probability = 1 / (1 + 2^(-weight))`
+
+Shared probabilistic models include their learned prior in this weight. Shared rule-based models return the author's score directly as `search.score`; their finite weight is derived from that score. The `match-details` extension is present when the comparison provides feature weights. A custom rule-based score is not necessarily a calibrated probability.
 
 See [Mathematical details](mathematical-details.md) for the full derivation.
 

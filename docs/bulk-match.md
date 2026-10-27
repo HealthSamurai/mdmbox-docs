@@ -8,6 +8,8 @@ Bulk matching finds duplicate pairs across a prepared dataset and finishes when 
 
 Configure a [BulkMatchingModel](matching-models.md#bulkmatchingmodel) to define the comparisons. To keep results current as records are inserted, updated, and deleted, use [Continuous matching](continuous-matching.md).
 
+**Available from:** `edge`. You can also use a [shared scoring model](matching-models.md#shared-model-api) saved by Model builder. Select its ID in the Admin UI or use it in the same Bulk API paths. Start captures the model definition and builds its own comparison data; editing the model or rebuilding the Builder workspace does not change an existing job. Continue retains that captured definition.
+
 ## How it works
 
 **Available from:** `2608` for preparation during Start and selective reuse of prepared data.
@@ -71,11 +73,14 @@ Each new Start uses the latest saved model. What it prepares depends on the chan
 | Change | What Start does |
 | --- | --- |
 | Weights, thresholds, comparison rules, or blocks | Reuses the snapshot and calculates new results with the updated rules |
+| `bulkQueryStrategy` | Reuses the snapshot and selects the candidate query strategy for the new job |
 | Source resource, `tableName`, column names, types, or `column.source` expressions | Rebuilds the snapshot from current source records |
 | Index definitions | Updates added, changed, or removed indexes without copying source records again |
 | Source records only | Reuses the snapshot; set `refreshSourceData: true` to include inserts, updates, and deletions |
 
 For example, you can change a threshold and run Start again to compare results on the same data. The new job uses the new threshold; previous jobs keep their results and model versions. Saving a model does not alter an active job.
+
+**Available from:** `edge` for the optional [`bulkQueryStrategy`](matching-models.md#choose-a-bulk-query-strategy) Start request property. It accepts `"or"` (default) or `"union"`; neither is always faster. The strategy is saved in the job and retained by Continue.
 
 Start rebuilds unavailable or incompatible snapshots, including after a PostgreSQL restart. Index-only updates preserve the snapshot and its preparation date. If an index update fails or is cancelled, its changes roll back; fix the model or retry Start.
 

@@ -6,6 +6,8 @@ description: Keep duplicate pairs current as source records are inserted, update
 
 A continuous matching process finds duplicate pairs in existing data and keeps processing inserted and updated records. It uses a [BulkMatchingModel](matching-models.md#bulkmatchingmodel) to prepare the comparison data, score pairs, and save those reaching the model's `probable` threshold. Each model has one process and one current result set. Matching does not automatically merge records.
 
+**Available from:** `edge`. A [shared scoring model](matching-models.md#shared-model-api) saved by Model builder works with the same controls and API paths. The process captures its comparison definition and uses it for source inserts, updates and deletions. Automatic recovery keeps the captured definition; an explicit Start or Resume loads the latest model and rebuilds when it changed.
+
 Source changes are processed asynchronously. When prepared fields change, MDMbox retracts the record's old pairs and recomputes its matches, including their weights. Deletions remove the record from comparisons and retract its pairs. Recreating the same ID uses the new record's values. Changes outside the model's prepared fields do not trigger recomputation.
 
 **Available from:** `2609.0` for processing updates, deletions, and recreated IDs and recomputing affected pairs.

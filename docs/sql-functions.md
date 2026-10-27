@@ -6,7 +6,7 @@ description: SQL functions for normalizing values and comparing strings in MDMbo
 
 Use SQL functions in [matching models](matching-models.md) to normalize extracted values and compare candidate records. `MatchingModel` uses them in `variable.expression` and feature cases; `BulkMatchingModel` uses them in `column.source` and feature cases.
 
-MDMbox installs four matching helpers in the `public` schema and enables the PostgreSQL extensions `unaccent`, `fuzzystrmatch`, and `pg_trgm` during startup. The examples below run against the PostgreSQL database shared by MDMbox and Aidbox. Extension functions can vary with your PostgreSQL version; the comparison functions listed below are available on PostgreSQL 14 and later unless stated otherwise.
+MDMbox installs matching helpers in the `public` schema and enables the PostgreSQL extensions `unaccent`, `fuzzystrmatch`, and `pg_trgm` during startup. The examples below run against the PostgreSQL database shared by MDMbox and Aidbox. Extension functions can vary with your PostgreSQL version; the comparison functions listed below are available on PostgreSQL 14 and later unless stated otherwise.
 
 **Available from:** `2609.0` for the canonical `mdm_` helper names. Use them for new models. If your installation has only the [legacy names](#legacy-names), use those until you upgrade.
 
@@ -138,6 +138,24 @@ Similarity values feed feature cases; the selected cases assign the model's matc
 
 The weights and cutoff above are illustrative. [Tune them](matching-models.md#tuning) against your own records.
 
+## Model builder comparisons
+
+**Available from:** `edge`.
+
+These PostgreSQL comparison helpers remain available when writing SQL expressions for `MatchingModel` resources:
+
+```text
+public.mdm_levenshtein(text, text) → integer
+public.mdm_levenshtein(text, text, integer) → integer
+public.mdm_soundex(text) → text
+```
+
+`mdm_levenshtein` returns the edit distance, including for inputs longer than the native function's 255-character limit. The three-argument form returns the exact distance up to the supplied cutoff and a larger value beyond it. Long inputs use a slower fallback. SQL `NULL` inputs return SQL `NULL`.
+
+`mdm_soundex` produces an ASCII English Soundex key, ignoring H and W when suppressing adjacent repeated codes. For example, `Smith` and `Smyth` produce `S530`, and `Ashcraft` produces `A261`. Empty values and values without ASCII letters return SQL `NULL`. Its keys can differ from PostgreSQL's native `soundex`, so use the same function on both sides of a comparison.
+
+Model builder uses JavaScript `jaroWinkler` and `levenshtein` helpers during Learning. Saved shared models use the same JavaScript comparisons in online, Bulk and Continuous matching; see [Model builder preview](matching-models.md#model-builder-preview). Existing FHIR models keep using their SQL expressions.
+
 ## PostgreSQL comparison functions
 
 ### Edit distance and phonetic codes
@@ -229,7 +247,7 @@ SELECT
 
 The matching helpers and comparison functions above return SQL `NULL` when a required input is `NULL`. An empty string is a present value: normalize it to `NULL` with `NULLIF(expression, '')` if your model should treat it as missing. Handle missing values in a feature case before comparing strings; a SQL `NULL` comparison does not satisfy a case.
 
-All four MDMbox helpers are declared `IMMUTABLE`, so they can be used in expression indexes. Of these helpers, `mdm_unaccent_upper` and `mdm_jaro_winkler` are also `PARALLEL SAFE`. Custom SQL functions should be declared `PARALLEL SAFE` only when their operations support parallel queries.
+The MDMbox normalization and Jaro–Winkler helpers are declared `IMMUTABLE`, so they can be used in expression indexes. Of these helpers, `mdm_unaccent_upper` and `mdm_jaro_winkler` are also `PARALLEL SAFE`. Custom SQL functions should be declared `PARALLEL SAFE` only when their operations support parallel queries.
 
 ## Legacy names
 

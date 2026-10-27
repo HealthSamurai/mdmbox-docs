@@ -6,41 +6,114 @@ description: Create and configure matching models that define how MDMbox compare
 
 A matching model defines how MDMbox compares records to find duplicates. It specifies which fields to compare, how to compare them, and what scores to assign.
 
-MDMbox supports two types of models:
+MDMbox supports shared scoring models and the existing FHIR model resources:
 
 - **MatchingModel** — for online `$match` queries against individual resources
 - **BulkMatchingModel** — shared by Bulk matching jobs and Continuous matching processes
+- **Shared scoring model** — a model saved by Model builder, usable by `$match`, Bulk matching and Continuous matching with the same ID
 
-Both are stored as FHIR resources. Manage `MatchingModel` through MDMbox REST endpoints, and `BulkMatchingModel` through the Admin UI or the [Aidbox FHIR API](https://www.health-samurai.io/docs/aidbox/api/rest-api/crud).
+`MatchingModel` and `BulkMatchingModel` are stored as FHIR resources. Their existing APIs and JSON formats remain supported. Shared scoring models use the [shared model API](#shared-model-api) and appear in the Models, Bulk matching and Continuous matching screens.
 
-## Save a trained model
+## Model builder preview
 
 **Available from:** `edge`.
 
-In **Models → Model builder**, prepare the data and features, review **Training** and **Blocks**, then open **Validation**. Enter a unique **Model ID** and select **Save model**. Every comparison case and Else level must have an estimated weight. A feature with missing weights must be trained or removed before saving.
+In **Models → Model builder**, use **Data** to profile Patient records and build a table of selected fields. Use **Blocking** to count candidate pairs and build indexes. In **Learning**, run the JavaScript example or write comparison features. The editor is above Results and Guide, with an AI assistant alongside it. Open **Validation** to inspect scores and choose thresholds, then select **Save model**.
 
-The saved `MatchingModel` contains the field transformations, comparison cases, weights, thresholds, and derived matching blocks. Missing values retain a weight of zero. Use its ID as `modelId` in a [$match request](match-operation.md). Saving a model does not copy the training records into the live resource database.
+Use the saved ID as `modelId` in a [$match request](match-operation.md) or select it in Bulk matching and Continuous matching. The model contains the selected fields, comparison definition, blocking rules and thresholds. Saving a changed definition creates an immutable version; saving the same definition again retains the version. Existing Bulk jobs and automatically resumed Continuous processes keep their original definition. An explicit Continuous Start or Resume uses the latest model and rebuilds when it changed.
 
-Models saved by Model builder use `"executionEngine": "duckdb"`. Their expressions run in DuckDB against current committed records in MDMbox's configured PostgreSQL database. This preserves DuckDB comparison behavior, including `levenshtein` and `jaro_winkler_similarity`, without requiring those functions in PostgreSQL. Soundex uses the same definition during training and matching. Scalar fields, lists, built-in SQL transformations, and custom SQL transformations are saved with the model; Double Metaphone variants are currently unsupported for live matching and must be removed from the features before saving. Rebuild tables created before transformation snapshots were supported if they use custom transformations.
+If the table was rebuilt after the comparison was prepared, saving returns an error in Validation. Take a new Learning sample, run the code again and review the thresholds before saving.
 
-`executionEngine` is optional. Omit it or use `"postgres"` for existing PostgreSQL models. Write expressions in the selected engine's SQL dialect. DuckDB models are for online `$match`; Bulk matching and Continuous matching still use `BulkMatchingModel`.
+Scalar fields, filtered lists, cleanup steps, date variants and custom SQL transformations can be selected on the Data step. Learning and live matching use the saved JavaScript comparison definition. Online `$match` reads current committed resources; Bulk jobs use their own prepared snapshot, and Continuous matching keeps its comparison data current asynchronously. All three are independent of the Builder's training tables and later edits to the transformation library.
 
-DuckDB matching requires the official DuckDB `postgres` extension, included in the MDMbox Docker image. When running outside that image, MDMbox loads the extension from the local cache and installs it from DuckDB's extension repository if absent; provision the cache before running without outbound network access. Each request opens a read-only PostgreSQL attachment and computes its result from the request's database snapshot; it does not participate in another connection's uncommitted transaction. DuckDB expressions can require scanning and transferring candidate data from PostgreSQL, so a PostgreSQL expression index does not automatically accelerate them.
+Write custom Data-step transformations as one PostgreSQL expression over `value` and, when needed, an integer `n`, for example `substr(value, 1, n)`. Table queries, additional statements and arbitrary function calls are rejected. In Learning, the editor provides `jaroWinkler`, `levenshtein` and `isPlaceholder` for JavaScript comparisons.
 
-### Accelerate DuckDB matching
+### AI assistant
 
-For DuckDB models, MDMbox can filter candidates in PostgreSQL before evaluating comparisons in DuckDB. This currently supports equality blocks on variables written as `json_extract_string(#.resource, '$.birthDate')`, including nested paths such as `$.name[0].given[0]`. Use a `variable` block with the default equality operator, or SQL containing `l.#dob = r.#dob` and conjunctions of such equalities. Every OR branch must be supported. Input values must be strings or missing. Other expressions, including fuzzy-only blocks, cleanup functions and the builder's `json_transform` expressions, retain the full scan.
+Configure [OpenAI or Anthropic](config-reference.md#ai-assistant) on the server, select a provider in Learning, and ask for a feature, an explanation or a code review. The assistant receives your messages, editor code, field names, blocking rules and aggregate sample counts. Sample Patient records and REPL results are excluded. Values you type into a message or include in code are sent as part of that text.
 
-For a variable extracting `$.birthDate`, create this expression index in the resource database:
+Review suggested code before inserting it or replacing the editor. Replacement is blocked if you have edited the code since asking; request an updated suggestion or insert the needed block. Run the code in the REPL and inspect Validation before saving a model. Chat proposals do not run or publish automatically. The conversation lasts for the open page and is cleared on reload.
 
-```sql
-CREATE INDEX CONCURRENTLY patient_duckdb_birth_date_idx ON public.patient
-((CASE WHEN jsonb_typeof(resource #> ARRAY['birthDate']) <> 'string'
-       THEN ''
-       ELSE resource #>> ARRAY['birthDate'] END));
+### Training data
+
+**Profile Patient records** profiles a sample of current Patient records. **Build table** copies the selected fields into the training table. Source changes after building do not update that table; profile and build again to use newer records. You can reopen Model builder to follow a running preparation job on the same MDMbox instance.
+
+During preparation, Model builder shows the current stage and elapsed time. Steps with measurable counters show completed work and a percentage; other steps show activity without a percentage or remaining-time estimate. A completed stage does not mean the entire preparation has finished.
+
+Prepared profiles, transformations and tables survive normal MDMbox restarts. If PostgreSQL crash recovery clears the rebuildable training data, profile and build again; saved transformations remain available. Use one MDMbox instance for Model builder jobs when replicas share a database; running jobs and their status belong to the instance that started them.
+
+By default, the builder uses MDMbox's configured database. To use another PostgreSQL source and training workspace, set [`MDMBOX_MODEL_BUILDER_JDBC_URL`](config-reference.md#model-builder). Saved models and live matching use MDMbox's configured database.
+
+### Interpreting Validation
+
+Validation scores sampled candidates, pairs found by the Data-step duplicate nets, and random pairs. The share of confident pairs below review is not a measured recall rate: duplicates missed by the nets are not represented. Candidate counts projected to the whole table are illustrative; Learning keeps at most 200 candidates per sampled record and blocking rule, and displays when that limit is reached. Review example pairs before choosing thresholds.
+
+### Upgrade from the experimental engine
+
+The experimental file workspace is no longer read. Models previously written for that engine require compatible PostgreSQL expressions. An execution-engine field does not translate their SQL or retrain weights. Execution options belong to matching requests; new model definitions must not contain `executionEngine` or `bulkQueryStrategy`.
+
+### Shared model API
+
+**Available from:** `edge`.
+
+Shared scoring models are JSON definitions, separate from FHIR resources. Manage them with these authenticated endpoints:
+
+| Request | Result |
+| --- | --- |
+| `GET /api/scoring-models` | List model IDs, types and current versions |
+| `PUT /api/scoring-models/{id}` | Create or update a model; return its saved definition and `meta.versionId` |
+| `GET /api/scoring-models/{id}` | Read the current definition |
+| `GET /api/scoring-models/{id}?version=1` | Read an immutable revision |
+| `DELETE /api/scoring-models/{id}` | Remove the model from new matching requests; retain revisions used by existing Bulk jobs |
+
+Pause an active Continuous process before deleting its model. A model ID cannot reuse an existing `MatchingModel` or `BulkMatchingModel` ID. Shared models use probability or custom-score thresholds from 0 to 1; existing FHIR models retain their original weight thresholds. A rule-based score is defined by its author and is not necessarily a calibrated probability.
+
+For example, this model compares exact given names among Patients sharing a family name:
+
+```http
+PUT /api/scoring-models/patient-exact
+Content-Type: application/json
 ```
 
-Use the complete expression: a plain index on `resource->>'birthDate'` does not match this filter. The filter retains non-string JSON values for checking in DuckDB, so it cannot discard a match because the engines serialize those values differently. Original blocks and comparisons still run in DuckDB. Indexes are created by the database operator, not during `$match`; they consume storage and add work to writes.
+```json
+{
+  "id": "patient-exact",
+  "resource": "Patient",
+  "type": "rule-based",
+  "variables": {
+    "columns": [
+      {"name": "family", "path": [{"name": "name", "list": true}, {"name": "family"}], "mode": "first"},
+      {"name": "given", "path": [{"name": "name", "list": true}, {"name": "given", "list": true}], "mode": "first"}
+    ],
+    "variants": [],
+    "transforms": []
+  },
+  "blocking": [["family"]],
+  "compare": "(a, b) => a.given && b.given && a.given === b.given ? 0.9 : 0.1",
+  "thresholds": {"certain": 0.95, "probable": 0.5}
+}
+```
+
+Use `patient-exact` in all three matching modes. New online requests see committed records immediately; Learning's candidate cap does not apply to live matching. Bulk exports keep the existing pair shape and log2 `matchWeight`; for rule-based models it is derived from the score, with 0 and 1 bounded to finite weights.
+
+Comparison functions receive `id` and the selected, transformed fields in all three modes. Field names use lower-case letters, digits and underscores, with a maximum of 63 characters; `id`, `seq`, `created_at` and `interval_no` are reserved. Model IDs use lower-case letters, digits and dashes, with a maximum of 63 characters. Importing a model applies the same custom-transformation expression checks as the Builder.
+
+### Existing model compatibility
+
+When a supported FHIR model is loaded for matching, MDMbox converts its feature conditions into JavaScript and saves an editable shared model with a stable `migrated-...` ID. Calls using the original model ID continue to work with the original weight thresholds and match grades. The original FHIR resource and APIs are preserved. Converted features retain SQL `NULL` and `ELSE` behavior; they do not acquire the Builder's zero-weight convention for missing fields. Field extraction and blocking continue to use PostgreSQL.
+
+Automatic conversion supports comparisons, `AND`/`OR`/`NOT`, null checks, `IS DISTINCT FROM`, `IN`, `BETWEEN`, `LIKE`/`ILIKE`, concatenation, Levenshtein, Jaro–Winkler, substring, length, case conversion and null helpers. Unknown PostgreSQL functions, casts, arithmetic and subqueries in comparison conditions need manual conversion. Such models continue to run with their existing SQL behavior. To see a conversion error or open the converted definition, select **Convert to JavaScript** in Models, or call:
+
+```http
+POST https://<mdmbox-host>/api/scoring-models/$migrate
+Content-Type: application/json
+
+{"resourceType":"MatchingModel","id":"patient-model"}
+```
+
+Use `"BulkMatchingModel"` for a Bulk model. Success returns the shared definition and its new ID. HTTP 422 returns an OperationOutcome naming an unsupported expression; the original remains usable. Repeating a conversion retains the same revision when the definition has not changed. Saving changes through the original FHIR API refreshes the converted definition on its next use. Edits made directly to the shared model remain there while the FHIR source is unchanged; they are not copied back into the original FHIR resource.
+
+Converted models declare `"score-scale":"weight"` and retain their old weight thresholds; Builder-created models use probabilities from 0 to 1. Keep that distinction when editing thresholds or supplying a `$match` threshold.
 
 ## Concepts
 
@@ -222,7 +295,7 @@ Key differences from MatchingModel:
 - `column` replaces `variable` — each column has a `source` SQL expression and a PostgreSQL `type`
 - `tableName` specifies the flat table to create
 - `index` defines indexes to create on the flat table after population
-- In `block` entries, `variable` refers to a `column` name (not a variable — the field name is the same in both model types)
+- In `block` entries, `column` refers to an extracted column; `sql` accepts a custom blocking expression
 - In `feature` expressions, reference column names directly (e.g., `l.dob` instead of `l.#dob`)
 
 ```json
@@ -236,6 +309,7 @@ Key differences from MatchingModel:
     "probable": 16
   },
   "column": [
+    { "name": "id", "type": "text", "source": "id" },
     { "name": "dob", "type": "text", "source": "resource->>'birthDate'" },
     {
       "name": "family",
@@ -248,8 +322,8 @@ Key differences from MatchingModel:
     { "name": "idx_family", "column": "family", "type": "btree" }
   ],
   "block": [
-    { "name": "dob", "variable": "dob" },
-    { "name": "fn", "variable": "family" }
+    { "name": "dob", "column": "dob" },
+    { "name": "fn", "column": "family" }
   ],
   "feature": [
     {
@@ -269,6 +343,23 @@ Key differences from MatchingModel:
   ]
 }
 ```
+
+### Choose a bulk query strategy
+
+**Available from:** `edge`.
+
+Set the optional `bulkQueryStrategy` property in a Bulk Start request to choose how the new job generates candidate pairs:
+
+| Value | Behavior |
+| --- | --- |
+| `"or"` | Combine blocking rules in one join condition. This is the default when the property is omitted. |
+| `"union"` | Generate candidate pairs separately for each block, remove duplicate pairs, then score them. |
+
+For example, pass `{"bulkQueryStrategy":"union"}` to Bulk Start. Both strategies apply the same blocks, feature weights and thresholds. A model with one block uses a single join with either setting. This option applies to bulk jobs only; continuous matching does not use it.
+
+Neither strategy is always faster. Candidate counts, overlap between blocks, indexes, batch size and data distribution affect the result. Compare completed jobs on the same prepared snapshot with the same `batchSize` and `workersCount` before choosing a strategy.
+
+Changing only `bulkQueryStrategy` in a new Start request reuses prepared source data. Start uses the latest saved model; active jobs and Continue retain their original model version and strategy.
 
 ## Admin UI
 
