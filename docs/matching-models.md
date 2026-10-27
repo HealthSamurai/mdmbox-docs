@@ -32,7 +32,9 @@ Write custom Data-step transformations as one PostgreSQL expression over `value`
 
 ### AI assistant
 
-Configure [OpenAI or Anthropic](config-reference.md#ai-assistant) on the server, select a provider in Learning, and ask for a feature, an explanation or a code review. The assistant receives your messages, editor code, field names, blocking rules and aggregate sample counts. Sample Patient records and REPL results are excluded. Values you type into a message or include in code are sent as part of that text.
+Configure [OpenAI or Anthropic](config-reference.md#ai-assistant) on the server, select a provider in Learning, and ask for a feature, an explanation or a code review. If configuration is incomplete, **Missing environment variables** lists only the unset variables for the selected provider. The assistant receives your messages, editor code, field names, blocking rules and aggregate sample counts. Sample Patient records and REPL results are excluded. Values you type into a message or include in code are sent as part of that text.
+
+Hide the assistant to expand the editor, then reopen it from the right edge. Hiding it preserves the conversation and unsent message. The navigation control in the bottom-left corner offers **Expanded**, **Collapsed** and **Expand on hover** modes. Both layout preferences are saved in your browser.
 
 Review suggested code before inserting it or replacing the editor. Replacement is blocked if you have edited the code since asking; request an updated suggestion or insert the needed block. Run the code in the REPL and inspect Validation before saving a model. Chat proposals do not run or publish automatically. The conversation lasts for the open page and is cleared on reload.
 
