@@ -18,7 +18,7 @@ MDMbox supports shared scoring models and the existing FHIR model resources:
 
 **Available from:** `edge`.
 
-In **Models → Model builder**, use **Data** to profile Patient records and build a table of selected fields. Use **Blocking** to count candidate pairs and build indexes. In **Learning**, run the JavaScript example or write comparison features, with an AI assistant alongside the editor. Each result or error appears directly below the executed code block or selection. Open **Guide** for an example workflow. Open **Validation** to inspect scores and choose thresholds, then select **Save model**.
+In **Models → Model builder**, use **Data** to profile Patient records and build a table of selected fields. Use **Blocking** to count candidate pairs and build indexes. In **Learning**, run the JavaScript example or write comparison features, with an AI assistant alongside the editor. Each result or error appears directly below the executed code block or selection. Open **Guide** for an example workflow. In **Validation**, select **Run validation** to check the full prepared population, inspect scores and choose thresholds, then select **Save model**.
 
 Use Ctrl+Enter (⌘+Enter on a Mac) to run the current block or selection, or Ctrl+Shift+Enter to run all blocks in order. Running a block again replaces its previous output. Outputs can be collapsed or cleared and are separate from your saved code. After editing code, taking a new sample or restarting the session, outputs are marked as outdated: run the relevant blocks again before relying on them. **Restart** stops running code and clears the session's definitions; run the blocks again to restore them.
 
@@ -42,6 +42,16 @@ Review suggested code before inserting it or replacing the editor. Replacement i
 
 **Profile Patient records** profiles a sample of current Patient records. **Build table** copies the selected fields into the training table. Source changes after building do not update that table; profile and build again to use newer records. You can reopen Model builder to follow a running preparation job on the same MDMbox instance.
 
+Choose the Learning sample in the first JavaScript block:
+
+```javascript
+sample({ records: 2000, random: 10000, confident: 5000, seed: 42 })
+```
+
+`records` selects records whose candidates are looked up across the prepared table; `random` selects records for random-pair comparisons; `confident` selects pairs from the Data-step duplicate nets. Each size accepts 1 to 100,000. The seed accepts a whole number from 0 to 2,147,483,647. Repeating a recipe on the same prepared table selects the same data; change the seed to explore another sample. Omitting the seed selects a new one. The block shows the actual sizes, seed and population version. Later blocks wait until the data is loaded. Existing drafts receive a default sample block above their original code.
+
+Learning keeps at most 200 candidates per selected record and blocking rule, and reports when that limit is reached. Confident pairs are rule-selected examples, not independently verified matches. Use Learning for experiments; Validation checks all candidates without that limit.
+
 During preparation, Model builder shows the current stage and elapsed time. Steps with measurable counters show completed work and a percentage; other steps show activity without a percentage or remaining-time estimate. A completed stage does not mean the entire preparation has finished.
 
 Prepared profiles, transformations and tables survive normal MDMbox restarts. If PostgreSQL crash recovery clears the rebuildable training data, profile and build again; saved transformations remain available. Use one MDMbox instance for Model builder jobs when replicas share a database; running jobs and their status belong to the instance that started them.
@@ -50,15 +60,19 @@ By default, the builder uses MDMbox's configured database. To use another Postgr
 
 ### Interpreting Validation
 
-Validation scores sampled candidates, pairs found by the Data-step duplicate nets, and random pairs. The share of confident pairs below review is not a measured recall rate: duplicates missed by the nets are not represented. Candidate counts projected to the whole table are illustrative; Learning keeps at most 200 candidates per sampled record and blocking rule, and displays when that limit is reached. Review example pairs before choosing thresholds.
+Select **Run validation** to score every distinct candidate pair under the blocking rules across the full prepared table. Progress shows processed records and scored pairs. **Stop** or switching to another Model builder step stops further processing after the current portion; a stopped or failed run keeps the previous completed report visible. The first run can take longer while comparison code is initialized; total time depends on candidate volume and comparison cost.
+
+Completed results show exact record and candidate counts, the score distribution, and paginated pairs with field values and comparison explanations. Changing thresholds reuses the computed scores. The chart groups probability scores in steps of 0.005, or probabilistic model weights in steps of 0.1; weights outside −100 to +100 share the end bins. Decision counts use the original scores, without chart rounding.
+
+These counts describe model decisions. They are not measured precision or recall: determining errors requires independently reviewed reference pairs, including a search for matches excluded by blocking. A run covers the prepared population, not source edits made after **Build table**. Rebuilding the table invalidates older runs. After changing Learning code, its sample or the blocking rules, run Validation again before saving. Completed score caches are temporary and may expire after 24 hours; run Validation again if a report expires.
 
 #### Compare changes
 
-Comparison is optional. You can save the first version of a model directly from Validation. To examine a later change, select **Set reference** after scoring the sample, edit and run the comparison in Learning, then return to Validation.
+Comparison is optional. You can save the first version of a model after its completed Validation run. To examine a later change, select **Set reference**, edit and run the comparison in Learning, then return to Validation and select **Run again**.
 
-**Changes since reference** groups candidate pairs by their decisions before and after the change. Select a group and a pair to inspect its scores, record fields and comparison levels or custom metadata. Both variants use the thresholds captured with the reference, even if you change the current thresholds for the main Validation results or saving. Counts describe the fixed candidate sample; review the pairs to judge whether the changed decisions are appropriate.
+**Changes since reference** groups all candidate pairs by their decisions before and after the change. Select a group and a pair to inspect its scores, record fields and comparison levels or custom metadata. Both variants use the thresholds captured with the reference, even if you change the current thresholds for the main Validation results or saving. Both runs must use the same prepared population and blocking rules; set a new reference after changing either. Review the pairs to judge whether the changed decisions are appropriate.
 
-**Replace reference** makes the current calculation the new starting point; **Clear reference** returns to normal Validation. The reference lasts for the open page and is cleared when you reload, take a new sample or restart the Learning session. Setting a reference does not save a model or create a version.
+**Replace reference** makes the current completed run the new starting point; **Clear reference** returns to normal Validation. Changing the Learning sample or restarting its session preserves the reference because Validation uses the full population. Reloading the page clears the reference; rebuilding the table or expiration of cached scores also requires a new run and reference. Setting a reference does not save a model or create a version.
 
 ### Upgrade from the experimental engine
 
