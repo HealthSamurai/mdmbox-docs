@@ -18,7 +18,7 @@ MDMbox supports shared scoring models and the existing FHIR model resources:
 
 **Available from:** `edge`.
 
-In **Models → Model builder**, use **Data** to profile Patient records and build a table of selected fields. Use **Blocking** to count candidate pairs and build indexes. In **Learning**, run the JavaScript example or write comparison features, with an AI assistant alongside the editor. Each result or error appears directly below the executed code block or selection. Open **Guide** for an example workflow. In **Validation**, select **Run validation** to check the full prepared population, inspect scores and choose thresholds, then select **Save model**.
+In **Models → Model builder**, follow **Data → Learning → Validation**. Use Data to profile Patient records and build a table of selected fields. In Learning, select **Train automatically** to choose blocking keys and train comparisons without writing code. For manual candidate selection, open **JavaScript comparisons and rule based models → Configure candidate rules**, then return to Learning. Each code result or error appears below the executed block. In Validation, select **Run validation** to check the prepared population, inspect scores and choose thresholds, then select **Save model**.
 
 Use Ctrl+Enter (⌘+Enter on a Mac) to run the current block or selection, or Ctrl+Shift+Enter to run all blocks in order. Running a block again replaces its previous output. Outputs can be collapsed or cleared and are separate from your saved code. After editing code, taking a new sample or restarting the session, outputs are marked as outdated: run the relevant blocks again before relying on them. **Restart** stops running code and clears the session's definitions; run the blocks again to restore them.
 
@@ -29,6 +29,54 @@ If the table was rebuilt after the comparison was prepared, saving returns an er
 Scalar fields, filtered lists, cleanup steps, date variants and custom SQL transformations can be selected on the Data step. Learning and live matching use the saved JavaScript comparison definition. Online `$match` reads current committed resources; Bulk jobs use their own prepared snapshot, and Continuous matching keeps its comparison data current asynchronously. All three are independent of the Builder's training tables and later edits to the transformation library.
 
 Write custom Data-step transformations as one PostgreSQL expression over `value` and, when needed, an integer `n`, for example `substr(value, 1, n)`. Table queries, additional statements and arbitrary function calls are rejected. In Learning, the editor provides `jaroWinkler`, `levenshtein` and `isPlaceholder` for JavaScript comparisons.
+
+### Automatic training and JavaScript extensions
+
+**Available from:** `edge`.
+
+**Train automatically** replaces the candidate rules with automatically selected exact keys, builds their indexes, loads a reproducible sample and creates the comparison named `automatic`. Select it in Validation. At least three single-value source fields are required. If no affordable key or independent training session is available, the builder reports the field or preparation problem; add useful fields, use **Configure candidate rules** or write a JavaScript comparison. Manual candidate rules are optional and are not a separate step in the automatic workflow.
+
+The builder chooses comparison levels from available source type metadata, field names and paths, and the content of an unlabeled sample. The training summary records each field's selected profile and the evidence used to select it.
+
+| Field profile | Automatic comparisons |
+| --- | --- |
+| Dates | Equivalent formats, day/month swap, one-day difference, same year and month, same month and day, and same year |
+| Names | Accent differences, reordered words, edit similarity, Jaro–Winkler, token overlap and English Soundex |
+| Addresses | Reordered words and string similarity; different explicit leading house numbers prevent fuzzy agreement |
+| Phones | Formatting, an extra country prefix and a one-character edit |
+| Email | A domain typo with the same mailbox, or a mailbox typo with the same domain; a common domain alone is insufficient |
+| Identifiers and postal codes | Formatting and a one-character edit; leading zeros remain significant |
+| Categorical fields | Exact equality |
+| Numeric values | Equivalent numeric representations and small relative differences |
+
+Every profile starts with normalized exact equality, and its levels are mutually exclusive. Recognized date fields always include day/month swaps, including when the swapped representation has an invalid month but corresponds to a valid calendar date. ISO dates, compact `YYYYMMDD` dates and separated day-first or month-first dates are supported. For separated dates, unambiguous values determine the order; an entirely ambiguous sample defaults to day-first. Normalize ambiguous source formats on Data when their meaning is known. Unknown text fields use the general string comparisons.
+
+Derived variants do not contribute a second independent weight for the same field. The builder estimates weights and the match prior without reviewed labels. These are model estimates; inferred types, correlated fields and errors affecting every blocking key can still cause incorrect or missed matches. Automatic blocking currently uses exact equality, so pairs differing on every selected key are excluded. Inspect Validation before using the model.
+
+To extend an automatically generated comparison, run a sample block after preparing the keys, then add named conditions for the selected field:
+
+```javascript
+const compare = autoTrain({
+  extensions: {
+    given: {
+      initials: (a, b) => a.given[0] === b.given[0]
+    }
+  }
+})
+```
+
+Conditions run after exact equality and before the built-in fuzzy levels. They must be self-contained functions of two records, using ordinary JavaScript and the provided helpers. Saving checks that the comparison can run independently of the editor session. A condition referring to an external variable or user-defined helper must include that logic within its function.
+
+You can also write the complete comparison as a rule based function:
+
+```javascript
+const myRules = (a, b) => ({
+  score: a.phone && a.phone === b.phone ? 1 : 0,
+  meta: { reason: "phone agreement" }
+})
+```
+
+Select `myRules` in Validation to inspect, compare and save it through the same workflow. A rule based score must be between 0 and 1 and is not necessarily a calibrated probability. Custom rules use the configured candidate keys, so evaluate their blocking coverage as well as their decisions.
 
 ### AI assistant
 
@@ -41,6 +89,8 @@ Review suggested code before inserting it or replacing the editor. Replacement i
 ### Training data
 
 **Profile Patient records** profiles a sample of current Patient records. **Build table** copies the selected fields into the training table. Source changes after building do not update that table; profile and build again to use newer records. You can reopen Model builder to follow a running preparation job on the same MDMbox instance.
+
+**Max values per Patient** is the largest number of values observed for a field in the profile sample or for a column in the built table. A maximum of `1` means no observed Patient had more than one value; use **Filled** to see how often the field or column has a value.
 
 Choose the Learning sample in the first JavaScript block:
 
@@ -64,7 +114,39 @@ Select **Run validation** to score every distinct candidate pair under the block
 
 Completed results show exact record and candidate counts, the score distribution, and paginated pairs with field values and comparison explanations. Changing thresholds reuses the computed scores. The chart groups probability scores in steps of 0.005, or probabilistic model weights in steps of 0.1; weights outside −100 to +100 share the end bins. Decision counts use the original scores, without chart rounding.
 
-These counts describe model decisions. They are not measured precision or recall: determining errors requires independently reviewed reference pairs, including a search for matches excluded by blocking. A run covers the prepared population, not source edits made after **Build table**. Rebuilding the table invalidates older runs. After changing Learning code, its sample or the blocking rules, run Validation again before saving. Completed score caches are temporary and may expire after 24 hours; run Validation again if a report expires.
+These counts describe model decisions. They are not measured precision or recall: determining errors requires independently reviewed reference pairs, including a search for matches excluded by blocking. A run covers the prepared population, not source edits made after **Build table**. After changing Learning code, its sample or the blocking rules, run Validation again before saving the changed comparison.
+
+#### Reopen Validation
+
+**Available from:** `edge`.
+
+Completed Validation results are saved automatically. Reloading Validation restores the last viewed report, comparison, thresholds, reference labels and comparison reference from the shared Model builder workspace. Opening a large report shows **Restoring validation…** while its results load; it does not repeat training or full-population scoring.
+
+After saving a model, open it in **Models** and select **Validation** to return to the report for that model version. Use **Saved validation** inside Validation to open another retained version. Each version keeps its saved thresholds. You can adjust thresholds on a restored report and select **Save model** to create a revision without retraining. To change comparison code, use **Train or edit in Learning** and validate the changed comparison.
+
+Retained reports include the original selected field values and scores, so rebuilding the training table or changing source records does not alter their counts, examples or explanations. Uploaded reference labels and a comparison reference are retained with the report. Reports attached to saved model versions and the last viewed report remain available; other unlinked runs can expire after 24 hours. A report that expired before retention was available cannot be recovered.
+
+Reports belong to the configured Model builder workspace. When using a separate PostgreSQL workspace with `MDMBOX_MODEL_BUILDER_JDBC_URL`, retain and back up that database as well as the database holding saved models.
+
+#### Measure quality with reference labels
+
+**Available from:** `edge`.
+
+After a completed Validation run, load a JSON file under **Measured quality**. Use the IDs from the prepared population:
+
+```json
+{
+  "mode": "reviewed",
+  "pairs": [
+    ["patient-a", "patient-b", true],
+    ["patient-a", "patient-c", false]
+  ]
+}
+```
+
+`reviewed` evaluates only the supplied pairs. Use `complete` only when the reference mapping identifies every true matching pair in the prepared population: unlisted pairs are then treated as nonmatches, including model predictions. The file accepts up to 100,000 labeled pairs and 16 MB. Pair order does not matter; unknown IDs, self-pairs and conflicting labels are rejected.
+
+The report shows precision, recall and F1 at both thresholds, plus true matches missed by blocking. A true labeled pair absent from the candidate set counts as a false negative. A metric with a zero denominator is undefined. These metrics use the same procedure for automatic, custom probabilistic and rule based models. Labels are used only for evaluation and are never passed to training. Threshold changes reuse the scores and recalculate metrics. Labels are restored with their report; a new population needs its own reference labels.
 
 #### Compare changes
 
@@ -72,7 +154,7 @@ Comparison is optional. You can save the first version of a model after its comp
 
 **Changes since reference** groups all candidate pairs by their decisions before and after the change. Select a group and a pair to inspect its scores, record fields and comparison levels or custom metadata. Both variants use the thresholds captured with the reference, even if you change the current thresholds for the main Validation results or saving. Both runs must use the same prepared population and blocking rules; set a new reference after changing either. Review the pairs to judge whether the changed decisions are appropriate.
 
-**Replace reference** makes the current completed run the new starting point; **Clear reference** returns to normal Validation. Changing the Learning sample or restarting its session preserves the reference because Validation uses the full population. Reloading the page clears the reference; rebuilding the table or expiration of cached scores also requires a new run and reference. Setting a reference does not save a model or create a version.
+**Replace reference** makes the current completed run the new starting point; **Clear reference** returns to normal Validation. Changing the Learning sample or restarting its session preserves the reference because Validation uses the full population. Reloading a retained report restores its reference and captured thresholds. A new population or changed blocking rules require a new run and reference. Setting a reference does not save a model or create a version.
 
 ### Upgrade from the experimental engine
 
