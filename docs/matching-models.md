@@ -18,25 +18,64 @@ MDMbox supports shared scoring models and the existing FHIR model resources:
 
 **Available from:** `edge`.
 
-In **Models → Model builder**, follow **Data → Learning → Validation**. Use Data to profile Patient records and build a table of selected fields. In Learning, select **Train automatically** to choose blocking keys and train comparisons without writing code. For manual candidate selection, open **JavaScript comparisons and rule based models → Configure candidate rules**, then return to Learning. Each code result or error appears below the executed block. In Validation, select **Run validation** to check the prepared population, inspect scores and choose thresholds, then select **Save model**.
+In **Models → Model builder**, follow **Data → Train model → Review & save**. In Data, choose or create a Patient ViewDefinition and build the training table. In Train model, the **Model definition** editor contains one `model` definition: use automatic field comparisons, change their conditions, or define a deterministic model. Select **Build model** to prepare candidate pairs and fit probabilistic weights or prepare the deterministic function. In Review & save, select **Run validation** to score the prepared population, inspect scores, choose thresholds and select **Save model**.
 
-Use Ctrl+Enter (⌘+Enter on a Mac) to run the current block or selection, or Ctrl+Shift+Enter to run all blocks in order. Running a block again replaces its previous output. Outputs can be collapsed or cleared and are separate from your saved code. After editing code, taking a new sample or restarting the session, outputs are marked as outdated: run the relevant blocks again before relying on them. **Restart** stops running code and clears the session's definitions; run the blocks again to restore them.
+Ctrl+Enter (⌘+Enter on a Mac) runs **Build model**. After changing the definition or rebuilding Data, build the model again and repeat validation before saving. **Probabilistic example** and **Deterministic example** replace the editor document; use Undo to restore your changes. Previous notebook drafts are retained as **Download previous draft** when moving to the model definition format.
 
 Use the saved ID as `modelId` in a [$match request](match-operation.md) or select it in Bulk matching and Continuous matching. The model contains the selected fields, comparison definition, blocking rules and thresholds. Saving a changed definition creates an immutable version; saving the same definition again retains the version. Existing Bulk jobs and automatically resumed Continuous processes keep their original definition. An explicit Continuous Start or Resume uses the latest model and rebuilds when it changed.
 
-If the table was rebuilt after the comparison was prepared, saving returns an error in Validation. Take a new Learning sample, run the code again and review the thresholds before saving.
+If the table was rebuilt after the comparison was prepared, saving returns an error in Review & save. Train the model again and review the thresholds before saving.
 
-Scalar fields, filtered lists, cleanup steps, date variants and custom SQL transformations can be selected on the Data step. Learning and live matching use the saved JavaScript comparison definition. Online `$match` reads current committed resources; Bulk jobs use their own prepared snapshot, and Continuous matching keeps its comparison data current asynchronously. All three are independent of the Builder's training tables and later edits to the transformation library.
+Learning and live matching use the saved JavaScript comparison definition. Online `$match` reads current committed resources; Bulk jobs use their own prepared snapshot, and Continuous matching keeps its comparison data current asynchronously. All three are independent of the Builder's training tables. The model definition editor provides `jaroWinkler`, `levenshtein` and `isPlaceholder` for JavaScript comparisons.
 
-Write custom Data-step transformations as one PostgreSQL expression over `value` and, when needed, an integer `n`, for example `substr(value, 1, n)`. Table queries, additional statements and arbitrary function calls are rejected. In Learning, the editor provides `jaroWinkler`, `levenshtein` and `isPlaceholder` for JavaScript comparisons.
+### SQL on FHIR projection
+
+**Available from:** `edge`.
+
+Data uses a SQL on FHIR **ViewDefinition** to describe how Patient resources become matching columns. The **ViewDefinition** menu lets you choose a saved Patient definition, create a new one, change its name or open its JSON. **Column definitions** edits column names, FHIRPath expressions and types. Choose a type ending in `[]`, such as `string[]`, to retain multiple values; this sets the standard `collection: true` property.
+
+FHIRPath suggestions appear as you type directly in a column's expression and inside column `path` strings in JSON. For example, `na` offers Patient `name`, and `name.gi` offers HumanName `given`. The JSON editor also completes properties and types from the installed ViewDefinition schema. Use the arrow keys to select a suggestion, Enter or Tab to accept it, and Escape to close the list; Ctrl+Space remains available to request suggestions explicitly.
+
+Each column shows **Filled** and **Distinct** on a fixed sample of up to 1,000 source records as you edit its expression. Collections also show **Longest list**, the largest number of retained values in one sampled record. Open **Values** to see frequent values and the number of sample records containing each value. These statistics use the whole fixed sample, independently of the record preview filter.
+
+Select a value to open **Record preview** with its SQL condition, or use **Empty values** to find records missing a column. The preview shows the generated query with an editable **WHERE** condition. Select **Run** or press Ctrl+Enter (⌘+Enter on a Mac) to apply your changes. For example, `"email" IS NULL AND "gender" = 'female'` selects records with no email and a female gender value; `'Linda' = ANY("all_given")` finds a value in a collection. The result count refers to the fixed sample. Open a record using its source button to inspect the original FHIR resource from that sample.
+
+The WHERE editor supports column comparisons, `AND`, `OR`, `NOT`, `IS NULL`, `IN`, `BETWEEN`, `LIKE`, `ILIKE`, `ANY`, `ALL`, arithmetic and functions such as `lower`, `upper`, `trim`, `length`, `cardinality` and `coalesce`. It accepts a condition over projected columns; full SQL statements, subqueries, comments and arbitrary functions are rejected. Use `TRUE` to clear the filter. Preview conditions are not part of the ViewDefinition or model and never restrict the training population.
+
+In the **ViewDefinition** menu, **Save ViewDefinition** stores a real FHIR resource. **Open in Aidbox UI** opens the same resource in the native editor; access there follows your Aidbox permissions. After editing there, select **Reload from Aidbox** in the builder. **Prepare data** saves the definition and prepares matching columns for the full source population. If the source has not been prepared yet, select **Prepare source** first. **Profile source again** refreshes the source snapshot and starts a new fixed preview sample.
+
+The new Data step uses the ViewDefinition alone, without a separate cleanup or variant configuration. Selection and filters belong in FHIRPath. Case normalization, phone formatting, date variants and fuzzy comparisons belong in the model's JavaScript comparisons; automatic comparisons already handle these cases. SQL on FHIR supports a subset of FHIRPath and does not support arbitrary string cleanup functions. A table created with the earlier transformation editor must be rebuilt before training with the new projection. Existing saved model versions keep their original transformations.
+
+Matching requires one row per Patient, an `id` column with `getResourceKey()` or `id`, and at least one matching column. Use `collection: true` to keep multiple values in one column. Collection cleanup removes empty values and duplicates and stores values in a stable order. Scalar columns must select a single value; use `first()` when that is the intended choice. A Patient with missing selected values remains in the population with empty columns.
+
+The matching projection supports column selections and nested `select` groups. Row filters (`ViewDefinition.where`), `forEach`, `forEachOrNull`, `unionAll`, `repeat` and runner-specific column extensions are rejected because they can change the population or require data unavailable to incoming-record matching. Column expressions support functions such as `where`, `first`, `join`, `ofType`, `exists` and the SQL on FHIR key functions. For example, `telecom.where(system = 'phone').first().value` selects the first phone value.
+
+The saved model captures the ViewDefinition. Training, online `$match`, Bulk matching and Continuous matching use that captured projection. Editing the builder or the separate ViewDefinition later does not change a saved model version.
 
 ### Automatic training and JavaScript extensions
 
 **Available from:** `edge`.
 
-**Train automatically** replaces the candidate rules with automatically selected exact keys, builds their indexes, loads a reproducible sample and creates the comparison named `automatic`. Select it in Validation. At least three single-value source fields are required. If no affordable key or independent training session is available, the builder reports the field or preparation problem; add useful fields, use **Configure candidate rules** or write a JavaScript comparison. Manual candidate rules are optional and are not a separate step in the automatic workflow.
+**Build model** selects exact keys for candidate pairs, builds their indexes and loads a reproducible sample. With `type: "probabilistic"`, it trains the comparisons declared in the editor and uses automatic comparisons for omitted fields. The resulting comparison is named `compare` in Review & save. Probabilistic fitting requires at least three single-value source fields. Deterministic models require at least one single-value source field and skip weight fitting. If no affordable key or independent training session is available, add useful source fields in Data and build again.
 
 The builder chooses comparison levels from available source type metadata, field names and paths, and the content of an unlabeled sample. The training summary records each field's selected profile and the evidence used to select it.
+
+After **Build model**, **Comparisons from last build** shows each field's ordered conditions and learned weights. Expand a field and select **Edit** beside one level to select its condition in the JavaScript editor. Change the condition, select **Build model** again, then repeat validation in Review & save. Other conditions are preserved; rebuilding re-estimates the weights. The last completed list remains available after refreshing the page, with a notice when it no longer describes the current draft.
+
+For example, this changes only the `given.close` condition and keeps all other levels and fields:
+
+```javascript
+const model = {
+  type: "probabilistic",
+  overrides: {
+    given: {
+      close: (a, b) => similarity(a.given, b.given) >= 0.96
+    }
+  }
+}
+```
+
+`model.overrides` changes existing levels in place. **Edit** adds the selected override to your existing document and preserves other code. Generated conditions use readable helpers such as `similarity`, `dateLevel`, `codeLevel`, `emailLevel`, `textLevel` and `numericLevel`. `similarity` uses the best normalized edit, Jaro–Winkler, token or phonetic similarity; address comparisons also check leading house numbers. Exact agreement and `else` remain built-in levels. Use `model.comparisons` below when replacing a field's complete set of fuzzy levels or adding new levels.
 
 | Field profile | Automatic comparisons |
 | --- | --- |
@@ -51,60 +90,55 @@ The builder chooses comparison levels from available source type metadata, field
 
 Every profile starts with normalized exact equality, and its levels are mutually exclusive. Recognized date fields always include day/month swaps, including when the swapped representation has an invalid month but corresponds to a valid calendar date. ISO dates, compact `YYYYMMDD` dates and separated day-first or month-first dates are supported. For separated dates, unambiguous values determine the order; an entirely ambiguous sample defaults to day-first. Normalize ambiguous source formats on Data when their meaning is known. Unknown text fields use the general string comparisons.
 
-Derived variants do not contribute a second independent weight for the same field. The builder estimates weights and the match prior without reviewed labels. These are model estimates; inferred types, correlated fields and errors affecting every blocking key can still cause incorrect or missed matches. Automatic blocking currently uses exact equality, so pairs differing on every selected key are excluded. Inspect Validation before using the model.
+Alternative comparison levels do not contribute a second independent weight for the same field. The builder estimates weights and the match prior without reviewed labels. These are model estimates; inferred types, correlated fields and errors affecting every blocking key can still cause incorrect or missed matches. Automatic blocking currently uses exact equality on projected values, so pairs differing on every selected key are excluded. Inspect Review & save before using the model.
 
-To extend an automatically generated comparison, run a sample block after preparing the keys, then add named conditions for the selected field:
+To change the comparison levels for a field, define named conditions in `model.comparisons`:
 
 ```javascript
-const compare = autoTrain({
-  extensions: {
+const model = {
+  type: "probabilistic",
+  comparisons: {
     given: {
+      typo: (a, b) => jaroWinkler(a.given, b.given) >= 0.92,
       initials: (a, b) => a.given[0] === b.given[0]
     }
   }
-})
+}
 ```
 
-Conditions run after exact equality and before the built-in fuzzy levels. They must be self-contained functions of two records, using ordinary JavaScript and the provided helpers. Saving checks that the comparison can run independently of the editor session. A condition referring to an external variable or user-defined helper must include that logic within its function.
+The supplied levels replace the automatic fuzzy levels for that field and run in declaration order. Exact agreement, missing values and the final `else` level are handled automatically; do not declare `exact` or `else`. An empty field object keeps only exact agreement. Each condition must read only its named field and be self-contained, using ordinary JavaScript and the provided helpers. Put any extra logic inside the condition. **Build model** estimates the weights; training calls do not belong in the editor document.
 
-You can also write the complete comparison as a rule based function:
+For a deterministic model, define a complete decision function:
 
 ```javascript
-const myRules = (a, b) => ({
-  score: a.phone && a.phone === b.phone ? 1 : 0,
-  meta: { reason: "phone agreement" }
-})
+const model = {
+  type: "deterministic",
+  compare: (a, b) => ({
+    score: a.phone && a.phone === b.phone ? 1 : 0,
+    meta: { reason: "phone agreement" }
+  })
+}
 ```
 
-Select `myRules` in Validation to inspect, compare and save it through the same workflow. A rule based score must be between 0 and 1 and is not necessarily a calibrated probability. Custom rules use the configured candidate keys, so evaluate their blocking coverage as well as their decisions.
+Return score `1` for a match and `0` otherwise, optionally with explanatory `meta`. The function must be self-contained. **Build model** prepares it without estimating weights. Both model types use automatically selected candidate keys, so evaluate their coverage as well as their decisions in Review & save.
 
 ### AI assistant
 
-Configure [OpenAI or Anthropic](config-reference.md#ai-assistant) on the server, select a provider in Learning, and ask for a feature, an explanation or a code review. If configuration is incomplete, **Missing environment variables** lists only the unset variables for the selected provider. The assistant receives your messages, editor code, field names, blocking rules and aggregate sample counts. Sample Patient records and REPL results are excluded. Values you type into a message or include in code are sent as part of that text.
+Configure [OpenAI or Anthropic](config-reference.md#ai-assistant) on the server, select a provider beside the model definition editor, and ask for a comparison, an explanation or a code review. If configuration is incomplete, **Missing environment variables** lists only the unset variables for the selected provider. The assistant receives your messages, editor code, field names, blocking rules and aggregate sample counts. Sample Patient records are excluded. Values you type into a message or include in code are sent as part of that text.
 
 Hide the assistant to expand the editor, then reopen it from the right edge. Hiding it preserves the conversation and unsent message. The navigation control in the bottom-left corner offers **Expanded**, **Collapsed** and **Expand on hover** modes. Both layout preferences are saved in your browser.
 
-Review suggested code before inserting it or replacing the editor. Replacement is blocked if you have edited the code since asking; request an updated suggestion or insert the needed block. Run the code in the REPL and inspect Validation before saving a model. Chat proposals do not run or publish automatically. The conversation lasts for the open page and is cleared on reload.
+Review suggested code before inserting it or replacing the editor. Replacement is blocked if you have edited the code since asking; request an updated suggestion. Select Build model and inspect Review & save before saving a model. Chat proposals do not run or publish automatically. The conversation lasts for the open page and is cleared on reload.
 
 ### Training data
 
-**Profile Patient records** profiles a sample of current Patient records. **Build table** copies the selected fields into the training table. Source changes after building do not update that table; profile and build again to use newer records. You can reopen Model builder to follow a running preparation job on the same MDMbox instance.
+**Prepare source** captures current Patient records. The Data workbench uses a fixed sample of up to 1,000 of those records for column statistics and record preview. **Prepare data** projects the full captured population into the training table, regardless of preview filters. Source changes after preparation do not update that table; select **Profile source again** in the ViewDefinition menu and prepare data again to use newer records. You can reopen Model builder to follow a running preparation job on the same MDMbox instance.
 
-**Max values per Patient** is the largest number of values observed for a field in the profile sample or for a column in the built table. A maximum of `1` means no observed Patient had more than one value; use **Filled** to see how often the field or column has a value.
-
-Choose the Learning sample in the first JavaScript block:
-
-```javascript
-sample({ records: 2000, random: 10000, confident: 5000, seed: 42 })
-```
-
-`records` selects records whose candidates are looked up across the prepared table; `random` selects records for random-pair comparisons; `confident` selects pairs from the Data-step duplicate nets. Each size accepts 1 to 100,000. The seed accepts a whole number from 0 to 2,147,483,647. Repeating a recipe on the same prepared table selects the same data; change the seed to explore another sample. Omitting the seed selects a new one. The block shows the actual sizes, seed and population version. Later blocks wait until the data is loaded. Existing drafts receive a default sample block above their original code.
-
-Learning keeps at most 200 candidates per selected record and blocking rule, and reports when that limit is reached. Confident pairs are rule-selected examples, not independently verified matches. Use Learning for experiments; Validation checks all candidates without that limit.
+Build model loads a reproducible training sample automatically. The training sample keeps at most 200 candidates per selected record and matching rule; probabilistic training rejects a sample that reaches this limit. Run validation checks all candidate pairs across the prepared table without that sample limit.
 
 During preparation, Model builder shows the current stage and elapsed time. Steps with measurable counters show completed work and a percentage; other steps show activity without a percentage or remaining-time estimate. A completed stage does not mean the entire preparation has finished.
 
-Prepared profiles, transformations and tables survive normal MDMbox restarts. If PostgreSQL crash recovery clears the rebuildable training data, profile and build again; saved transformations remain available. Use one MDMbox instance for Model builder jobs when replicas share a database; running jobs and their status belong to the instance that started them.
+Prepared profiles and tables survive normal MDMbox restarts. If PostgreSQL crash recovery clears the rebuildable training data, profile and build again; saved ViewDefinitions and model versions remain available. Use one MDMbox instance for Model builder jobs when replicas share a database; running jobs and their status belong to the instance that started them.
 
 By default, the builder uses MDMbox's configured database. To use another PostgreSQL source and training workspace, set [`MDMBOX_MODEL_BUILDER_JDBC_URL`](config-reference.md#model-builder). Saved models and live matching use MDMbox's configured database.
 
@@ -112,9 +146,11 @@ By default, the builder uses MDMbox's configured database. To use another Postgr
 
 Select **Run validation** to score every distinct candidate pair under the blocking rules across the full prepared table. Progress shows processed records and scored pairs. **Stop** or switching to another Model builder step stops further processing after the current portion; a stopped or failed run keeps the previous completed report visible. The first run can take longer while comparison code is initialized; total time depends on candidate volume and comparison cost.
 
-Completed results show exact record and candidate counts, the score distribution, and paginated pairs with field values and comparison explanations. Changing thresholds reuses the computed scores. The chart groups probability scores in steps of 0.005, or probabilistic model weights in steps of 0.1; weights outside −100 to +100 share the end bins. Decision counts use the original scores, without chart rounding.
+During processing, the **Partial results** report updates the score distribution, decision counts and examples from pairs already scored. Select a chart point to inspect its feature combinations and record pairs while the check continues. Records are processed in ID order, so early results are not a random sample or a projection of the final population. Thresholds remain fixed during the run. After completion, adjust thresholds, load reference labels, compare against a reference or save the model using the completed report.
 
-These counts describe model decisions. They are not measured precision or recall: determining errors requires independently reviewed reference pairs, including a search for matches excluded by blocking. A run covers the prepared population, not source edits made after **Build table**. After changing Learning code, its sample or the blocking rules, run Validation again before saving the changed comparison.
+Completed results show exact record and candidate counts, the score distribution, and paginated pairs with field values and comparison explanations. Select a chart point to see the feature-level combinations among the pairs on that page, then select a combination to inspect its pairs. Page through the selected score range to inspect more pairs; combination counts refer only to the visible page. Changing thresholds reuses the computed scores. The chart groups probability scores in steps of 0.005, or probabilistic model weights in steps of 0.1; weights outside −100 to +100 share the end bins. Decision counts use the original scores, without chart rounding.
+
+These counts describe model decisions. They are not measured precision or recall: determining errors requires independently reviewed reference pairs, including a search for matches excluded by blocking. A run covers the prepared population, not source edits made after **Prepare data**. After changing comparison code, its sample or the matching rules, run validation again before saving the changed comparison.
 
 #### Reopen Validation
 
@@ -122,7 +158,7 @@ These counts describe model decisions. They are not measured precision or recall
 
 Completed Validation results are saved automatically. Reloading Validation restores the last viewed report, comparison, thresholds, reference labels and comparison reference from the shared Model builder workspace. Opening a large report shows **Restoring validation…** while its results load; it does not repeat training or full-population scoring.
 
-After saving a model, open it in **Models** and select **Validation** to return to the report for that model version. Use **Saved validation** inside Validation to open another retained version. Each version keeps its saved thresholds. You can adjust thresholds on a restored report and select **Save model** to create a revision without retraining. To change comparison code, use **Train or edit in Learning** and validate the changed comparison.
+After saving a model, open it in **Models** and select **Validation** to return to the report for that model version. In Review & save, select **Saved validation**, search by model ID and open the required version. Each version keeps its saved thresholds. You can adjust thresholds on a restored report and select **Save model** to create a revision without retraining. To change comparison code, use **Edit in Train model** and validate the changed comparison.
 
 Retained reports include the original selected field values and scores, so rebuilding the training table or changing source records does not alter their counts, examples or explanations. Uploaded reference labels and a comparison reference are retained with the report. Reports attached to saved model versions and the last viewed report remain available; other unlinked runs can expire after 24 hours. A report that expired before retention was available cannot be recovered.
 
@@ -150,7 +186,7 @@ The report shows precision, recall and F1 at both thresholds, plus true matches 
 
 #### Compare changes
 
-Comparison is optional. You can save the first version of a model after its completed Validation run. To examine a later change, select **Set reference**, edit and run the comparison in Learning, then return to Validation and select **Run again**.
+Comparison against a reference is optional. You can save the first version of a model after its completed validation run. To examine a later change, select **Set reference**, edit the definition in Train model and select **Build model**, then return to Review & save and select **Run again**.
 
 **Changes since reference** groups all candidate pairs by their decisions before and after the change. Select a group and a pair to inspect its scores, record fields and comparison levels or custom metadata. Both variants use the thresholds captured with the reference, even if you change the current thresholds for the main Validation results or saving. Both runs must use the same prepared population and blocking rules; set a new reference after changing either. Review the pairs to judge whether the changed decisions are appropriate.
 
@@ -189,9 +225,20 @@ Content-Type: application/json
   "resource": "Patient",
   "type": "rule-based",
   "variables": {
+    "viewDefinition": {
+      "resourceType": "ViewDefinition",
+      "name": "patient_matching",
+      "status": "active",
+      "resource": "Patient",
+      "select": [{"column": [
+        {"name": "id", "path": "getResourceKey()", "type": "id"},
+        {"name": "family", "path": "name.first().family.first()", "type": "string"},
+        {"name": "given", "path": "name.first().given.first()", "type": "string"}
+      ]}]
+    },
     "columns": [
-      {"name": "family", "path": [{"name": "name", "list": true}, {"name": "family"}], "mode": "first"},
-      {"name": "given", "path": [{"name": "name", "list": true}, {"name": "given", "list": true}], "mode": "first"}
+      {"name": "family"},
+      {"name": "given"}
     ],
     "variants": [],
     "transforms": []
@@ -204,7 +251,9 @@ Content-Type: application/json
 
 Use `patient-exact` in all three matching modes. New online requests see committed records immediately; Learning's candidate cap does not apply to live matching. Bulk exports keep the existing pair shape and log2 `matchWeight`; for rule-based models it is derived from the score, with 0 and 1 bounded to finite weights.
 
-Comparison functions receive `id` and the selected, transformed fields in all three modes. Field names use lower-case letters, digits and underscores, with a maximum of 63 characters; `id`, `seq`, `created_at` and `interval_no` are reserved. Model IDs use lower-case letters, digits and dashes, with a maximum of 63 characters. Importing a model applies the same custom-transformation expression checks as the Builder.
+Comparison functions receive `id` and the projected fields in all three modes. Field names use lower-case letters, digits and underscores, with a maximum of 63 characters; `id`, `seq`, `created_at` and `interval_no` are reserved. Model IDs use lower-case letters, digits and dashes, with a maximum of 63 characters. Imported legacy transformations retain their expression validation.
+
+With `variables.viewDefinition`, `variables.columns` lists the matching columns in the same order, excluding `id`. Extraction paths belong in the ViewDefinition. The API retains optional `clean-steps`, `min-length`, variants and transformations for compatibility with earlier saved definitions; the new Data editor does not add them. Definitions using the earlier `variables.columns[].path` or `expression` format also remain supported.
 
 ### Existing model compatibility
 
