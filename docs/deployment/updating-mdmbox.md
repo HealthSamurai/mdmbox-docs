@@ -10,6 +10,8 @@ When upgrading from `2608` to `2609`, pass the same public Aidbox `BOX_WEB_BASE_
 
 ## Docker Compose
 
+The Model builder release uses a Wolfi/glibc container base. If you derive your own image, use `apk` to install system packages and restore the non-root `app` user (UID/GID 999) after installation. Custom health probes should send GET to `/healthz`; GNU Wget's `--spider` sends HEAD, which this endpoint does not support.
+
 From the directory containing the `docker-compose.yml` used in [Getting started](../getting-started.md), run:
 
 ```bash

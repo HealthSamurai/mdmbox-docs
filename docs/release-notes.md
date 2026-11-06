@@ -6,36 +6,34 @@ description: New features, improvements, and changes in MDMbox releases.
 
 Release notes are grouped by monthly version. Each version lists compatible Aidbox monthly versions. See [Versions and compatibility](deployment/versions-and-compatibility.md) for the supported range and Docker release tags.
 
-## October 2026 (edge)
+## October 2026 (2610.0)
 
-**Docker tag:** `edge`
+**Docker tags:** `2610.0`, `2610`, `latest`
 
-**Upcoming improvements**
+**Tested Aidbox versions:** `2605.15` (LTS), `2606.7`, `2607.7`, `2608.8`, `2609.4`, `2610.0`.
 
-* **[SQL on FHIR matching projections](matching-models.md#sql-on-fhir-projection)** — Create matching columns with automatic FHIRPath completion and immediate statistics on a fixed sample. Inspect frequent or empty values, edit the SQL WHERE condition in Record preview, and open original FHIR records. Preview filters leave the full training population unchanged. Save the ViewDefinition, edit its JSON with FHIR schema completion or open it in Aidbox. Training, online, Bulk and Continuous matching retain the captured projection. Existing model versions retain their earlier extraction behavior.
+**Features and improvements**
 
-* **[Live validation results](matching-models.md#interpreting-validation)** — Inspect the growing score distribution, decision counts and example pairs while the full population check is running. Partial results are marked explicitly; model saving and measured quality use completed reports.
+* **Security updates** — Updated Java 25 and application dependencies, and moved the container to a patched Wolfi base with glibc. Derived Docker images use `apk` for additional system packages.
 
-* **[Model builder workspace](matching-models.md#model-builder-preview)** — Follow Data, Train model and Review & save in one workspace. Define field comparisons or a deterministic decision function in JavaScript; Build model prepares candidate pairs and performs any required training. Inspect the resulting conditions and weights, then edit one comparison while preserving the other conditions. The last completed comparison list survives page refreshes, and previous notebook drafts remain downloadable. Selecting a score-chart point shows feature-level combinations among its visible example pairs. Search saved validation reports by model ID and open the required version.
+* **Container healthcheck** — The healthcheck uses GET `/healthz` and works with GNU Wget in the new container base.
 
-* **[Restore Validation](matching-models.md#reopen-validation)** — Reopen completed reports after refreshing the page or rebuilding the training table. Saved model versions retain their comparison, thresholds, scores, record examples, reference labels and comparison reference. Change thresholds and save a revision without repeating training or population scoring.
+* **Shared database upgrades** — Updating MDMbox preserves the FHIR packages installed by Aidbox, including when Aidbox restarts after the update. Existing matching model definitions and weight thresholds remain unchanged.
 
-* **[Automatic model training](matching-models.md#automatic-training-and-javascript-extensions)** — Build model automatically selects exact candidate keys and fits probabilistic comparison weights. Training profiles use field types, names, paths and sampled content; dates include calendar-checked day/month swaps, while phones, email, identifiers, names, addresses and categories receive appropriate comparisons. Change comparison conditions or define a deterministic model in the model definition editor. Load independent reference labels in Review & save to measure precision, recall, F1 and matches missed by blocking for either model type.
+* **[Model builder](matching-models.md#model-builder-preview)** — Create patient matching models in the Admin UI, from data preparation to validation and use in production. Define matching fields with SQL on FHIR ViewDefinitions and inspect their values and statistics. Train a probabilistic model with automatic candidate selection and learned comparison parameters, without labeled training pairs, or write deterministic matching logic in JavaScript. Automatic training accounts for detected relationships between fields and considers spelling errors when choosing candidate keys. Customize comparisons in the editor with an optional AI assistant. Validate candidate pairs across the full prepared population, inspect explanations and choose review and same-person thresholds. Validation can be paused, resumed and reopened. Save a versioned model and use its ID for online `$match`, Bulk matching and Continuous matching. Existing FHIR matching models remain supported.
+
+  Automatically trained models achieved **99.45–100% pairwise F1** on held-out synthetic FEBRL1–4 partitions without SSN. On NC Voters 5M and 10M, selecting thresholds on separate validation queries yielded **91.79% and 91.68% query-retrieval F1**. Read [Introducing Model builder in MDMbox](https://www.health-samurai.io/articles/mdmbox-model-builder) for the workflow, automatic and configured precision/recall/F1, evaluation protocol and limitations.
 
 * **[Bulk query strategy](matching-models.md#choose-a-bulk-query-strategy)** — Set `bulkQueryStrategy` to `"or"` (default) or `"union"` in a Bulk Start request. Compare the strategies on the same prepared snapshot; each job retains its model version and strategy when resumed.
-* **[Shared scoring models](matching-models.md#shared-model-api)** — Use one model ID for `$match`, Bulk matching and Continuous matching. Model builder saves immutable revisions; existing jobs keep their original definition. Supported FHIR model conditions automatically convert to JavaScript while retaining original IDs, weight thresholds and APIs. Explicit conversion identifies expressions that need manual changes.
-* **[Model builder preview](matching-models.md#model-builder-preview)** — Profile Patient records, select fields, define a model and validate all candidate pairs across the prepared population with visible progress and Stop. Threshold changes reuse computed scores. The model definition editor includes a collapsible AI assistant supporting OpenAI and Anthropic. Collapse navigation or expand it on hover using the bottom-left control to give the editor more space. Optionally set a validation reference to compare full-population decisions and explanations before and after a change.
-* **[Model builder comparisons](sql-functions.md#model-builder-comparisons)** — PostgreSQL helpers retain the builder’s Soundex keys and support Levenshtein inputs longer than 255 characters. Rebuild models previously saved for the experimental engine.
-* **[Large training datasets](matching-models.md#training-data)** — The builder profiles a sample, copies selected fields into a training table, and reports stage progress during preparation. Reopening the page resumes tracking a running preparation job on the same instance.
 * **[Prometheus monitoring](monitoring.md)** — A separate metrics endpoint reports request rate, response codes, latency by route, JVM usage, and database connections. A Grafana dashboard includes route and status breakdowns.
 * **[Aidbox App integration](authentication.md#admin-ui-through-aidbox)** — Improved delivery of CSV exports and incremental Admin UI updates through Aidbox Apps. With Aidbox's response streaming, bulk and continuous matching downloads begin before the complete file is generated, and UI events arrive as MDMbox sends them. Aidbox no longer holds the complete response body in memory.
 * **[Direct Admin UI access for development](authentication.md#admin-ui-through-aidbox)** — With `MDMBOX_AUTH_ENABLED=false`, the Admin UI can open directly on the MDMbox address without Aidbox sign-in. Authentication remains enabled by default.
 
-Response streaming is planned for Aidbox `2610`. We recommend Aidbox `2610` or later for App integration once that release is available. Earlier supported Aidbox versions continue to serve the UI and downloads with buffered responses; see [App integration compatibility](deployment/versions-and-compatibility.md#aidbox-app-integration).
+Response streaming is available with Aidbox `2610.0` or later. We recommend that version or later for App integration. Earlier supported Aidbox versions continue to serve the UI and downloads with buffered responses; see [App integration compatibility](deployment/versions-and-compatibility.md#aidbox-app-integration).
 
 ## September 2026
 
-**Docker tags:** `2609.0`, `2609`, `latest`
+**Docker tags:** `2609.0`, `2609`
 
 **Compatible Aidbox versions:** `2605`, `2606`, `2607`, `2608`, `2609`.
 

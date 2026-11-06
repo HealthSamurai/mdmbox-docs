@@ -1,6 +1,6 @@
 # Monitoring
 
-**Available from:** `edge`.
+**Available from:** `2610.0`.
 
 MDMbox exposes Prometheus metrics at `GET /metrics` on a separate HTTP port. The listener is enabled by default on `127.0.0.1:9464`. The endpoint does not require authentication, so expose it only to trusted monitoring systems.
 

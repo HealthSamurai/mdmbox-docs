@@ -8,6 +8,12 @@ MDMbox is configured through environment variables.
 
 For the Prometheus listener and its environment variables, see [Monitoring](monitoring.md).
 
+## HTTP request size
+
+**Available from:** `2610.0`.
+
+MDMbox accepts HTTP request bodies up to 64 MiB, including [shared model definitions](matching-models.md#shared-model-api) with population frequency parameters. Configure any reverse proxy or ingress in front of MDMbox to accept the model sizes you import or save. The MDMbox Helm chart accepts ingress controller settings through `ingress.annotations`.
+
 ## License
 
 MDMbox requires an active license. Choose an activation method:
@@ -48,7 +54,7 @@ Authentication is enabled by default. Direct API requests use an `Authorization`
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `MDMBOX_AUTH_ENABLED` | Require authentication for API endpoints and Admin UI access through Aidbox. When `false` on `edge`, direct Admin UI access on the MDMbox address is allowed without sign-in. Accepted values: `true` or `false`. | `true` |
+| `MDMBOX_AUTH_ENABLED` | Require authentication for API endpoints and Admin UI access through Aidbox. When `false` on `2610.0` or later, direct Admin UI access on the MDMbox address is allowed without sign-in. Accepted values: `true` or `false`. | `true` |
 | `MDMBOX_ADMIN_ID` | Initial Aidbox `User` id with a seeded AccessPolicy for the MDMbox UI. Set with `MDMBOX_ADMIN_PASSWORD`. | unset |
 | `MDMBOX_ADMIN_PASSWORD` | Admin password. Set with `MDMBOX_ADMIN_ID`. | unset |
 | `MDMBOX_API_CLIENT_ID` | API `Client` id for Basic authentication. Set with `MDMBOX_API_CLIENT_SECRET`. | unset |
@@ -152,7 +158,7 @@ With the Helm chart, set `config.MDMBOX_LOG_LEVEL` to the desired level. Restart
 
 ## Model builder
 
-**Available from:** `edge`.
+**Available from:** `2610.0`.
 
 Model builder uses PostgreSQL to profile Patient records and store selected fields in a training table. By default it uses the configured MDMbox database. The workspace stores prepared data in the database and survives normal application restarts.
 
@@ -166,9 +172,9 @@ The source override affects the builder workspace only. Saved models and online,
 
 ## AI assistant
 
-**Available from:** `edge`.
+**Available from:** `2610.0`.
 
-The Learning assistant supports OpenAI and Anthropic. Configure one or both providers and restart MDMbox. A provider becomes available when both its key and model are set. Choose a model available to your provider account.
+The Model builder assistant supports OpenAI and Anthropic. Configure one or both providers and restart MDMbox. A provider becomes available when both its key and model are set. Choose a model available to your provider account.
 
 | Variable | Description | Default |
 |----------|-------------|---------|

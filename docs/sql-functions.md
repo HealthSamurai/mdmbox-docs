@@ -140,7 +140,7 @@ The weights and cutoff above are illustrative. [Tune them](matching-models.md#tu
 
 ## Model builder comparisons
 
-**Available from:** `edge`.
+**Available from:** `2610.0`.
 
 These PostgreSQL comparison helpers remain available when writing SQL expressions for `MatchingModel` resources:
 
@@ -154,7 +154,7 @@ public.mdm_soundex(text) → text
 
 `mdm_soundex` produces an ASCII English Soundex key, ignoring H and W when suppressing adjacent repeated codes. For example, `Smith` and `Smyth` produce `S530`, and `Ashcraft` produces `A261`. Empty values and values without ASCII letters return SQL `NULL`. Its keys can differ from PostgreSQL's native `soundex`, so use the same function on both sides of a comparison.
 
-Model builder uses JavaScript `jaroWinkler` and `levenshtein` helpers during Learning. Saved shared models use the same JavaScript comparisons in online, Bulk and Continuous matching; see [Model builder preview](matching-models.md#model-builder-preview). Existing FHIR models keep using their SQL expressions.
+Model builder uses JavaScript `jaroWinkler` and `levenshtein` helpers during training. Saved shared models use the same JavaScript comparisons in online, Bulk and Continuous matching; see [Model builder preview](matching-models.md#model-builder-preview). Existing FHIR models keep using their SQL expressions.
 
 ## PostgreSQL comparison functions
 

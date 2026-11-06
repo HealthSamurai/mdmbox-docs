@@ -8,7 +8,7 @@ The `$match` operation performs a probabilistic search using a matching model an
 
 A [MatchingModel or shared scoring model](matching-models.md) must be created before using `$match`.
 
-**Available from:** `edge`. Use a model saved by [Model builder](matching-models.md#model-builder-preview) as `modelId` in the same request format. Shared models use score thresholds from 0 to 1; existing `MatchingModel` resources keep their weight thresholds. Online matching uses current committed records and does not depend on the Builder's training tables.
+**Available from:** `2610.0`. Use a model saved by [Model builder](matching-models.md#model-builder-preview) as `modelId` in the same request format. Shared models use score thresholds from 0 to 1; existing `MatchingModel` resources keep their weight thresholds. Online matching uses current committed records and does not depend on the Builder's training tables.
 
 MDMbox follows the request and response shape of the FHIR R6 [`Patient/$match`](https://build.fhir.org/patient-operation-match.html) operation: clients send a FHIR `Parameters` resource and receive a `Bundle` of type `searchset`. MDMbox generalizes the operation to any configured FHIR resource type and adds `modelId` and `threshold` parameters so callers can choose the matching model and score cutoff.
 

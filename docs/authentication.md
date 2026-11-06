@@ -60,7 +60,7 @@ MDMbox creates the Aidbox `User` and `AccessPolicy/mdmbox-ui-admin-admin`, grant
 
 `MDMBOX_ADMIN_ROLE` is no longer used. Existing roles and `Client/mdmbox-ui` are not removed, but MDMbox no longer uses or creates them. Sign-in and sign-out use Aidbox's authentication and audit facilities; MDMbox [audits UI operations](audit.md) with the verified identity forwarded by Aidbox.
 
-**Available from:** `edge`. Set `MDMBOX_AUTH_ENABLED=false` to open the Admin UI directly on the MDMbox address without signing in through Aidbox. This also disables authentication for MDMbox API requests, so use it only in a trusted development environment. Keep authentication enabled in production.
+**Available from:** `2610.0`. Set `MDMBOX_AUTH_ENABLED=false` to open the Admin UI directly on the MDMbox address without signing in through Aidbox. This also disables authentication for MDMbox API requests, so use it only in a trusted development environment. Keep authentication enabled in production.
 
 ## API through Aidbox
 
