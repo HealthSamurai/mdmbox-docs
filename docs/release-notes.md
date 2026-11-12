@@ -6,6 +6,14 @@ description: New features, improvements, and changes in MDMbox releases.
 
 Release notes are grouped by monthly version. Each version lists compatible Aidbox monthly versions. See [Versions and compatibility](deployment/versions-and-compatibility.md) for the supported range and Docker release tags.
 
+## edge
+
+* **[Name dictionaries](matching-models.md#compare-given-names-using-dictionaries)** — Compare FHIR given names using English, Spanish, or custom dictionaries in JavaScript models. Match compound names to short forms, inspect ambiguous links for weighting, and import custom dictionaries from CSV in the Admin UI. Browse and search dictionary entries, copy IDs, and start from the Model Builder's dictionary template. Model Builder remembers the selected step and definition draft when navigating away and back in the same tab. Joined given-name fields support online blocking indexes.
+
+* **[Continuous matching](continuous-matching.md)** — Improved performance for JavaScript models with multiple blocking rules that share a common field, such as surname plus postcode and surname plus given name. Overlapping rules still produce one result per pair.
+
+* **[Model Builder validation](matching-models.md#model-builder-preview)** — Improved candidate retrieval for overlapping blocking rules while preserving ordered, resumable validation across the full prepared population. Fixed saving a newly built model after pausing and continuing validation in the same page.
+
 ## October 2026 (2610.0)
 
 **Docker tags:** `2610.0`, `2610`, `latest`

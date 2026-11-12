@@ -239,6 +239,56 @@ Content-Type: application/json
 
 Use `patient-exact` in all three matching modes. New online requests see committed records immediately; the training candidate cap does not apply to live matching. Bulk exports keep the existing pair shape and log2 `matchWeight`; for rule-based models it is derived from the score, with 0 and 1 bounded to finite weights.
 
+### Compare given names using dictionaries
+
+**Available from:** `edge`
+
+Use `compareGivenWithDictionaries(left, right, options)` in a rule-based JavaScript comparison or a custom probabilistic comparison level. Both arguments are flat arrays of strings, such as the original FHIR `HumanName.given` arrays. The helper compares the whole sequence in order, ignoring case and spacing while preserving accents. A dictionary entry can relate multiple adjacent words to a single variant. Every substitution uses a direct dictionary link. Missing or empty values return `false`.
+
+The helper runs after candidate selection. A pair must satisfy a configured blocking rule to reach the comparison.
+
+```js
+compareGivenWithDictionaries(["María", "José", "Elena"], ["Majo", "Elena"], {
+  dictionaries: ["es"],
+  details: true
+})
+// { matches: true, links: [
+//   { name: "María José", variant: "Majo", dictionaries: ["es"], isAmbiguous: false }
+// ] }
+```
+
+The helper returns a boolean by default. Set `details: true` to get `matches` and the dictionary links used for a match. Exact matches have an empty `links` array. A link is ambiguous when its variant points to more than one full name across the selected dictionaries. For example, `Manu` can stand for `Manuel` or `Manuela`. A full name can have several distinct variants without making those links ambiguous. Use the result to assign a score or define separate weighted levels.
+
+The default selection includes `en` and `es`. Pass `dictionaries` to choose the IDs for a comparison. English coverage comes from a [US name-variant dataset](https://github.com/carltonnorthern/nicknames). Spanish coverage comes from the [Wiktionary list of Spanish diminutives](https://en.wiktionary.org/w/index.php?oldid=92654536).
+
+#### Import a custom dictionary
+
+In the Admin UI, open **Models → Name dictionaries** to browse built-in and imported dictionaries. Filter the dictionary list by ID or language, select a dictionary, and search its full names and variants. Search ignores case and accents. Use **Copy ID** to reference the selected dictionary in a model.
+
+Expand **Import a dictionary** to download an example CSV or upload your own. Enter a new dictionary ID and upload a UTF-8 CSV with the header `name,variant`. Each row maps a full name to a variant. Use spaces between words in a compound name. For example, `María José,Majo`. A file can contain up to 10,000 data rows and 1,000,000 characters. IDs contain up to 63 lowercase letters, digits, and dashes and start with a letter or digit. The IDs `en` and `es` are reserved.
+
+Declare up to 16 imported IDs in the model's `nameDictionaries` array, either in the Model Builder's JavaScript `model` object or in the saved JSON definition. Select those IDs in the comparison call.
+
+In Model Builder, create a scalar `given` column with the FHIRPath `name.first().given.join(' ')` to preserve the order of a compound given name. Collection columns sort and deduplicate their values. Wrap each joined string in a one-element array when calling the helper.
+
+Joined given-name columns can also participate in blocking rules. Model Builder and model saving create the corresponding indexes for online matching.
+
+In **Train model → Templates → Name dictionaries**, start from an example with separate levels for unambiguous and other dictionary matches. **Browse dictionaries** and the sidebar dictionary link open a new tab so you can look up IDs without interrupting your work. Model Builder restores the selected step and definition draft when you return in the same browser tab.
+
+```js
+const model = {
+  type: "deterministic",
+  nameDictionaries: ["clinic-v1"],
+  compare: (a, b) => compareGivenWithDictionaries([a.given], [b.given], {
+    dictionaries: ["es", "clinic-v1"]
+  }) ? 1 : 0
+}
+```
+
+For a hand-authored model with SQL column expressions, use a `jsonb` column with `(#.resource #> '{name,0,given}')` to pass the original array directly.
+
+Imported dictionaries are immutable. Import a new ID to revise the pairs, then update the model. When moving a model to another installation, import the same CSV under the same ID before saving the model.
+
 Comparison functions receive `id` and the projected fields in all three modes. Field names use lower-case letters, digits and underscores, with a maximum of 63 characters; `id`, `seq`, `created_at` and `interval_no` are reserved. Model IDs use lower-case letters, digits and dashes, with a maximum of 63 characters. Imported legacy transformations retain their expression validation.
 
 With `variables.viewDefinition`, `variables.columns` lists the matching columns in the same order, excluding `id`. Extraction paths belong in the ViewDefinition. The API retains optional `clean-steps`, `min-length`, variants and transformations for compatibility with earlier saved definitions; the new Data editor does not add them. Definitions using the earlier `variables.columns[].path` or `expression` format also remain supported.
