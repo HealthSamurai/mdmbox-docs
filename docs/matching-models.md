@@ -136,6 +136,14 @@ const model = {
 
 Return score `1` for a match and `0` otherwise, optionally with explanatory `meta`. The function must be self-contained. **Build model** prepares it without estimating weights. Both model types use automatically selected candidate keys, so evaluate their coverage as well as their decisions in Review & save.
 
+#### Training iteration limit
+
+**Available from:** `edge`
+
+In **Train model → Training options**, set **Maximum iterations** to a whole number from 1 to 100,000. The limit applies to each probabilistic training session; training stops earlier when it converges. Leave the field empty for the automatic defaults: 200 iterations for comparison-level models or 30 for models with learned character errors. Deterministic models do not use this setting.
+
+The setting is remembered when you reload or return in the same browser tab. Changing it requires **Build model** again before validating the new build. The saved model's `training.maxIterations` records the effective limit. A larger limit gives training more time to converge; it does not guarantee better matching accuracy.
+
 ### AI assistant
 
 Configure [OpenAI or Anthropic](config-reference.md#ai-assistant) on the server, select a provider beside the model definition editor, and ask for a comparison, an explanation or a code review. If configuration is incomplete, **Missing environment variables** lists only the unset variables for the selected provider. The assistant receives your messages, editor code, field names, blocking rules and aggregate sample counts. Sample Patient records are excluded. Values you type into a message or include in code are sent as part of that text.

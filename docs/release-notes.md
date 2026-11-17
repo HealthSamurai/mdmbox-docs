@@ -8,6 +8,8 @@ Release notes are grouped by monthly version. Each version lists compatible Aidb
 
 ## edge
 
+* **[Training iteration limit](matching-models.md#training-iteration-limit)** — Set the maximum iterations per probabilistic training session in Model Builder's **Training options**. Explicit limits apply to both comparison-level and learned character-error models; leaving the setting empty preserves their automatic defaults.
+
 * **[Name dictionaries](matching-models.md#compare-given-names-using-dictionaries)** — Compare FHIR given names using English, Spanish, or custom dictionaries in JavaScript models. Match compound names to short forms, inspect ambiguous links for weighting, and import custom dictionaries from CSV in the Admin UI. Browse and search dictionary entries, copy IDs, and start from the Model Builder's dictionary template. Model Builder remembers the selected step and definition draft when navigating away and back in the same tab. Joined given-name fields support online blocking indexes.
 
 * **[Continuous matching](continuous-matching.md)** — Improved performance for JavaScript models with multiple blocking rules that share a common field, such as surname plus postcode and surname plus given name. Overlapping rules still produce one result per pair.
