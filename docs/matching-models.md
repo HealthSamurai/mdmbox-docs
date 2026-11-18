@@ -20,7 +20,7 @@ MDMbox supports shared scoring models and the existing FHIR model resources:
 
 For an introduction to the feature and measured matching quality, see [Introducing Model builder in MDMbox](https://www.health-samurai.io/articles/mdmbox-model-builder).
 
-In **Models → Model builder**, follow **Prepare data → Train model → Review & save**. In Prepare data, choose or create a Patient ViewDefinition and build the training table. In Train model, the **Model definition** editor contains one `model` definition: use automatic field comparisons, change their conditions, or define a deterministic model. Select **Build model** below the editor to prepare candidate pairs and fit probabilistic weights or prepare the deterministic function. In Review & save, select **Run validation** to score the prepared population, inspect scores, choose thresholds and select **Save model**.
+In **Models → Model builder**, follow **Prepare data → Train model → Review & save**. In Prepare data, choose or create a Patient ViewDefinition and build the training table. In Train model, the **Model definition** editor contains one `model` definition: use automatic comparisons, add known alternatives, or define a deterministic model. Select **Build model** below the editor to prepare candidate pairs and fit probabilistic parameters or prepare the deterministic function. In Review & save, select **Run validation** to score the prepared population, inspect scores, choose thresholds and select **Save model**.
 
 Ctrl+Enter (⌘+Enter on a Mac) runs **Build model**. After changing the definition or rebuilding the prepared data, build the model again and repeat validation before saving. **Templates** offers **Probabilistic**, which learns comparison weights, and **Deterministic**, which uses a scoring function you define. These are starting definitions that replace the editor document; use Undo to restore your changes. The model's `type` in JavaScript determines its behavior. Previous notebook drafts are retained as **Download previous draft** when moving to the model definition format.
 
@@ -52,7 +52,7 @@ The WHERE editor supports column comparisons, `AND`, `OR`, `NOT`, `IS NULL`, `IN
 
 **Save mapping** stores the ViewDefinition as a FHIR resource. **Open in Aidbox** opens the same resource in the native editor; access there follows your Aidbox permissions. After editing there, select **Reload mapping** in the builder. **Prepare data** saves the definition and prepares matching columns for the full source population. If the source has not been prepared yet, select **Prepare source** first. **Refresh source** refreshes the source snapshot and starts a new preview sample.
 
-The new Data step uses the ViewDefinition alone, without a separate cleanup or variant configuration. Selection and filters belong in FHIRPath. Case normalization, phone formatting, date variants and fuzzy comparisons belong in the model's JavaScript comparisons; automatic comparisons already handle these cases. SQL on FHIR supports a subset of FHIRPath and does not support arbitrary string cleanup functions. A table created with the earlier transformation editor must be rebuilt before training with the new projection. Existing saved model versions keep their original transformations.
+The new Data step uses the ViewDefinition alone, without a separate cleanup or variant configuration. Selection and filters belong in FHIRPath. Automatic training normalizes case and whitespace. Use `typos()` for spelling errors, `dictionary()` for known name variants, and a Boolean comparison for a domain rule. SQL on FHIR supports a subset of FHIRPath and does not support arbitrary string cleanup functions. A table created with the earlier transformation editor must be rebuilt before training with the new projection. Existing saved model versions keep their original transformations.
 
 Matching requires one row per Patient, an `id` column with `getResourceKey()` or `id`, and at least one matching column. Use `collection: true` to keep multiple values in one column. Collection cleanup removes empty values and duplicates and stores values in a stable order. Scalar columns must select a single value; use `first()` when that is the intended choice. A Patient with missing selected values remains in the population with empty columns.
 
@@ -66,61 +66,61 @@ FHIRPath expressions use FHIR field names for extensions, choice fields and refe
 
 **Available from:** `2610.0`.
 
-**Build model** selects candidate keys, builds their indexes and loads a reproducible sample. It starts with exact field keys. When fewer than three exact keys fit the candidate budget, it also considers normalized prefixes and suffixes, choosing combinations that retain simulated spelling errors and missing fields. Candidate costs are checked against the full prepared population. The same saved keys are used in validation and live matching. Probabilistic fitting requires at least three single-value source fields. Deterministic models require at least one single-value source field and skip weight fitting. If no affordable key or independent training session is available, add useful source fields in Prepare data and build again.
+**Build model** selects candidate keys, builds their indexes and loads a reproducible sample. It starts with exact field keys. When fewer than three exact keys fit the candidate budget, it also considers normalized prefixes and suffixes, choosing combinations that retain simulated spelling errors and missing fields. Candidate costs are checked against the full prepared population. The same saved keys are used in validation and live matching. Probabilistic fitting requires at least three single-value source fields and candidate pairs. Deterministic models require at least one single-value source field and skip weight fitting. If no affordable candidate key is available, add useful source fields in Prepare data and build again.
 
-With `type: "probabilistic"` and automatic comparisons, the builder checks whether relationships between fields generalize beyond copied records. When they do, it learns character substitution, insertion, deletion and transposition rates, and uses population frequencies conditional on the related fields. This prevents a predictable agreement, such as city together with its postal code, from being counted as independent rare evidence. **Learned character error rates** shows the fitted parameters. Pair explanations in Review & save show the contributions for that particular comparison; these contributions depend on the values being compared.
+**Unified training is available from:** `edge`.
 
-When no such dependency is selected, the builder fits ordered comparison levels and their weights as described below. Explicit `model.comparisons` or `model.overrides` also use this comparison-level model. The resulting comparison is named `compare` in Review & save.
+Every new probabilistic build uses the same algorithm for the comparisons listed in its definition. Training uses population frequencies and relationships between fields, including predictable agreements such as city together with its postal code. Adding a dictionary or Boolean comparison preserves these relationships; a model containing only Boolean comparisons uses the same learner.
 
-For comparison-level models, the builder chooses levels from available source type metadata, field names and paths, and the content of an unlabeled sample. The training summary records each field's selected profile and the evidence used to select it.
+**Learned comparisons** shows the selected comparisons and fitted parameters. Pair explanations in Review & save show contributions for the particular values being compared, including a joint normalization correction when Boolean comparisons are present. A Boolean coefficient is not a standalone match score. The resulting comparison is named `compare`.
 
-For comparison-level models, **Comparisons from last build** shows each field's ordered conditions and learned weights. Expand a field and select **Edit** beside one level to select its condition in the JavaScript editor. Change the condition, select **Build model** again, then repeat validation in Review & save. Other conditions are preserved; rebuilding re-estimates the weights. The last completed list remains available after refreshing the page, with a notice when it no longer describes the current draft.
-
-For example, this changes only the `given.close` condition and keeps all other levels and fields:
-
-```javascript
-const model = {
-  type: "probabilistic",
-  overrides: {
-    given: {
-      close: (a, b) => similarity(a.given, b.given) >= 0.96
-    }
-  }
-}
-```
-
-`model.overrides` changes existing levels in place. **Edit** adds the selected override to your existing document and preserves other code. Generated conditions use readable helpers such as `similarity`, `dateLevel`, `codeLevel`, `emailLevel`, `textLevel` and `numericLevel`. `similarity` uses the best normalized edit, Jaro–Winkler, token or phonetic similarity; address comparisons also check leading house numbers. Exact agreement and `else` remain built-in levels. Use `model.comparisons` below when replacing a field's complete set of fuzzy levels or adding new levels.
-
-| Field profile | Automatic comparisons |
-| --- | --- |
-| Dates | Equivalent formats, day/month swap, one-day difference, same year and month, same month and day, and same year |
-| Names | Accent differences, reordered words, edit similarity, Jaro–Winkler, token overlap and English Soundex |
-| Addresses | Reordered words and string similarity; different explicit leading house numbers prevent fuzzy agreement |
-| Phones | Formatting, an extra country prefix and a one-character edit |
-| Email | A domain typo with the same mailbox, or a mailbox typo with the same domain; a common domain alone is insufficient |
-| Identifiers and postal codes | Formatting and a one-character edit; leading zeros remain significant |
-| Categorical fields | Exact equality |
-| Numeric values | Equivalent numeric representations and small relative differences |
-
-Every profile starts with normalized exact equality, and its levels are mutually exclusive. Recognized date fields always include day/month swaps, including when the swapped representation has an invalid month but corresponds to a valid calendar date. ISO dates, compact `YYYYMMDD` dates and separated day-first or month-first dates are supported. For separated dates, unambiguous values determine the order; an entirely ambiguous sample defaults to day-first. Normalize ambiguous source formats in Prepare data when their meaning is known. Unknown text fields use the general string comparisons.
-
-Alternative comparison levels do not contribute a second independent weight for the same field. The builder estimates model parameters and the match prior without reviewed labels. These are estimates; unmodeled relationships, errors and pairs differing on every selected candidate key can still cause incorrect or missed matches. Character error models describe spelling changes; replacing a whole field with an unrelated value is a different error pattern. Inspect Review & save before using the model.
-
-To change the comparison levels for a field, define named conditions in `model.comparisons`:
+List every selected source field in `comparisons`. Each field has a nonempty array of comparisons. For a population with given name, family name and city:
 
 ```javascript
 const model = {
   type: "probabilistic",
   comparisons: {
-    given: {
-      typo: (a, b) => jaroWinkler(a.given, b.given) >= 0.92,
-      initials: (a, b) => a.given[0] === b.given[0]
-    }
+    given: [typos(), dictionary(["en", "es"])],
+    family: [typos()],
+    city: [typos()]
   }
 }
 ```
 
-The supplied levels replace the automatic fuzzy levels for that field and run in declaration order. Exact agreement, missing values and the final `else` level are handled automatically; do not declare `exact` or `else`. An empty field object keeps only exact agreement. Each condition must read only its named field and be self-contained, using ordinary JavaScript and the provided helpers. Put any extra logic inside the condition. **Build model** estimates the weights; training calls do not belong in the editor document.
+`typos()` learns character substitution, insertion, deletion and adjacent transposition rates. It retains the possible edit alignments rather than applying a fixed edit-distance threshold. It does not add calendar rules, phone-prefix rules or a name dictionary automatically.
+
+`dictionary(["en", "es"])` adds known name variants. The model learns their frequency of use. A short form with several possible names distributes its probability among those alternatives; it is not reduced to an independent Boolean agreement. Keep `typos()` in the same array to allow spelling errors as well. Each field accepts one `typos()`, one `dictionary()` and Boolean functions, up to ten comparisons in total.
+
+For example, a legacy export stores initials. Supplement the existing name comparisons with an initial rule, returning `null` when both names are complete:
+
+```javascript
+const model = {
+  type: "probabilistic",
+  comparisons: {
+    given: [typos(), dictionary(["en", "es"]), (a, b) => {
+      const left = Array.from(a), right = Array.from(b);
+      if (left.length !== 1 && right.length !== 1) {
+        return null;
+      }
+      return left[0] === right[0];
+    }],
+    family: [typos()],
+    city: [typos()]
+  }
+}
+```
+
+Custom functions receive two scalar strings after Unicode NFKC normalization, lowercasing, trimming and whitespace collapse. Return `true` for agreement, `false` for disagreement, or `null` when the rule does not apply. Missing values skip the function and supply no evidence. Functions must be deterministic and self-contained; put any extra helper inside the function. `levenshtein(a, b)` and `jaroWinkler(a, b)` are available. Return `levenshtein(a, b) < 2` to use a Boolean distance rule; raw numbers, strings, arrays and objects are not supported return values in this stage.
+
+Adding a comparison supplements the other entries in its array. To replace spelling comparison with equality, use `identifier: [(a, b) => a === b]`. No `typos()` is added implicitly. A probabilistic agreement or disagreement is evidence, not a mandatory final decision. Use a deterministic model when the entire match decision must follow a fixed rule.
+
+Dictionary comparisons accept up to 16 built-in or imported IDs, recognize compound names, and save the selected pairs inside the model. They reject names with more than 128 tokens or more than 4,096 generated alternatives. For FHIR given names, use `name.first().given.join(' ')` so `María José` can match `Majo`.
+
+Training estimates parameters without reviewed labels. Candidate retrieval can still miss pairs that disagree on every selected key. A custom rule cannot recover a pair that was never retrieved. Rare rules may have insufficient examples to estimate their effect reliably. If training requests new population counts, prepare the data again; if it reports that no reference covers a comparison's availability, simplify or broaden when that comparison applies and rebuild. Review quality and thresholds before using a model.
+
+**Changed in `edge`:** JavaScript models use the explicit comparison API and saved format 3 only. Before upgrading an installation containing older JavaScript models, export their definitions and remove those models, then rebuild them from current templates after the upgrade. Unsupported persisted probabilistic models can prevent startup while their comparisons are prepared. The earlier `text()` alias, notebook commands, comparison-level objects, `channels`, `alternatives`, `overrides` and `extensions` are no longer supported. `MatchingModel` and `BulkMatchingModel` retain their SQL APIs and formats.
+
+See [Custom comparison examples](custom-comparison-examples.md) for complete models covering initials, swapped dates, local dictionaries, exact identifiers and Boolean-only training. Each example starts with the user case and describes what to check after building.
 
 For a deterministic model, define a complete decision function:
 
@@ -140,7 +140,7 @@ Return score `1` for a match and `0` otherwise, optionally with explanatory `met
 
 **Available from:** `edge`
 
-In **Train model → Training options**, set **Maximum iterations** to a whole number from 1 to 100,000. The limit applies to each probabilistic training session; training stops earlier when it converges. Leave the field empty for the automatic defaults: 200 iterations for comparison-level models or 30 for models with learned character errors. Deterministic models do not use this setting.
+In **Train model → Training options**, set **Maximum iterations** to a whole number from 1 to 100,000. Training stops earlier when it converges. Leave the field empty for the default of 100 iterations. If the limit is reached first, the builder shows that training has not converged; the latest fitted model remains available for review. Deterministic models do not use this setting.
 
 The setting is remembered when you reload or return in the same browser tab. Changing it requires **Build model** again before validating the new build. The saved model's `training.maxIterations` records the effective limit. A larger limit gives training more time to converge; it does not guarantee better matching accuracy.
 
@@ -204,9 +204,9 @@ Shared scoring models are JSON definitions, separate from FHIR resources. Manage
 | `GET /api/scoring-models/{id}?version=1` | Read an immutable revision |
 | `DELETE /api/scoring-models/{id}` | Remove the model from new matching requests; retain revisions used by existing Bulk jobs |
 
-Pause an active Continuous process before deleting its model. A model ID cannot reuse an existing `MatchingModel` or `BulkMatchingModel` ID. Shared models use probability or custom-score thresholds from 0 to 1; existing FHIR models retain their original weight thresholds. A rule-based score is defined by its author and is not necessarily a calibrated probability.
+Pause an active Continuous process before deleting its model. A model ID cannot reuse an existing `MatchingModel` or `BulkMatchingModel` ID. Shared models use thresholds from 0 to 1; FHIR models retain their original weight thresholds. Probabilistic models return a learned probability. Deterministic models return a decision score of 0 or 1.
 
-Export and import the complete saved definition. `format-version: 1` stores weighted comparison levels or a rule-based function. `format-version: 2` stores a probabilistic model with `likelihood.kind: "conditional-edit-v1"`, its learned character error parameters and packed population frequency tables. Both formats include the projection, candidate keys and thresholds and work with online, Bulk and Continuous matching. Keep every block of the version 2 frequency tables intact when moving a model; rebuilding them from a different population changes its meaning. Models can be larger than 8 MiB; see [HTTP request size](config-reference.md#http-request-size). Existing saved model versions retain their original definitions and behavior.
+Export and import the complete saved definition with `format-version: 3`. Probabilistic models use `likelihood.kind: "comparisons-v1"`, storing explicit comparison definitions, learned parameters, dictionary snapshots and packed population frequencies. Deterministic models store the source of `compare`. Both types include the projection, candidate keys and thresholds and work with online, Bulk and Continuous matching. Keep the exported likelihood intact; editing its fitted parameters or reference data changes the model. Raw population values used during training are not included in the exported likelihood. Models can be larger than 8 MiB; see [HTTP request size](config-reference.md#http-request-size).
 
 For example, this model compares exact given names among Patients sharing a family name:
 
@@ -219,7 +219,8 @@ Content-Type: application/json
 {
   "id": "patient-exact",
   "resource": "Patient",
-  "type": "rule-based",
+  "format-version": 3,
+  "type": "deterministic",
   "variables": {
     "viewDefinition": {
       "resourceType": "ViewDefinition",
@@ -240,18 +241,18 @@ Content-Type: application/json
     "transforms": []
   },
   "blocking": [["family"]],
-  "compare": "(a, b) => a.given && b.given && a.given === b.given ? 0.9 : 0.1",
+  "compare": "(a, b) => a.given && b.given && a.given === b.given ? 1 : 0",
   "thresholds": {"certain": 0.95, "probable": 0.5}
 }
 ```
 
-Use `patient-exact` in all three matching modes. New online requests see committed records immediately; the training candidate cap does not apply to live matching. Bulk exports keep the existing pair shape and log2 `matchWeight`; for rule-based models it is derived from the score, with 0 and 1 bounded to finite weights.
+Use `patient-exact` in all three matching modes. New online requests see committed records immediately; the training candidate cap does not apply to live matching. Bulk exports keep the existing pair shape and log2 `matchWeight`; deterministic decisions 0 and 1 are bounded to finite weights.
 
 ### Compare given names using dictionaries
 
 **Available from:** `edge`
 
-Use `compareGivenWithDictionaries(left, right, options)` in a rule-based JavaScript comparison or a custom probabilistic comparison level. Both arguments are flat arrays of strings, such as the original FHIR `HumanName.given` arrays. The helper compares the whole sequence in order, ignoring case and spacing while preserving accents. A dictionary entry can relate multiple adjacent words to a single variant. Every substitution uses a direct dictionary link. Missing or empty values return `false`.
+Use `compareGivenWithDictionaries(left, right, options)` inside a deterministic JavaScript comparison. For automatic training, use `dictionary()` in the field's comparison list. Both arguments are flat arrays of strings, such as the original FHIR `HumanName.given` arrays. The helper compares the whole sequence in order, ignoring case and spacing while preserving accents. A dictionary entry can relate multiple adjacent words to a single variant. Every substitution uses a direct dictionary link. Missing or empty values return `false`.
 
 The helper runs after candidate selection. A pair must satisfy a configured blocking rule to reach the comparison.
 
@@ -265,7 +266,7 @@ compareGivenWithDictionaries(["María", "José", "Elena"], ["Majo", "Elena"], {
 // ] }
 ```
 
-The helper returns a boolean by default. Set `details: true` to get `matches` and the dictionary links used for a match. Exact matches have an empty `links` array. A link is ambiguous when its variant points to more than one full name across the selected dictionaries. For example, `Manu` can stand for `Manuel` or `Manuela`. A full name can have several distinct variants without making those links ambiguous. Use the result to assign a score or define separate weighted levels.
+The helper returns a boolean by default. Set `details: true` to get `matches` and the dictionary links used for a match. Exact matches have an empty `links` array. A link is ambiguous when its variant points to more than one full name across the selected dictionaries. For example, `Manu` can stand for `Manuel` or `Manuela`. A full name can have several distinct variants without making those links ambiguous. Use the result to accept only unambiguous links in a deterministic rule or explain the decision in `meta`.
 
 The default selection includes `en` and `es`. Pass `dictionaries` to choose the IDs for a comparison. English coverage comes from a [US name-variant dataset](https://github.com/carltonnorthern/nicknames). Spanish coverage comes from the [Wiktionary list of Spanish diminutives](https://en.wiktionary.org/w/index.php?oldid=92654536).
 
@@ -275,13 +276,13 @@ In the Admin UI, open **Models → Name dictionaries** to browse built-in and im
 
 Expand **Import a dictionary** to download an example CSV or upload your own. Enter a new dictionary ID and upload a UTF-8 CSV with the header `name,variant`. Each row maps a full name to a variant. Use spaces between words in a compound name. For example, `María José,Majo`. A file can contain up to 10,000 data rows and 1,000,000 characters. IDs contain up to 63 lowercase letters, digits, and dashes and start with a letter or digit. The IDs `en` and `es` are reserved.
 
-Declare up to 16 imported IDs in the model's `nameDictionaries` array, either in the Model Builder's JavaScript `model` object or in the saved JSON definition. Select those IDs in the comparison call.
+For automatic training, pass up to 16 IDs to `dictionary(["en", "clinic-aliases"])` in the field's `comparisons` array. For deterministic or hand-authored comparison functions, declare imported IDs in the model's `nameDictionaries` array and select those IDs in the comparison call.
 
 In Model Builder, create a scalar `given` column with the FHIRPath `name.first().given.join(' ')` to preserve the order of a compound given name. Collection columns sort and deduplicate their values. Wrap each joined string in a one-element array when calling the helper.
 
 Joined given-name columns can also participate in blocking rules. Model Builder and model saving create the corresponding indexes for online matching.
 
-In **Train model → Templates → Name dictionaries**, start from an example with separate levels for unambiguous and other dictionary matches. **Browse dictionaries** and the sidebar dictionary link open a new tab so you can look up IDs without interrupting your work. Model Builder restores the selected step and definition draft when you return in the same browser tab.
+In **Train model → Templates → Name dictionaries**, start from an explicit model with `typos()` for each selected source field and `dictionary(["en", "es"])` added to `given`. **Browse dictionaries** and the sidebar dictionary link open a new tab so you can look up IDs without interrupting your work. Model Builder restores the selected step and definition draft when you return in the same browser tab.
 
 ```js
 const model = {
@@ -295,7 +296,7 @@ const model = {
 
 For a hand-authored model with SQL column expressions, use a `jsonb` column with `(#.resource #> '{name,0,given}')` to pass the original array directly.
 
-Imported dictionaries are immutable. Import a new ID to revise the pairs, then update the model. When moving a model to another installation, import the same CSV under the same ID before saving the model.
+Imported dictionaries are immutable. Import a new ID to revise the pairs, then rebuild the model. Automatic models contain a snapshot of their selected dictionaries and need no separate dictionary import on another installation. Models that call `compareGivenWithDictionaries` directly require the same CSV under the same ID before saving on the destination.
 
 Comparison functions receive `id` and the projected fields in all three modes. Field names use lower-case letters, digits and underscores, with a maximum of 63 characters; `id`, `seq`, `created_at` and `interval_no` are reserved. Model IDs use lower-case letters, digits and dashes, with a maximum of 63 characters. Imported legacy transformations retain their expression validation.
 

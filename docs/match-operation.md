@@ -162,7 +162,7 @@ Match weights are log2 Bayes factor sums. MDMbox exposes the raw weight in the `
 
 `probability = 1 / (1 + 2^(-weight))`
 
-Shared probabilistic models include their learned prior in this weight. Shared rule-based models return the author's score directly as `search.score`; their finite weight is derived from that score. The `match-details` extension is present when the comparison provides feature weights. A custom rule-based score is not necessarily a calibrated probability.
+Shared probabilistic models include their learned prior in this weight. Shared deterministic models return a decision score of 0 or 1 as `search.score`; their finite weight is derived from that score. The `match-details` extension is present when the comparison provides feature weights. A deterministic decision score is not a calibrated probability.
 
 See [Mathematical details](mathematical-details.md) for the full derivation.
 
