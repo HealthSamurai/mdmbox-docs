@@ -18,13 +18,13 @@ Use these scalar column aliases in a Patient ViewDefinition. The aliases are low
 
 Also select `id` with `getResourceKey()`. Replace the example identifier system with the system used by your sources. Joining the ordered FHIR `given` array retains compound names such as María José; choosing only its first element would lose information needed by the dictionary.
 
-Callbacks receive normalized scalar strings, not Patient records. Missing values provide no evidence. `false` means disagreement; `null` means the rule does not apply. Functions must be self-contained and return Boolean or null. Add a function beside `typos()` to supplement it; remove `typos()` to replace it. The learner estimates their combined effect, so agreement on one comparison does not by itself require a match.
+Callbacks receive normalized scalar strings, not Patient records. Missing values provide no evidence. `false` means disagreement; `null` means the rule does not apply. Functions must be self-contained and return Boolean or null. Add a function beside `name()` to supplement it; remove `name()` to replace it. The learner estimates their combined effect, so agreement on one comparison does not by itself require a match.
 
 ## Names and nicknames
 
 A registration system stores William while another clinic records Bill. The remaining demographic fields are available in both sources.
 
-Add the English name dictionary alongside `typos()` for given names.
+Add the English name dictionary alongside `name()` for given names.
 
 **Fields:** `given`, `family`, `birth_date`, `postal_code`.
 
@@ -32,10 +32,10 @@ Add the English name dictionary alongside `typos()` for given names.
 const model = {
   type: "probabilistic",
   comparisons: {
-    given: [typos(), dictionary(["en"])],
-    family: [typos()],
-    birth_date: [typos()],
-    postal_code: [typos()]
+    given: [name(), dictionary(["en"])],
+    family: [name()],
+    birth_date: [date()],
+    postal_code: [identifier()]
   }
 };
 ```
@@ -55,7 +55,7 @@ const model = {
   type: "probabilistic",
   comparisons: {
     given: [
-      typos(),
+      name(),
       dictionary(["en"]),
       (a, b) => {
         const left = Array.from(a), right = Array.from(b);
@@ -63,9 +63,9 @@ const model = {
         return left[0] === right[0];
       }
     ],
-    family: [typos()],
-    birth_date: [typos()],
-    postal_code: [typos()]
+    family: [name()],
+    birth_date: [date()],
+    postal_code: [identifier()]
   }
 };
 ```
@@ -76,7 +76,7 @@ Compare J with John, J with Peter, and John with James. Confirm that complete na
 
 Two imports use complete ISO birth dates, but an earlier migration exchanged the day and month in some records: 1980-03-07 became 1980-07-03.
 
-Add a comparison for different valid dates whose day and month are exchanged. Keep format normalization in data preparation; this comparison represents an uncertain data-entry error.
+The standard date profile distinguishes exact dates and day/month exchanges. This example treats both as the same agreement and skips partial or invalid ISO dates.
 
 **Fields:** `given`, `family`, `birth_date`, `postal_code`.
 
@@ -84,9 +84,9 @@ Add a comparison for different valid dates whose day and month are exchanged. Ke
 const model = {
   type: "probabilistic",
   comparisons: {
-    given: [typos(), dictionary(["en", "es"])],
-    family: [typos()],
-    birth_date: [typos(), (a, b) => {
+    given: [name(), dictionary(["en", "es"])],
+    family: [name()],
+    birth_date: [(a, b) => {
       const parse = value => {
         const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
         if (!match) return null;
@@ -98,9 +98,9 @@ const model = {
       };
       const left = parse(a), right = parse(b);
       if (!left || !right) return null;
-      return a !== b && left[0] === right[0] && left[1] === right[2] && left[2] === right[1];
+      return a === b || (left[0] === right[0] && left[1] === right[2] && left[2] === right[1]);
     }],
-    postal_code: [typos()]
+    postal_code: [identifier()]
   }
 };
 ```
@@ -126,10 +126,10 @@ Alexandra Maria,AM
 const model = {
   type: "probabilistic",
   comparisons: {
-    given: [typos(), dictionary(["en", "clinic-aliases"])],
-    family: [typos()],
-    birth_date: [typos()],
-    postal_code: [typos()]
+    given: [name(), dictionary(["en", "clinic-aliases"])],
+    family: [name()],
+    birth_date: [date()],
+    postal_code: [identifier()]
   }
 };
 ```
@@ -148,9 +148,9 @@ Replace spelling comparison for identifier with equality. Keep the existing comp
 const model = {
   type: "probabilistic",
   comparisons: {
-    given: [typos(), dictionary(["en", "es"])],
-    family: [typos()],
-    birth_date: [typos()],
+    given: [name(), dictionary(["en", "es"])],
+    family: [name()],
+    birth_date: [date()],
     identifier: [(a, b) => a === b]
   }
 };
