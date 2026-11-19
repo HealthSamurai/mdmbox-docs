@@ -74,7 +74,7 @@ Pairs recorded with [$mark-not-a-match](mark-not-a-match.md) are excluded when t
 | `threshold` | valueDecimal | No | Override the model's `probable` threshold. Cannot be combined with `onlyCertainMatches=true` or `onlySingleMatch=true`. |
 | `count` | valueInteger | No | Maximum number of returned entries (default: 10). `Bundle.total` still reports the full number of matches above the effective threshold. |
 
-The default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and is `10` unless configured otherwise.
+For native models, the default `count` is controlled by `MDMBOX_MATCH_DEFAULT_COUNT` and defaults to `10`. Imported HAPI models return every qualifying result when `count` is omitted, subject to the R4 TEFCA limit when enabled.
 
 ### Profiled input resources
 

@@ -248,11 +248,42 @@ Content-Type: application/json
 
 Use `patient-exact` in all three matching modes. New online requests see committed records immediately; the training candidate cap does not apply to live matching. Bulk exports keep the existing pair shape and log2 `matchWeight`; deterministic decisions 0 and 1 are bounded to finite weights.
 
+### Import HAPI FHIR MDM rules
+
+**Available from:** `edge`
+
+In **Models → New Model**, choose the HAPI rules JSON file. Select the resource type for a file with several `mdmTypes`. Enable nickname search expansion if the source deployment registered the HAPI nickname search interceptor. Review the generated model ID and comparison, then select **Save**.
+
+Select **8.6.0** or **9.0.0** to match the source HAPI FHIR release. Both use FHIR R4. Version 9.0.0 also supports multiple EID systems for a resource type. The `version` in a rules file identifies the author's rule revision. To convert through the API, send `POST /api/scoring-models/import-hapi` with `id`, `resource`, `hapiVersion`, and the parsed rules object in `rules`. The optional boolean `nicknameSearch` defaults to `false`. Set `candidateSearchLimit` if the source uses a different per-group online search limit. The HAPI default is 10,000. Reaching the limit returns an OperationOutcome. Save the returned definition with `PUT /api/scoring-models/{id}`.
+
+A deterministic comparison may return `{decision: "MATCH"}`, `{decision: "POSSIBLE_MATCH"}`, or `{decision: "NO_MATCH"}`. The corresponding MDMbox decision scores are 1, 0.5, and 0. An imported comparison also returns the sum of scores of the fields that matched in `hapiScore`. Online matching orders HAPI results by that sum divided by the number of applicable fields. The FHIR Bundle carries this normalized value in `entry.search.score`. Its match grades are `certain` and `possible`. With a configured EID system, an online EID hit returns the matching resource with score 1 and takes precedence over ordinary rules. Checking a record is read-only. Merge or update records through an explicit MDMbox operation.
+
+On the saved revision, select **Validate current records** to score a separate snapshot of the current resources. The resulting Model Builder report is attached to that model revision. Selecting the action again refreshes its report. Bulk, Continuous and validation evaluate the eligible search directions for each unordered pair. In Bulk and Continuous, a pair is retained when either direction qualifies. Its stored details report the decision and original HAPI score for each eligible direction.
+
+Candidate groups are alternatives. Every term in a group must hold. A column name means equality. Use `{"column":"aliases","operator":"overlaps"}` for a shared value between two text arrays, `prefix` for a candidate array value starting with an input array value, and `date` for an R4 birth date within the input date's precision. An optional `inputColumn` supplies a separately projected input value. Use `"blocking":"all"` to score the entire eligible population. Put fixed candidate-side constraints in `candidateFilter`, for example `[{"column":"active","value":true}]`.
+
+The importer accepts the standard search parameters used in the example models for identifiers, birth dates, names, phone numbers, general practitioners and manufacturers. String search on given or family name supports `:exact`. Candidate groups also support `active` and `gender`. Fixed filters on these parameters accept equality and the HAPI `NOT` qualifier. A negative filter includes records with a missing value. Match fields can navigate elements, select a position, use `first()`, `last()`, `ofType()`, combine paths with `|` and filter on a simple equality. Unsupported syntax produces an import error. An external Smile CDR deployment can supply different search parameters, interceptors or matcher implementations.
+
+Case-insensitive name searches use the PostgreSQL ICU collation `und-x-icu` for Unicode uppercase conversion. A general-practitioner or manufacturer search uses the logical target ID and resource type, including when the input refers to a specific version. When comparing deployments, use the same source population and account for explicit MDMbox pair exclusions. The importer targets HAPI's default handling of placeholder records.
+
+You can also use the versioned comparison functions directly in deterministic JavaScript. Both supported HAPI releases use the same built-in algorithms here. `hapi860.matches(options, left, right)` returns a boolean for a pair of R4 values. `hapi860.similarity(options, left, right)` returns the numeric similarity for a pair of primitives. Apply your chosen threshold to that number.
+
+```js
+hapi860.matches({algorithm: "NICKNAME"}, "Elizabeth", "Beth")
+hapi860.matches({algorithm: "IDENTIFIER", identifierSystem: "urn:hospital:mrn"},
+  {system: "urn:hospital:mrn", value: "123"}, {system: "urn:hospital:mrn", value: "123"})
+hapi860.similarity({algorithm: "JARO_WINKLER"}, "Martha", "Marhta")
+```
+
+The built-in matchers are `STRING`, `SUBSTRING`, `NUMERIC`, `DATE`, `EMPTY_FIELD`, `IDENTIFIER`, `EXTENSION_ANY_ORDER`, `NICKNAME`, `NAME_FIRST_AND_LAST`, `NAME_ANY_ORDER`, `CAVERPHONE1`, `CAVERPHONE2`, `COLOGNE`, `DOUBLE_METAPHONE`, `MATCH_RATING_APPROACH`, `METAPHONE`, `NYSIIS`, `REFINED_SOUNDEX` and `SOUNDEX`. Similarities are `JARO_WINKLER`, `COSINE`, `JACCARD`, `LEVENSCHTEIN` and `SORENSEN_DICE`, each also available with the `NUMERIC_` prefix.
+
+Use `resourcePath` for dot-separated R4 element names and `fhirPath` when you need a positional selection or a filter. An imported `EXTENSION_ANY_ORDER` or `EMPTY_FIELD` rule on a primitive also reads the corresponding underscore-prefixed element, including its position in a repeated field.
+
 ### Compare given names using dictionaries
 
 **Available from:** `edge`
 
-Use `compareGivenWithDictionaries(left, right, options)` inside a deterministic JavaScript comparison. For automatic training, use `dictionary()` in the field's comparison list. Both arguments are flat arrays of strings, such as the original FHIR `HumanName.given` arrays. The helper compares the whole sequence in order, ignoring case and spacing while preserving accents. A dictionary entry can relate multiple adjacent words to a single variant. Every substitution uses a direct dictionary link. Missing or empty values return `false`.
+Use `compareGivenWithDictionaries(left, right, options)` inside a deterministic JavaScript comparison. For automatic training, use `dictionary()` in the field's comparison list. Both arguments are flat arrays of strings, such as the original FHIR `HumanName.given` arrays. The helper compares the whole sequence in order, ignoring case and spacing while preserving accents. A dictionary entry can relate multiple adjacent words to a single variant. Two variants of the same full name also match each other. For example, entries linking Elizabeth to Beth and Bessie allow Beth to match Bessie. Missing or empty values return `false`.
 
 The helper runs after candidate selection. A pair must satisfy a configured blocking rule to reach the comparison.
 
