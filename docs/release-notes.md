@@ -8,7 +8,7 @@ Release notes are grouped by monthly version. Each version lists compatible Aidb
 
 ## edge
 
-- Import HAPI FHIR 8.6.0 and 9.0.0 MDM comparison rules in **Models → New Model**. Deterministic models can return a possible match. Name dictionaries now match two variants listed for the same full name. See [Matching Models](matching-models.md).
+- Import HAPI FHIR 8.6.0 and 9.0.0 MDM comparison rules in **Models → New Model → Import rules**. Deterministic models can return a possible match. Name dictionaries now match two variants listed for the same full name. See [Matching Models](matching-models.md).
 
 * **[Per-field comparison profiles](matching-models.md#automatic-training-and-javascript-extensions)** — Model Builder suggests a comparison for each column. Names, dates, identifiers and categories have distinct outcomes, including whole-field disagreement. Add a dictionary or a Boolean function for a local rule. Saved models carry their fitted weights and dictionary snapshots into online, Bulk and Continuous matching. JavaScript models use saved format 3. Rebuild older JavaScript definitions from the current templates. [Examples](custom-comparison-examples.md) cover initials, swapped dates, local aliases and exact identifiers.
 

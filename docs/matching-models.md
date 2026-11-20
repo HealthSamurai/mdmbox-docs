@@ -252,7 +252,7 @@ Use `patient-exact` in all three matching modes. New online requests see committ
 
 **Available from:** `edge`
 
-In **Models → New Model**, choose the HAPI rules JSON file. Select the resource type for a file with several `mdmTypes`. Enable nickname search expansion if the source deployment registered the HAPI nickname search interceptor. Review the generated model ID and comparison, then select **Save**.
+In **Models → New Model**, open **Import rules** and select the source HAPI FHIR release. Drop the MDM rules JSON file into the import area or select **browse** to choose it. Select the resource type for a file with several `mdmTypes`. Enable nickname search expansion if the source deployment registered the HAPI nickname search interceptor. Review the generated model ID and comparison, then select **Save**.
 
 Select **8.6.0** or **9.0.0** to match the source HAPI FHIR release. Both use FHIR R4. Version 9.0.0 also supports multiple EID systems for a resource type. The `version` in a rules file identifies the author's rule revision. To convert through the API, send `POST /api/scoring-models/import-hapi` with `id`, `resource`, `hapiVersion`, and the parsed rules object in `rules`. The optional boolean `nicknameSearch` defaults to `false`. Set `candidateSearchLimit` if the source uses a different per-group online search limit. The HAPI default is 10,000. Reaching the limit returns an OperationOutcome. Save the returned definition with `PUT /api/scoring-models/{id}`.
 
