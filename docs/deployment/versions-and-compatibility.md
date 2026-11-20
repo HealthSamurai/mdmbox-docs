@@ -22,6 +22,8 @@ With authentication enabled, the Admin UI is available only through Aidbox. For 
 
 ## Docker image tags
 
+**Available from:** `edge` for the Admin UI version label. The bottom of the left navigation, above API Docs, shows the running version, such as `2610.0`, or `edge:<short SHA>` for a development image. Hover over the label to see the full commit SHA when available.
+
 [Published MDMbox images](https://hub.docker.com/r/healthsamurai/mdmbox/tags) support Linux amd64 and arm64:
 
 | Tag | What it selects |

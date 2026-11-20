@@ -8,6 +8,8 @@ Release notes are grouped by monthly version. Each version lists compatible Aidb
 
 ## edge
 
+* **Admin UI version** — The bottom of the left navigation, above API Docs, shows the running MDMbox version, including a short commit SHA for `edge` builds.
+
 - Import HAPI FHIR 8.6.0 and 9.0.0 MDM comparison rules in **Models → New Model → Import rules**. Deterministic models can return a possible match. Name dictionaries now match two variants listed for the same full name. See [Matching Models](matching-models.md).
 
 * **[Per-field comparison profiles](matching-models.md#automatic-training-and-javascript-extensions)** — Model Builder suggests a comparison for each column. Names, dates, identifiers and categories have distinct outcomes, including whole-field disagreement. Add a dictionary or a Boolean function for a local rule. Saved probabilistic models use dictionary IDs and content fingerprints. JavaScript model definitions display their target FHIR resource. In Models, retrain a probabilistic definition, edit `thresholds` in its JavaScript without retraining, export a saved revision and its custom dictionary CSVs, or test an edited deterministic comparison before saving a revision. JavaScript models use saved format 3. MDMbox skips unsupported saved definitions and retains their JSON for recovery. [Examples](custom-comparison-examples.md) cover initials, swapped dates, local aliases and exact identifiers.

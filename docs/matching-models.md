@@ -650,7 +650,7 @@ Changing only `bulkQueryStrategy` in a new Start request reuses prepared source 
 
 ## Admin UI
 
-In the Admin UI at `/mdmbox/admin` on the Aidbox address, select a model in **Models** to edit its JSON, or choose **New Model** to create one. The list marks `MatchingModel` as **Online only** and `BulkMatchingModel` as **Bulk & Continuous only**. Scoring models work in all three modes and have no mode badge. Check the resource type before saving or deleting because the two FHIR model types can share an ID.
+In the Admin UI at `/mdmbox/admin` on the Aidbox address, select a model in **Models** to edit its JSON, or choose **New Model** to create one. The list marks `MatchingModel` as **$match only** and `BulkMatchingModel` as **Bulk & Continuous only**. Scoring models work in all three modes and have no mode badge. Check the resource type before saving or deleting because the two FHIR model types can share an ID.
 
 ## Tuning
 
