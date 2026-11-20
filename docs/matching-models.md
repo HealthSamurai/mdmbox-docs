@@ -10,7 +10,7 @@ MDMbox supports shared scoring models and the existing FHIR model resources:
 
 - **MatchingModel** — for online `$match` queries against individual resources
 - **BulkMatchingModel** — shared by Bulk matching jobs and Continuous matching processes
-- **Shared scoring model** — a model saved by Model builder, usable by `$match`, Bulk matching and Continuous matching with the same ID
+- **Scoring model** — a model saved by Model builder, usable by `$match`, Bulk matching and Continuous matching with the same ID
 
 `MatchingModel` and `BulkMatchingModel` are stored as FHIR resources. Their existing APIs and JSON formats remain supported. Shared scoring models use the [shared model API](#shared-model-api) and appear in the Models, Bulk matching and Continuous matching screens.
 
@@ -78,6 +78,7 @@ List every selected source field in `comparisons`. Each field has a nonempty arr
 
 ```javascript
 const model = {
+  resource: "Patient",
   type: "probabilistic",
   comparisons: {
     given: [name(), dictionary(["en", "es"])],
@@ -95,6 +96,7 @@ For example, a legacy export stores initials. Supplement the existing name compa
 
 ```javascript
 const model = {
+  resource: "Patient",
   type: "probabilistic",
   comparisons: {
     given: [name(), dictionary(["en", "es"]), (a, b) => {
@@ -118,7 +120,16 @@ Dictionary comparisons accept up to 16 built-in or imported IDs, recognize compo
 
 Training estimates parameters without reviewed labels. Candidate retrieval can still miss pairs that disagree on every selected key. A custom rule cannot recover a pair that was never retrieved. Rare rules may have insufficient examples to estimate their effect reliably. If training requests new population counts, prepare the data again; if it reports that no reference covers a comparison's availability, simplify or broaden when that comparison applies and rebuild. Review quality and thresholds before using a model.
 
-**Changed in `edge`:** JavaScript models use the explicit comparison API and saved format 3 only. For a draft from an earlier `edge` build that calls `typos()`, replace each call with the profile for that field and rebuild the model. Before upgrading an installation containing older JavaScript models, export their definitions and remove those models, then rebuild them from current templates after the upgrade. Unsupported persisted probabilistic models can prevent startup while their comparisons are prepared. Notebook commands, comparison-level objects, `channels`, `alternatives`, `overrides` and `extensions` are no longer supported. `MatchingModel` and `BulkMatchingModel` retain their SQL APIs and formats.
+**Changed in `edge`:** JavaScript models use the explicit comparison API and saved format 3. MDMbox skips unsupported definitions at startup and in the model catalogue. Looking up an unsupported revision through the model API returns HTTP 404. Bulk jobs and Continuous processes pinned to an unsupported definition are excluded from matching. For an earlier `edge` definition that used `typos()`, choose a profile for each field and rebuild the model. Saving a supported definition under the same ID creates a new revision. Notebook commands, comparison-level objects, `channels`, `alternatives`, `overrides` and `extensions` are no longer supported. `MatchingModel` and `BulkMatchingModel` retain their SQL APIs and formats.
+
+Administrators with PostgreSQL access can recover the original JSON of any saved revision. Substitute the model ID below.
+
+```sql
+SELECT version, model
+FROM mdm.scoring_model_history
+WHERE id = 'my-model'
+ORDER BY version;
+```
 
 See [Custom comparison examples](custom-comparison-examples.md) for complete models covering initials, swapped dates, local dictionaries, exact identifiers and Boolean-only training. Each example starts with the user case and describes what to check after building.
 
@@ -126,6 +137,7 @@ For a deterministic model, define a complete decision function:
 
 ```javascript
 const model = {
+  resource: "Patient",
   type: "deterministic",
   compare: (a, b) => ({
     score: a.phone && a.phone === b.phone ? 1 : 0,
@@ -180,7 +192,9 @@ These counts describe model decisions. They are not measured precision or recall
 
 Completed Validation results are saved automatically. Reloading Validation restores the last viewed report, comparison and thresholds from the shared Model builder workspace. The summary, score distribution and candidate pairs appear independently as they load. If one section fails, use its **Retry** action; the other results remain available. Reopening a report does not repeat training or full-population scoring.
 
-After saving a model, open it in **Models** and select **Validation** to return to the report for that model version. In Review & save, select **Saved validation**, search by model ID and open the required version. Each version keeps its saved thresholds. You can adjust thresholds on a restored report and select **Save model** to create a revision without retraining. To change comparison code, use **Edit matching logic** and validate the changed comparison. A **Comparison function** selector appears only when the current build contains several comparison functions.
+After saving a model, open it in **Models** and select **Validation** to return to that version. The link opens its retained report first. If a report has not been saved and the workspace has a paused validation with the same scoring definition, candidate rules and prepared population, the page shows its partial results at the selected version’s thresholds. Select **Continue validation** to resume from the last processed pair, then **Save model** to retain the finished report.
+
+In Review & save, select **Saved validation**, search by model ID and open the required version. Each version keeps its saved thresholds. You can adjust thresholds on a restored report and select **Save model** to create a revision without retraining. To change comparison code, use **Edit matching logic** and validate the changed comparison. A **Comparison function** selector appears only when the current build contains several comparison functions.
 
 Retained reports include the original selected field values and scores, so rebuilding the training table or changing source records does not alter their counts, examples or explanations. Reports attached to saved model versions and the last viewed report remain available; other unlinked runs can expire after 24 hours. Select **Delete report** beside a version in **Saved validation** to remove its retained results. Confirm the deletion in the list. The saved model and its revisions remain runnable. Scores and record snapshots are removed when no other report uses them. Deleted reports cannot be restored. A report that expired before retention was available cannot be recovered.
 
@@ -206,7 +220,13 @@ Shared scoring models are JSON definitions, separate from FHIR resources. Manage
 
 Pause an active Continuous process before deleting its model. A model ID cannot reuse an existing `MatchingModel` or `BulkMatchingModel` ID. Shared models use thresholds from 0 to 1; FHIR models retain their original weight thresholds. Probabilistic models return a learned probability. Deterministic models return a decision score of 0 or 1.
 
-Export and import the complete saved definition with `format-version: 3`. Probabilistic exports store either per-field outcome weights (`field-levels-v1`) or the fitted comparison model (`comparisons-v1`), including any dictionary snapshots and population frequencies it uses. Deterministic models store the source of `compare`. Both types include the projection, candidate keys and thresholds and work with online, Bulk and Continuous matching. Keep the exported likelihood intact; editing its fitted parameters or reference data changes the model. Raw population values used during training are not included in the exported likelihood. Models can be larger than 8 MiB; see [HTTP request size](config-reference.md#http-request-size).
+**Available from:** `edge`
+
+Open a saved JavaScript model in **Models** to edit a revision. The JavaScript definition shows the target FHIR resource, for example `resource: "Patient"`. Each revision uses the resource type of its projection. For a probabilistic model, edit the comparison definition and select **Retrain and review**. Review the candidate count and changes in match grades at the saved thresholds before selecting **Save revision**. Retraining uses the original prepared table version and blocking rules. If the workspace has changed, use Model Builder to prepare the intended population and train there. The JavaScript definition includes `thresholds`, for example `thresholds: { certain: 0.95, probable: 0.5 }`. Use numeric values from 0 to 1 with `probable` at or below `certain`. Edit just these values and select **Save revision** to keep the fitted weights. Model Builder also accepts `thresholds` in the training definition and uses them as the starting values in **Review & save**.
+
+For a deterministic model, edit the comparison expression and select **Test pair** with two JSON records using the projected column names. Review the returned score or decision, then select **Save revision**. An edited imported comparison is labeled **Customized HAPI rules**. Use **Export revision** to download the complete saved model JSON and any required custom dictionary CSVs. API clients can send a quoted revision number in the `If-Match` header on `PUT /api/scoring-models/{id}`. A stale revision returns HTTP 412.
+
+Export and import the complete saved definition with `format-version: 3`. Probabilistic exports store either per-field outcome weights (`field-levels-v1`) or the fitted comparison model (`comparisons-v1`), including its dictionary references and population frequencies. Deterministic models store the source of `compare`. Both types include the projection, candidate keys and thresholds and work with online, Bulk and Continuous matching. Keep the exported likelihood intact; editing its fitted parameters or reference data changes the model. Raw population values used during training are not included in the exported likelihood. Models can be larger than 8 MiB; see [HTTP request size](config-reference.md#http-request-size).
 
 For example, this model compares exact given names among Patients sharing a family name:
 
@@ -313,10 +333,11 @@ In Model Builder, create a scalar `given` column with the FHIRPath `name.first()
 
 Joined given-name columns can also participate in blocking rules. Model Builder and model saving create the corresponding indexes for online matching.
 
-In **Train model → Templates → Name dictionaries**, start from an explicit model with a profile for each selected source field and `dictionary(["en", "es"])` added to `given`. **Browse dictionaries** and the sidebar dictionary link open a new tab so you can look up IDs without interrupting your work. Model Builder restores the selected step and definition draft when you return in the same browser tab.
+In **Train model → Templates → Name dictionaries**, start from an explicit model with a profile for each selected source field and `dictionary(["en", "es"])` added to `given`. **Browse dictionaries** opens a new tab so you can look up IDs while training runs. The **Name dictionaries** sidebar link opens the catalog in the current tab. Model Builder restores the selected step and definition draft when you return in the same browser tab.
 
 ```js
 const model = {
+  resource: "Patient",
   type: "deterministic",
   nameDictionaries: ["clinic-v1"],
   compare: (a, b) => compareGivenWithDictionaries([a.given], [b.given], {
@@ -327,7 +348,7 @@ const model = {
 
 For a hand-authored model with SQL column expressions, use a `jsonb` column with `(#.resource #> '{name,0,given}')` to pass the original array directly.
 
-Imported dictionaries are immutable. Import a new ID to revise the pairs, then rebuild the model. Automatic models contain a snapshot of their selected dictionaries and need no separate dictionary import on another installation. Models that call `compareGivenWithDictionaries` directly require the same CSV under the same ID before saving on the destination.
+Imported dictionaries are immutable. Import a new ID to revise the pairs, then rebuild the model. New probabilistic models store each selected dictionary ID and its content fingerprint. When moving a model, open **Export revision**, download its JSON and any custom dictionary CSVs, then import those CSVs under the same IDs on the destination. The comparison lists the IDs in `dictionaries` and the corresponding fingerprints in `hashes`. MDMbox checks each fingerprint when loading the model. Reordering CSV rows or repeating a pair preserves its fingerprint. Reversing the name and variant columns can change it. Earlier format 3 revisions with embedded pairs continue to use their saved contents. Models that call `compareGivenWithDictionaries` directly require the same CSV under the same ID before saving on the destination.
 
 Comparison functions receive `id` and the projected fields in all three modes. Field names use lower-case letters, digits and underscores, with a maximum of 63 characters; `id`, `seq`, `created_at` and `interval_no` are reserved. Model IDs use lower-case letters, digits and dashes, with a maximum of 63 characters. Imported legacy transformations retain their expression validation.
 
@@ -629,7 +650,7 @@ Changing only `bulkQueryStrategy` in a new Start request reuses prepared source 
 
 ## Admin UI
 
-In the Admin UI at `/mdmbox/admin` on the Aidbox address, select a model in **Models** to edit its JSON, or choose **New Model** to create one. A **bulk** badge identifies BulkMatchingModel resources. Check the resource type before saving or deleting: the two model types can share an ID.
+In the Admin UI at `/mdmbox/admin` on the Aidbox address, select a model in **Models** to edit its JSON, or choose **New Model** to create one. The list marks `MatchingModel` as **Online only** and `BulkMatchingModel` as **Bulk & Continuous only**. Scoring models work in all three modes and have no mode badge. Check the resource type before saving or deleting because the two FHIR model types can share an ID.
 
 ## Tuning
 

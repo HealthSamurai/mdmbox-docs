@@ -10,7 +10,7 @@ Release notes are grouped by monthly version. Each version lists compatible Aidb
 
 - Import HAPI FHIR 8.6.0 and 9.0.0 MDM comparison rules in **Models → New Model → Import rules**. Deterministic models can return a possible match. Name dictionaries now match two variants listed for the same full name. See [Matching Models](matching-models.md).
 
-* **[Per-field comparison profiles](matching-models.md#automatic-training-and-javascript-extensions)** — Model Builder suggests a comparison for each column. Names, dates, identifiers and categories have distinct outcomes, including whole-field disagreement. Add a dictionary or a Boolean function for a local rule. Saved models carry their fitted weights and dictionary snapshots into online, Bulk and Continuous matching. JavaScript models use saved format 3. Rebuild older JavaScript definitions from the current templates. [Examples](custom-comparison-examples.md) cover initials, swapped dates, local aliases and exact identifiers.
+* **[Per-field comparison profiles](matching-models.md#automatic-training-and-javascript-extensions)** — Model Builder suggests a comparison for each column. Names, dates, identifiers and categories have distinct outcomes, including whole-field disagreement. Add a dictionary or a Boolean function for a local rule. Saved probabilistic models use dictionary IDs and content fingerprints. JavaScript model definitions display their target FHIR resource. In Models, retrain a probabilistic definition, edit `thresholds` in its JavaScript without retraining, export a saved revision and its custom dictionary CSVs, or test an edited deterministic comparison before saving a revision. JavaScript models use saved format 3. MDMbox skips unsupported saved definitions and retains their JSON for recovery. [Examples](custom-comparison-examples.md) cover initials, swapped dates, local aliases and exact identifiers.
 
 * **[Training iteration limit](matching-models.md#training-iteration-limit)** — Set the maximum iterations in Model Builder's **Training options**. The default is 100. The build reports convergence or an exhausted iteration limit and keeps the fitted model available for review.
 
@@ -18,7 +18,7 @@ Release notes are grouped by monthly version. Each version lists compatible Aidb
 
 * **[Continuous matching](continuous-matching.md)** — Improved performance for JavaScript models with multiple blocking rules that share a common field, such as surname plus postcode and surname plus given name. Overlapping rules still produce one result per pair.
 
-* **[Model Builder validation](matching-models.md#model-builder-preview)** — Improved candidate retrieval for overlapping blocking rules while preserving ordered, resumable validation across the full prepared population. Fixed saving a newly built model after pausing and continuing validation in the same page.
+* **[Model Builder validation](matching-models.md#model-builder-preview)** — Improved candidate retrieval for overlapping blocking rules while preserving ordered, resumable validation across the full prepared population. Fixed saving a newly built model after pausing and continuing validation in the same page. A revision’s Validation link can reopen a compatible paused run with its progress and partial results.
 
 ## October 2026 (2610.0)
 
